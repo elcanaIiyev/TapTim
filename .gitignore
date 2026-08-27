@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+
+.env
+.env.local
+.env.*.local
+
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Vendored third-party Claude skills (ui-ux-pro-max bundle).
+# Reinstall with: git clone --depth 1 https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+# then copy its .claude/skills/* here.
+.claude/skills/

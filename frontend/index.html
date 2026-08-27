@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TapTim — Find Your Perfect Hackathon Team</title>
+    <meta
+      name="description"
+      content="TapTim matches hackathon and tech-event participants into balanced teams by skills, roles, and working style."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Loaded asynchronously: a plain stylesheet link here is render-blocking, and
+      because the SPA body is empty until React mounts, a slow font response shows
+      a blank page. The `media` swap lets the browser paint in the system-font
+      fallback immediately and upgrade to Inter once the CSS arrives.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'; this.onload=null;"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <!--
+      Critical inline styles. The main stylesheet is injected by JS during dev,
+      so without this the first paint is unstyled white even in dark mode. The
+      `#root:empty` rule shows a spinner only until React mounts and fills it.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html.dark {
+        color-scheme: dark;
+      }
+      html {
+        background: #f8fafc;
+      }
+      html.dark {
+        background: #020617;
+      }
+      body {
+        margin: 0;
+        font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      #root:empty {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      #root:empty::after {
+        content: '';
+        width: 28px;
+        height: 28px;
+        border-radius: 9999px;
+        border: 3px solid rgb(99 102 241 / 0.25);
+        border-top-color: #6366f1;
+        animation: taptim-spin 0.7s linear infinite;
+      }
+      @keyframes taptim-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #root:empty::after {
+          animation-duration: 2s;
+        }
+      }
+    </style>
+    <script>
+      // Applied before first paint so a dark-mode reload never flashes white.
+      (function () {
+        try {
+          var stored = localStorage.getItem('taptim-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
