@@ -13,7 +13,9 @@ import { NotFoundPage } from './pages/NotFoundPage';
 /** Restores the top of the page on every route change. */
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 
