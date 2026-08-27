@@ -3,12 +3,12 @@ import { Container } from '../ui/Container';
 
 export function CtaBand({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="border-y-2 border-ink-950 bg-flame-600 dark:border-ink-100">
+    <section className="border-y border-ink-200 bg-iris-600 dark:border-ink-700">
       <Container className="py-16 sm:py-20">
         {/* Asymmetric: the statement takes the left, the actions sit right. */}
         <div className="grid items-end gap-10 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <span className="type-label text-ink-950">Last call</span>
+            <span className="type-label text-iris-100">Last call</span>
             <h2 className="type-display mt-4 text-white">
               Your next team
               <br />
@@ -17,7 +17,7 @@ export function CtaBand({ onGetStarted }: { onGetStarted: () => void }) {
           </div>
 
           <div className="lg:col-span-5">
-            <p className="max-w-md text-base leading-relaxed text-ink-950">
+            <p className="max-w-md text-base leading-relaxed text-iris-50">
               Create a profile in under a minute and let TapTim do the matching before the
               opening ceremony starts.
             </p>

@@ -9,7 +9,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
-      className="icon-btn grid h-9 w-9 cursor-pointer place-items-center border-2 border-ink-950 bg-transparent text-ink-950 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 dark:border-ink-100 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-950"
+      className="icon-btn grid h-9 w-9 cursor-pointer place-items-center rounded-[var(--radius-soft-sm)] border border-ink-200 bg-transparent text-ink-900 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 dark:border-ink-700 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-900"
     >
       {isDark ? (
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

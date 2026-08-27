@@ -46,7 +46,7 @@ export function SectionHeading({
           )}
         </div>
       )}
-      <h2 className="type-section mt-5 text-ink-950 dark:text-white">{title}</h2>
+      <h2 className="type-section mt-5 text-ink-900 dark:text-white">{title}</h2>
       {description && (
         <p
           className={cn(

@@ -5,11 +5,11 @@ import { cn } from '../../lib/cn';
 // Hard-framed fields. Focus is handled by the global focus-visible outline, so
 // the field itself only signals hover and error state.
 const FIELD =
-  'w-full border-2 bg-white px-3.5 py-2.5 text-sm text-ink-950 transition-colors duration-150 ' +
+  'w-full rounded-[var(--radius-soft-sm)] border bg-white px-3.5 py-2.5 text-sm text-ink-900 transition-colors duration-150 ' +
   'placeholder:text-ink-400 dark:bg-ink-950 dark:text-white dark:placeholder:text-ink-400';
 
 const FIELD_OK =
-  'border-ink-950 hover:border-flame-600 dark:border-ink-400 dark:hover:border-flame-500';
+  'border-ink-950 hover:border-iris-600 dark:border-ink-700 dark:hover:border-iris-500';
 
 const FIELD_ERROR = 'border-signal-bad dark:border-signal-bad';
 

@@ -22,7 +22,7 @@ interface HeroProps {
 
 export function Hero({ onGetStarted }: HeroProps) {
   return (
-    <section className="relative overflow-hidden border-b-2 border-ink-950 dark:border-ink-100">
+    <section className="relative overflow-hidden border-b border-ink-200 dark:border-ink-700">
       <div
         className="grid-rule pointer-events-none absolute inset-0 opacity-60"
         aria-hidden="true"
@@ -33,13 +33,13 @@ export function Hero({ onGetStarted }: HeroProps) {
         <div className="grid items-start gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <div className="reveal flex items-center gap-3">
-              <span className="inline-flex h-2.5 w-2.5 bg-flame-600" aria-hidden="true" />
+              <span className="inline-flex h-2 w-2 rounded-full bg-fern-500" aria-hidden="true" />
               <span className="type-label text-ink-600 dark:text-ink-400">
                 Sprint 1 MVP / Built for hackathon season
               </span>
             </div>
 
-            <h1 className="reveal reveal-delay-1 type-hero mt-7 text-ink-950 dark:text-white">
+            <h1 className="reveal reveal-delay-1 type-hero mt-7 text-ink-900 dark:text-white">
               Stop forming
               <br />
               teams by
@@ -50,10 +50,10 @@ export function Hero({ onGetStarted }: HeroProps) {
                 sibling, so the text can never end up sitting on bare paper if
                 the stacking context changes.
               */}
-              <span className="inline-block bg-flame-600 px-2 text-white">accident.</span>
+              <span className="inline-block rounded-[var(--radius-soft-sm)] bg-iris-600 px-3 pb-1 text-white">accident.</span>
             </h1>
 
-            <div className="reveal reveal-delay-2 mt-9 border-l-4 border-flame-600 pl-5">
+            <div className="reveal reveal-delay-2 mt-9 border-l-2 border-iris-400 pl-5">
               <p className="type-quote text-ink-800 dark:text-ink-200">
                 “The best teams are built, not bumped into.”
               </p>
@@ -93,34 +93,34 @@ export function Hero({ onGetStarted }: HeroProps) {
           </div>
 
           <div className="reveal reveal-delay-2 lg:col-span-5">
-            <div className="brut-box brut-shadow">
-              <div className="flex items-center justify-between border-b-2 border-ink-950 bg-ink-950 px-4 py-2.5 dark:border-ink-100">
+            <div className="panel panel-soft overflow-hidden">
+              <div className="flex items-center justify-between border-b border-ink-200 bg-ink-900 px-4 py-2.5 dark:border-ink-700">
                 <span className="type-label text-ink-50">Team Nebula</span>
-                <span className="type-label text-flame-500">3 / 4 seats</span>
+                <span className="type-label text-fern-400">3 / 4 seats</span>
               </div>
 
-              <ul className="divide-y-2 divide-ink-950 dark:divide-ink-100">
+              <ul className="divide-y divide-ink-200 dark:divide-ink-800">
                 {ROSTER.map((member) => (
                   <li
                     key={member.name}
                     className={
                       member.filled
                         ? 'flex items-center gap-3.5 px-4 py-3.5'
-                        : 'flex items-center gap-3.5 bg-flame-50 px-4 py-3.5 dark:bg-flame-900/25'
+                        : 'flex items-center gap-3.5 bg-iris-50 px-4 py-3.5 dark:bg-iris-900/25'
                     }
                   >
                     <span
                       className={
                         member.filled
-                          ? 'grid h-10 w-10 shrink-0 place-items-center border-2 border-ink-950 bg-ink-950 font-mono text-xs font-bold text-ink-50 dark:border-ink-100'
-                          : 'grid h-10 w-10 shrink-0 place-items-center border-2 border-dashed border-flame-600 font-mono text-xs font-bold text-flame-700 dark:text-flame-400'
+                          ? 'grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink-200 bg-ink-900 font-mono text-xs font-bold text-ink-50 dark:border-ink-700'
+                          : 'grid h-10 w-10 shrink-0 place-items-center rounded-full border border-dashed border-iris-400 font-mono text-xs font-bold text-iris-700 dark:text-iris-400'
                       }
                       aria-hidden="true"
                     >
                       {member.initials}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-ink-950 dark:text-white">
+                      <span className="block truncate text-sm font-bold text-ink-900 dark:text-white">
                         {member.name}
                       </span>
                       <span className="type-label block text-ink-600 dark:text-ink-400">
@@ -128,7 +128,7 @@ export function Hero({ onGetStarted }: HeroProps) {
                       </span>
                     </span>
                     {!member.filled && (
-                      <span className="type-label shrink-0 border-2 border-ink-950 bg-flame-600 px-2 py-0.5 text-ink-950 dark:border-ink-100">
+                      <span className="type-label shrink-0 border border-ink-200 bg-iris-600 px-2 py-0.5 text-white dark:border-ink-700">
                         Gap
                       </span>
                     )}
@@ -136,7 +136,7 @@ export function Hero({ onGetStarted }: HeroProps) {
                 ))}
               </ul>
 
-              <p className="border-t-2 border-ink-950 px-4 py-3 text-xs leading-relaxed text-ink-600 dark:border-ink-100 dark:text-ink-400">
+              <p className="border-t border-ink-200 px-4 py-3 text-xs leading-relaxed text-ink-600 dark:border-ink-700 dark:text-ink-400">
                 TapTim suggests candidates for the open seat based on what the team is missing.
               </p>
             </div>
@@ -144,19 +144,19 @@ export function Hero({ onGetStarted }: HeroProps) {
         </div>
 
         {/* Stats rail: mono figures on a hard rule, not soft dividers. */}
-        <dl className="reveal reveal-delay-3 mt-16 grid grid-cols-1 border-2 border-ink-950 sm:grid-cols-3 dark:border-ink-100">
+        <dl className="reveal reveal-delay-3 mt-16 grid grid-cols-1 overflow-hidden rounded-[var(--radius-soft)] border border-ink-200 sm:grid-cols-3 dark:border-ink-700">
           {STATS.map((stat, i) => (
             <div
               key={stat.label}
               className={
                 'bg-white px-5 py-6 dark:bg-ink-900' +
                 (i < STATS.length - 1
-                  ? ' border-b-2 border-ink-950 sm:border-b-0 sm:border-r-2 dark:border-ink-100'
+                  ? ' border-b border-ink-200 sm:border-b-0 sm:border-r dark:border-ink-700'
                   : '')
               }
             >
               <dt className="sr-only">{stat.label}</dt>
-              <dd className="font-mono text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl dark:text-white">
+              <dd className="font-mono text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl dark:text-white">
                 {stat.value}
               </dd>
               <p className="type-label mt-2 text-ink-600 dark:text-ink-400">{stat.label}</p>

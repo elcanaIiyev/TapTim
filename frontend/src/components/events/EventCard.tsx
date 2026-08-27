@@ -36,7 +36,7 @@ export function EventCard({ event }: { event: EventItem }) {
     <Card interactive className="group relative flex h-full flex-col overflow-hidden">
       {/* Featured cards get a solid accent rail so they read at a glance. */}
       {event.featured && (
-        <span className="absolute inset-x-0 top-0 h-2 bg-flame-600" aria-hidden="true" />
+        <span className="absolute inset-x-0 top-0 h-2 bg-iris-600" aria-hidden="true" />
       )}
 
       <div className={cn('flex items-start justify-between gap-3', event.featured && 'mt-2')}>
@@ -51,7 +51,7 @@ export function EventCard({ event }: { event: EventItem }) {
         )}
       </div>
 
-      <h3 className="mt-5 text-lg font-bold uppercase leading-tight tracking-tight text-ink-950 dark:text-white">
+      <h3 className="mt-5 text-lg font-bold leading-snug tracking-tight text-ink-900 dark:text-white">
         {event.name}
       </h3>
       <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
@@ -100,10 +100,10 @@ export function EventCard({ event }: { event: EventItem }) {
         ))}
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-3 border-t-2 border-ink-950 pt-5 dark:border-ink-100">
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-ink-200 pt-5 dark:border-ink-700">
         <div>
           {event.prizePool && (
-            <p className="font-mono text-lg font-bold tracking-tight text-ink-950 dark:text-white">
+            <p className="font-mono text-lg font-bold tracking-tight text-ink-900 dark:text-white">
               {event.prizePool}
             </p>
           )}

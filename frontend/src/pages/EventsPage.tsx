@@ -27,10 +27,10 @@ export function EventsPage() {
   return (
     <Container className="py-14 sm:py-20">
       {/* Masthead: title left, live count right, sitting on a hard rule. */}
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-ink-950 pb-8 dark:border-ink-100">
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-ink-200 pb-8 dark:border-ink-700">
         <div>
           <span className="type-label text-accent-text">Catalogue</span>
-          <h1 className="type-display mt-4 text-ink-950 dark:text-white">Explore events</h1>
+          <h1 className="type-display mt-4 text-ink-900 dark:text-white">Explore events</h1>
         </div>
         <p className="max-w-sm text-sm leading-relaxed text-ink-600 dark:text-ink-300">
           Hackathons, AI sprints, design jams, and CTFs — filtered the way you think about them.
@@ -54,7 +54,7 @@ export function EventsPage() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search by name, tag, or location…"
-            className="w-full border-2 border-ink-950 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-950 transition-colors duration-150 placeholder:text-ink-400 hover:border-flame-600 dark:border-ink-400 dark:bg-ink-950 dark:text-white dark:hover:border-flame-500"
+            className="w-full rounded-[var(--radius-soft-sm)] border border-ink-300 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-900 transition-colors duration-150 placeholder:text-ink-400 hover:border-iris-600 dark:border-ink-700 dark:bg-ink-950 dark:text-white dark:hover:border-iris-500"
           />
         </div>
       </div>
@@ -69,7 +69,7 @@ export function EventsPage() {
       </div>
 
       {!loading && !error && (
-        <p className="type-label mt-8 border-l-4 border-flame-600 pl-3 text-ink-600 dark:text-ink-400">
+        <p className="type-label mt-8 border-l-2 border-iris-400 pl-3 text-ink-600 dark:text-ink-400">
           {total} {total === 1 ? 'event' : 'events'} found
         </p>
       )}

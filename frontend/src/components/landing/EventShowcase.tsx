@@ -14,7 +14,7 @@ export function EventShowcase() {
   const totalAcrossCategories = categories.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <section className="border-b-2 border-ink-950 py-20 sm:py-24 dark:border-ink-100">
+    <section className="border-b border-ink-200 py-20 sm:py-24 dark:border-ink-700">
       <Container>
         <SectionHeading
           index="02"

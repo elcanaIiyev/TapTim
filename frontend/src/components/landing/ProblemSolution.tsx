@@ -46,7 +46,7 @@ const SOLUTIONS = [
 
 export function ProblemSolution() {
   return (
-    <section className="border-b-2 border-ink-950 bg-ink-50 py-20 sm:py-24 dark:border-ink-100 dark:bg-ink-900/40">
+    <section className="border-b border-ink-200 bg-ink-50 py-20 sm:py-24 dark:border-ink-700 dark:bg-ink-900/40">
       <Container>
         <SectionHeading
           index="01"
@@ -57,15 +57,15 @@ export function ProblemSolution() {
 
         <div className="mt-14 grid gap-8 lg:grid-cols-5 lg:gap-10">
           {/* The problem panel is inverted — a black block against the paper. */}
-          <div className="surface-dark brut-shadow border-2 border-ink-950 bg-ink-950 p-6 lg:col-span-2 dark:border-ink-100">
-            <p className="type-label text-flame-500">The problem</p>
-            <h3 className="mt-4 text-xl font-bold uppercase tracking-tight text-white">
+          <div className="surface-dark panel-soft border border-ink-200 bg-ink-900 p-6 lg:col-span-2 dark:border-ink-700">
+            <p className="type-label text-accent-text">The problem</p>
+            <h3 className="mt-4 text-xl font-bold tracking-tight text-white">
               Team formation is guesswork
             </h3>
-            <ul className="mt-7 divide-y-2 divide-ink-800">
+            <ul className="mt-7 divide-y divide-ink-800">
               {PROBLEMS.map((problem, i) => (
                 <li key={problem} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-                  <span className="font-mono text-xs font-bold text-flame-500" aria-hidden="true">
+                  <span className="font-mono text-xs font-bold text-accent-text" aria-hidden="true">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span className="text-sm leading-relaxed text-ink-300">{problem}</span>
@@ -77,7 +77,7 @@ export function ProblemSolution() {
           <div className="grid gap-5 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-1">
             {SOLUTIONS.map((solution) => (
               <Card key={solution.title} className="flex gap-4 sm:items-start">
-                <span className="grid h-11 w-11 shrink-0 place-items-center border-2 border-ink-950 bg-flame-600 text-white dark:border-ink-100">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-soft)] border border-ink-200 bg-iris-600 text-white dark:border-ink-700">
                   <svg
                     width="20"
                     height="20"
@@ -92,7 +92,7 @@ export function ProblemSolution() {
                   </svg>
                 </span>
                 <div>
-                  <h3 className="font-bold uppercase tracking-tight text-ink-950 dark:text-white">
+                  <h3 className="font-bold tracking-tight text-ink-900 dark:text-white">
                     {solution.title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">

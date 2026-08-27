@@ -11,7 +11,7 @@ export function Spinner({ className }: { className?: string }) {
       role="status"
       aria-label="Loading"
       className={cn(
-        'inline-block h-2.5 w-8 border-2 border-current',
+        'inline-block h-2.5 w-8 border border-current',
         'bg-[linear-gradient(to_right,currentColor_50%,transparent_50%)] bg-[length:200%_100%]',
         'bg-right bg-no-repeat motion-safe:animate-[taptim-bar_0.9s_steps(6,end)_infinite]',
         'motion-reduce:bg-left',

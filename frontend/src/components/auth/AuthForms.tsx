@@ -45,7 +45,7 @@ function FormError({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="flex items-start gap-2.5 border-2 border-signal-bad bg-signal-bad px-4 py-3 text-sm font-medium text-white"
+      className="flex items-start gap-2.5 border border-signal-bad bg-signal-bad px-4 py-3 text-sm font-medium text-white"
     >
       {message}
     </div>
@@ -113,7 +113,7 @@ export function LoginForm({ onSuccess, onSwitch }: FormProps) {
           <button
             type="button"
             onClick={onSwitch}
-            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400"
+            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-iris-700 dark:hover:text-iris-400"
           >
             Create one
           </button>
@@ -220,7 +220,7 @@ export function SignupForm({ onSuccess, onSwitch }: FormProps) {
           <button
             type="button"
             onClick={onSwitch}
-            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400"
+            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-iris-700 dark:hover:text-iris-400"
           >
             Log in
           </button>

@@ -10,25 +10,25 @@ interface EventGridProps {
 
 function SkeletonCard() {
   return (
-    <div className="brut-box brut-shadow animate-pulse space-y-4 p-6">
-      <div className="h-5 w-24 bg-ink-200 dark:bg-ink-800" />
-      <div className="h-6 w-3/4 bg-ink-200 dark:bg-ink-800" />
+    <div className="panel panel-soft animate-pulse space-y-4 p-6">
+      <div className="h-5 w-24 rounded bg-ink-200 dark:bg-ink-800" />
+      <div className="h-6 w-3/4 rounded bg-ink-200 dark:bg-ink-800" />
       <div className="space-y-2">
-        <div className="h-3 bg-ink-200 dark:bg-ink-800" />
-        <div className="h-3 w-5/6 bg-ink-200 dark:bg-ink-800" />
+        <div className="h-3 rounded bg-ink-200 dark:bg-ink-800" />
+        <div className="h-3 w-5/6 rounded bg-ink-200 dark:bg-ink-800" />
       </div>
-      <div className="h-20 bg-ink-100 dark:bg-ink-800/60" />
+      <div className="h-20 rounded bg-ink-100 dark:bg-ink-800/60" />
     </div>
   );
 }
 
-/** Shared shell for the error and empty states — a framed block on hatching. */
+/** Shared shell for the error and empty states — a framed block on washing. */
 function StatePanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="relative border-2 border-ink-950 dark:border-ink-100">
-      <div className="hatch pointer-events-none absolute inset-0" aria-hidden="true" />
+    <div className="relative overflow-hidden rounded-[var(--radius-soft)] border border-ink-200 dark:border-ink-700">
+      <div className="wash pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative px-6 py-14 text-center">
-        <p className="type-section text-ink-950 dark:text-white">{title}</p>
+        <p className="type-section text-ink-900 dark:text-white">{title}</p>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-ink-600 dark:text-ink-300">
           {children}
         </p>

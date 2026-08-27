@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 export function Logo() {
   return (
     <Link to="/" className="group/logo flex items-center gap-2.5" aria-label="TapTim home">
-      <span className="grid h-9 w-9 place-items-center border-2 border-ink-950 bg-flame-600 transition-colors duration-150 group-hover/logo:bg-ink-950 dark:border-ink-100 dark:group-hover/logo:bg-ink-100">
+      <span className="grid h-9 w-9 place-items-center border border-ink-200 bg-iris-600 transition-colors duration-150 group-hover/logo:bg-ink-950 dark:border-ink-700 dark:group-hover/logo:bg-ink-100">
         <svg
           width="19"
           height="19"
@@ -24,7 +24,7 @@ export function Logo() {
           <path d="m16 11 2 2 4-4" />
         </svg>
       </span>
-      <span className="text-lg font-extrabold uppercase tracking-[-0.02em] text-ink-950 dark:text-white">
+      <span className="text-lg font-extrabold tracking-[-0.02em] text-ink-900 dark:text-white">
         Tap<span className="text-accent-text">Tim</span>
       </span>
     </Link>

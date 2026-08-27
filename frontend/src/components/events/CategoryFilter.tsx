@@ -27,11 +27,11 @@ export function CategoryFilter({ categories, active, onChange, total }: Category
             aria-selected={isActive}
             onClick={() => onChange(option.name)}
             className={cn(
-              'type-label cursor-pointer border-2 px-3 py-2 transition-colors duration-150',
+              'type-label cursor-pointer rounded-full border px-3.5 py-2 transition-colors duration-200',
               isActive
-                ? 'border-ink-950 bg-flame-600 text-ink-950 dark:border-ink-100'
+                ? 'border-ink-950 bg-iris-600 text-white dark:border-ink-700'
                 : 'border-ink-950 bg-white text-ink-700 hover:bg-ink-950 hover:text-ink-50 ' +
-                    'dark:border-ink-400 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-100 dark:hover:text-ink-950',
+                    'dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-100 dark:hover:text-ink-900',
             )}
           >
             {option.name}

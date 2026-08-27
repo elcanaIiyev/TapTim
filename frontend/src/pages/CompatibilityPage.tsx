@@ -49,12 +49,12 @@ export function CompatibilityPage() {
 
   return (
     <Container className="py-14 sm:py-20">
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-ink-950 pb-8 dark:border-ink-100">
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-ink-200 pb-8 dark:border-ink-700">
         <div>
           <Badge tone="accent" className="mb-5">
             Preview · Engine ships in Sprint 2
           </Badge>
-          <h1 className="type-display text-ink-950 dark:text-white">
+          <h1 className="type-display text-ink-900 dark:text-white">
             Compatibility
             <br />
             calculator
@@ -92,9 +92,9 @@ export function CompatibilityPage() {
           </Select>
         </div>
 
-        <div className="mt-10 border-t-2 border-ink-950 pt-10 dark:border-ink-100">
+        <div className="mt-10 border-t border-ink-200 pt-10 dark:border-ink-700">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <p className="font-mono text-[clamp(3.5rem,12vw,6rem)] font-bold leading-none tracking-tighter text-accent-text">
+            <p className="font-mono text-[clamp(3.5rem,12vw,6rem)] font-bold leading-none tracking-tighter text-success-text">
               {score}
               <span className="text-3xl">%</span>
             </p>
@@ -109,7 +109,7 @@ export function CompatibilityPage() {
             the filled-segment count is legible even at small sizes.
           */}
           <div
-            className="mt-6 flex gap-1 border-2 border-ink-950 p-1 dark:border-ink-100"
+            className="mt-6 flex gap-1 rounded-full border border-ink-200 p-1.5 dark:border-ink-700"
             role="img"
             aria-label={`Compatibility score ${score} out of 100`}
           >
@@ -117,9 +117,9 @@ export function CompatibilityPage() {
               <span
                 key={i}
                 className={
-                  'h-7 flex-1 ' +
+                  'h-6 flex-1 rounded-full ' +
                   (i < Math.round(score / 5)
-                    ? 'bg-flame-600'
+                    ? 'bg-fern-500'
                     : 'bg-ink-200 dark:bg-ink-800')
                 }
               />

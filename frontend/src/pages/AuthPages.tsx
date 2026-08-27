@@ -20,7 +20,7 @@ function AuthShell({
       <div className="w-full max-w-md">
         <div>
           <span className="type-label text-accent-text">Account</span>
-          <h1 className="type-section mt-4 text-ink-950 dark:text-white">{title}</h1>
+          <h1 className="type-section mt-4 text-ink-900 dark:text-white">{title}</h1>
           <p className="mt-3 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{subtitle}</p>
         </div>
 
@@ -45,7 +45,7 @@ export function LoginPage() {
       footer={
         <>
           No account yet?{' '}
-          <Link to="/signup" className="font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400">
+          <Link to="/signup" className="font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-iris-700 dark:hover:text-iris-400">
             Create one
           </Link>
         </>
@@ -69,7 +69,7 @@ export function SignupPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400">
+          <Link to="/login" className="font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-iris-700 dark:hover:text-iris-400">
             Log in
           </Link>
         </>

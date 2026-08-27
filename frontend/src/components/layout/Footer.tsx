@@ -23,13 +23,13 @@ const FOOTER_COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="surface-dark mt-auto border-t-2 border-ink-950 bg-ink-950 text-ink-100 dark:border-ink-100">
+    <footer className="surface-dark mt-auto border-t border-ink-200 bg-ink-950 text-ink-100 dark:border-ink-700">
       {/* Full-bleed statement line: the footer opens with type, not links. */}
-      <Container className="border-b-2 border-ink-800 py-10 lg:py-14">
+      <Container className="border-b border-ink-800 py-10 lg:py-14">
         <p className="type-display max-w-4xl text-ink-50">
           Build the team,
           <br />
-          <span className="text-flame-500">then build the thing.</span>
+          <span className="text-accent-text">then build the thing.</span>
         </p>
       </Container>
 
@@ -52,7 +52,7 @@ export function Footer() {
 
           {FOOTER_COLUMNS.map((column) => (
             <div key={column.title}>
-              <h3 className="type-label border-b-2 border-ink-700 pb-2 text-flame-500">
+              <h3 className="type-label border-b border-ink-700 pb-2 text-accent-text">
                 {column.title}
               </h3>
               <ul className="mt-4 space-y-3">
@@ -60,7 +60,7 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       to={link.to}
-                      className="inline-block py-1 text-sm font-medium text-ink-300 transition-colors duration-150 hover:text-flame-400"
+                      className="inline-block py-1 text-sm font-medium text-ink-300 transition-colors duration-150 hover:text-iris-400"
                     >
                       {link.label}
                     </Link>
@@ -71,13 +71,13 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="type-label mt-14 flex flex-col gap-3 border-t-2 border-ink-800 pt-6 text-ink-400 sm:flex-row sm:items-center sm:justify-between">
+        <div className="type-label mt-14 flex flex-col gap-3 border-t border-ink-800 pt-6 text-ink-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} TapTim / Sprint 1 MVP</p>
           <a
             href={`${API_URL}/api/docs`}
             target="_blank"
             rel="noreferrer"
-            className="transition-colors duration-150 hover:text-flame-400"
+            className="transition-colors duration-150 hover:text-iris-400"
           >
             API documentation ↗
           </a>

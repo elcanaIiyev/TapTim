@@ -85,13 +85,13 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="brut-shadow-lg relative max-h-[92vh] w-full max-w-md overflow-y-auto border-2 border-ink-950 bg-white p-6 sm:p-8 dark:border-ink-100 dark:bg-ink-900"
+        className="panel-soft-lg relative max-h-[92vh] w-full max-w-md overflow-y-auto border border-ink-200 bg-white p-6 sm:p-8 dark:border-ink-700 dark:bg-ink-900"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="icon-btn absolute right-4 top-4 grid h-8 w-8 cursor-pointer place-items-center border-2 border-ink-950 text-ink-950 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 dark:border-ink-100 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-950"
+          className="icon-btn absolute right-4 top-4 grid h-8 w-8 rounded-full cursor-pointer place-items-center border border-ink-200 text-ink-900 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 dark:border-ink-700 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-900"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12" />

@@ -37,10 +37,10 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
   // keeps the bar reading as a control strip rather than a marketing header.
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'type-label border-2 px-2.5 py-2 transition-colors duration-150',
+      'type-label border px-2.5 py-2 transition-colors duration-150',
       isActive
-        ? 'border-ink-950 bg-ink-950 text-ink-50 dark:border-ink-100 dark:bg-ink-100 dark:text-ink-950'
-        : 'border-transparent text-ink-600 hover:border-ink-950 hover:text-ink-950 dark:text-ink-400 dark:hover:border-ink-100 dark:hover:text-white',
+        ? 'border-ink-950 bg-ink-950 text-ink-50 dark:border-ink-700 dark:bg-ink-100 dark:text-ink-900'
+        : 'border-transparent text-ink-600 hover:border-ink-950 hover:text-ink-900 dark:text-ink-400 dark:hover:border-ink-100 dark:hover:text-white',
     );
 
   return (
@@ -49,8 +49,8 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
         // Always opaque: a translucent blur bar over a hard-edged page reads as
         // a different design system. Scroll only thickens the bottom rule.
         'sticky top-0 z-40 bg-ink-100 transition-shadow duration-150 dark:bg-ink-950',
-        'border-b-2 border-ink-950 dark:border-ink-100',
-        scrolled && 'shadow-[0_4px_0_0_var(--color-flame-600)]',
+        'border-b border-ink-200 dark:border-ink-700',
+        scrolled && 'shadow-[0_4px_0_0_var(--color-iris-600)]',
       )}
     >
       <Container>
@@ -95,7 +95,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
               onClick={() => setMobileOpen((open) => !open)}
               aria-expanded={mobileOpen}
               aria-label="Toggle navigation menu"
-              className="icon-btn grid h-9 w-9 cursor-pointer place-items-center border-2 border-ink-950 text-ink-950 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 md:hidden dark:border-ink-100 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-950"
+              className="icon-btn grid h-9 w-9 cursor-pointer place-items-center rounded-[var(--radius-soft-sm)] border border-ink-200 text-ink-900 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 md:hidden dark:border-ink-700 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-900"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                 {mobileOpen ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
@@ -106,7 +106,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
       </Container>
 
       {mobileOpen && (
-        <div className="border-t-2 border-ink-950 bg-ink-100 md:hidden dark:border-ink-100 dark:bg-ink-950">
+        <div className="border-t border-ink-200 bg-ink-100 md:hidden dark:border-ink-700 dark:bg-ink-950">
           <Container className="space-y-1.5 py-4">
             {NAV_LINKS.map((link) => (
               <NavLink
@@ -115,10 +115,10 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
                 end={link.to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'type-label block border-2 px-3 py-3',
+                    'type-label block border px-3 py-3',
                     isActive
-                      ? 'border-ink-950 bg-flame-600 text-ink-950 dark:border-ink-100'
-                      : 'border-ink-950 text-ink-800 dark:border-ink-400 dark:text-ink-200',
+                      ? 'border-ink-950 bg-iris-600 text-white dark:border-ink-700'
+                      : 'border-ink-950 text-ink-800 dark:border-ink-700 dark:text-ink-200',
                   )
                 }
               >

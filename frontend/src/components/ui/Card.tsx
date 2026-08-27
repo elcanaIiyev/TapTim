@@ -6,7 +6,7 @@ interface CardProps {
   className?: string;
   /** Adds the press interaction. Use for clickable cards only. */
   interactive?: boolean;
-  /** Drops the offset shadow — for cards sitting inside an already-framed grid. */
+  /** Drops the shadow — for cards sitting inside an already-framed grid. */
   flat?: boolean;
 }
 
@@ -14,14 +14,14 @@ export function Card({ children, className, interactive = false, flat = false }:
   return (
     <div
       className={cn(
-        'brut-box p-6',
-        !flat && 'brut-shadow',
-        interactive && !flat && 'brut-press',
-        // Flat cards live in a shared grid, so they signal hover with the
-        // accent rather than by moving — nothing to move into.
+        'panel p-6',
+        !flat && 'panel-soft',
+        interactive && !flat && 'press',
+        // Flat cards live in a shared grid, so they signal hover with a tint
+        // rather than by lifting out of their neighbours.
         interactive &&
           flat &&
-          'transition-colors duration-150 hover:bg-flame-50 dark:hover:bg-ink-800',
+          'transition-colors duration-150 hover:bg-iris-50 dark:hover:bg-ink-800',
         className,
       )}
     >
