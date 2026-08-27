@@ -19,6 +19,10 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       if (event.key === 'Escape') onClose();
     };
 
+    // Opening the dialog moves focus into it, so remember where focus came
+    // from and hand it back on close. Without this, closing drops focus to
+    // <body> and a keyboard user restarts from the top of the page.
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', onKeyDown);
@@ -27,6 +31,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
