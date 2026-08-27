@@ -26,7 +26,12 @@ const ROLE_SYNERGY: Partial<Record<PrimaryRole, PrimaryRole[]>> = {
 
 function scoreFor(a: PrimaryRole, b: PrimaryRole) {
   if (a === b) return 58;
-  return ROLE_SYNERGY[a]?.includes(b) ? 92 : 74;
+  // ROLE_SYNERGY is hand-authored and not symmetric: it lists Product Manager
+  // under Frontend Developer but not the reverse. Compatibility between two
+  // people cannot depend on which dropdown each of them used, so treat a
+  // synergy declared in either direction as declared for the pair.
+  const complementary = ROLE_SYNERGY[a]?.includes(b) || ROLE_SYNERGY[b]?.includes(a);
+  return complementary ? 92 : 74;
 }
 
 export function CompatibilityPage() {
