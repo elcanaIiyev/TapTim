@@ -3,43 +3,77 @@
 /* Manual theme switching: the `dark` class on <html> wins over the OS setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  TapTim — Brutalist Editorial.
+
+  Generated from ui-ux-pro-max (design-system/taptim/MASTER.md): Brutalism +
+  industrial grey + safety orange, Inter/Playfair Display/JetBrains Mono.
+  Hard 0px corners, 2px rules, offset shadows with no blur, type as the hero.
+
+  One deliberate departure from MASTER.md: the background is newsprint
+  (#F2F0EB) rather than #F8FAFC. Slate-50 is the Tailwind default the old
+  template already used, and warm paper is what makes the editorial half of
+  "brutalist editorial" read. The accent is #EA580C exactly as specified.
+*/
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-quote: 'Playfair Display', ui-serif, Georgia, serif;
 
-  /* Brand — electric indigo. Primary actions, links, focus rings. */
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
+  /* Flame — safety orange. The single accent: CTAs, rules, active states. */
+  --color-flame-50: #fff5ed;
+  --color-flame-100: #ffe8d5;
+  --color-flame-200: #fed0aa;
+  --color-flame-300: #fdb174;
+  --color-flame-400: #fb923c;
+  --color-flame-500: #f97316;
+  --color-flame-600: #ea580c;
+  --color-flame-700: #c2410c;
+  --color-flame-800: #9a3412;
+  --color-flame-900: #7c2d12;
 
-  /* Accent — cyan. Gradient partner and "match" signalling. */
-  --color-accent-300: #67e8f9;
-  --color-accent-400: #22d3ee;
-  --color-accent-500: #06b6d4;
-  --color-accent-600: #0891b2;
+  /* Ink — warm concrete neutrals. Newsprint paper through to near-black. */
+  --color-ink-50: #f8f7f4;
+  --color-ink-100: #f2f0eb;
+  --color-ink-200: #e7e4dc;
+  --color-ink-300: #d3cec2;
+  --color-ink-400: #a8a196;
+  --color-ink-500: #7c756a;
+  --color-ink-600: #5c564d;
+  --color-ink-700: #423d36;
+  --color-ink-800: #2a2621;
+  --color-ink-900: #17150f;
+  --color-ink-950: #0b0a08;
 
-  /* Ink — neutral scale for surfaces, borders, and text. */
-  --color-ink-50: #f8fafc;
-  --color-ink-100: #f1f5f9;
-  --color-ink-200: #e2e8f0;
-  --color-ink-300: #cbd5e1;
-  --color-ink-400: #94a3b8;
-  --color-ink-500: #64748b;
-  --color-ink-600: #475569;
-  --color-ink-700: #334155;
-  --color-ink-800: #1e293b;
-  --color-ink-900: #0f172a;
-  --color-ink-950: #020617;
+  /*
+    Signals. Kept flat and saturated so they read against paper. The `-bright`
+    variants exist because the light-mode greens/ambers only reach ~3.6:1 on the
+    near-black dark surface; these clear 4.5:1 there.
+  */
+  --color-signal-ok: #15803d;
+  --color-signal-ok-bright: #22c55e;
+  --color-signal-warn: #a16207;
+  --color-signal-warn-bright: #eab308;
+  --color-signal-bad: #b91c1c;
+  --color-signal-bad-bright: #ef4444;
 
-  --radius-card: 1rem;
-  --shadow-glow: 0 0 0 1px rgb(99 102 241 / 0.18), 0 18px 45px -20px rgb(79 70 229 / 0.55);
+  /*
+    Accent used as TEXT, which is a different problem from accent used as a
+    fill. flame-600 on newsprint is only 3.13:1, so text needs the darker
+    flame-700 (4.55:1) in light — but flame-700 on near-black is 3.82:1, so
+    dark has to go the other way to flame-500 (7.06:1). This token flips
+    between them; `.dark` redefines it below.
+  */
+  --color-accent-text: #c2410c;
+
+  /* Brutalism: no rounding anywhere. */
+  --radius-none: 0px;
+
+  /* Offset shadows, zero blur — the defining brutalist surface treatment. */
+  --shadow-hard-sm: 3px 3px 0 0 var(--color-ink-950);
+  --shadow-hard: 5px 5px 0 0 var(--color-ink-950);
+  --shadow-hard-lg: 8px 8px 0 0 var(--color-ink-950);
+  --shadow-hard-flame: 5px 5px 0 0 var(--color-flame-600);
 }
 
 @layer base {
@@ -49,87 +83,261 @@
   }
 
   body {
-    @apply bg-ink-50 text-ink-800 font-sans antialiased;
+    @apply bg-ink-100 text-ink-900 font-sans antialiased;
   }
 
   .dark body {
-    @apply bg-ink-950 text-ink-200;
+    @apply bg-ink-950 text-ink-100;
   }
 
-  /* One consistent focus treatment across every interactive element. */
+  /* See --color-accent-text above: the accent inverts direction on dark. */
+  .dark {
+    --color-accent-text: #f97316;
+  }
+
+  /*
+    Blocks that are dark in BOTH themes (the footer, the inverted problem
+    panel) need the dark-side accent even while the page is in light mode.
+    Mark them with `surface-dark` so `text-accent-text` resolves correctly
+    rather than falling back to the light-mode flame-700, which only reaches
+    3.82:1 on near-black.
+  */
+  .surface-dark {
+    --color-accent-text: #f97316;
+  }
+
+  /*
+    Brutalist focus: a solid offset block, not a soft ring. Deliberately
+    high-contrast — the style's accessibility profile requires visible focus.
+  */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    @apply outline-2 outline-offset-2 outline-brand-500;
+    @apply outline-[3px] outline-offset-2 outline-flame-600;
   }
 
   ::selection {
-    @apply bg-brand-500/25;
+    @apply bg-flame-600 text-white;
+  }
+
+  /*
+    Touch targets. Keyed on pointer type rather than viewport width, because a
+    tablet is a coarse pointer at 1024px wide. Inline links in prose are
+    unaffected: min-height does not apply to inline boxes, so only the
+    block/flex controls (buttons, chips, framed links) grow to 44px.
+  */
+  @media (pointer: coarse) {
+    :where(button, a[href], [role='tab'], select, input:not([type='hidden'])) {
+      min-height: 44px;
+    }
+
+    /* Square icon buttons need the width too, not just the height. */
+    :where(button, a[href]).icon-btn {
+      min-width: 44px;
+    }
+  }
+
+  /* Headings never inherit the serif; Playfair is quote-only by design. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-sans;
+    font-feature-settings: 'ss01', 'cv11';
   }
 }
 
 @layer utilities {
-  /* Shared gradient for headline words and brand marks. */
-  .text-gradient {
-    @apply bg-gradient-to-r from-brand-500 via-brand-400 to-accent-400 bg-clip-text text-transparent;
+  /*
+    Type-as-hero. Poster scale with negative tracking and sub-1 leading, per
+    the Inter Poster pairing: -1.5px at hero, -0.5px at subhead.
+  */
+  .type-hero {
+    @apply font-sans font-extrabold uppercase;
+    font-size: clamp(2.75rem, 9vw, 5.5rem);
+    line-height: 0.88;
+    letter-spacing: -0.045em;
   }
 
-  /* Entrance animation for landing sections. `.reveal-delay-N` staggers a row
-     of sibling cards. Suppressed entirely under reduced-motion below. */
+  .type-display {
+    @apply font-sans font-extrabold uppercase;
+    font-size: clamp(2rem, 5.5vw, 3.25rem);
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+  }
+
+  .type-section {
+    @apply font-sans font-bold uppercase;
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+  }
+
+  /* Mono labels: uppercase, wide-tracked. Used for overlines, tags, stats. */
+  .type-label {
+    @apply font-mono text-[0.6875rem] uppercase tracking-[0.2em];
+  }
+
+  /* Playfair italic, reserved strictly for pull quotes. */
+  .type-quote {
+    @apply font-quote italic;
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    line-height: 1.3;
+  }
+
+  /* The structural motif: hard 2px frame + offset shadow. */
+  .brut-box {
+    @apply border-2 border-ink-950 bg-white dark:border-ink-100 dark:bg-ink-900;
+  }
+
+  .brut-shadow {
+    box-shadow: var(--shadow-hard);
+  }
+
+  .dark .brut-shadow {
+    box-shadow: 5px 5px 0 0 var(--color-ink-100);
+  }
+
+  .brut-shadow-lg {
+    box-shadow: var(--shadow-hard-lg);
+  }
+
+  .dark .brut-shadow-lg {
+    box-shadow: 8px 8px 0 0 var(--color-ink-100);
+  }
+
+  .brut-shadow-sm {
+    box-shadow: var(--shadow-hard-sm);
+  }
+
+  .dark .brut-shadow-sm {
+    box-shadow: 3px 3px 0 0 var(--color-ink-100);
+  }
+
+  /*
+    Press interaction: the element travels into its own shadow. Replaces the
+    template's lift-and-glow hover with something physical.
+  */
+  .brut-press {
+    @apply transition-[transform,box-shadow] duration-150 ease-out;
+  }
+
+  .brut-press:hover {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-hard-sm);
+  }
+
+  .dark .brut-press:hover {
+    box-shadow: 3px 3px 0 0 var(--color-ink-100);
+  }
+
+  .brut-press:active {
+    transform: translate(5px, 5px);
+    box-shadow: 0 0 0 0 var(--color-ink-950);
+  }
+
+  /* Diagonal hatching for empty states and decorative blocks. */
+  .hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-ink-950) 0px,
+      var(--color-ink-950) 1px,
+      transparent 1px,
+      transparent 7px
+    );
+    opacity: 0.14;
+  }
+
+  .dark .hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-ink-100) 0px,
+      var(--color-ink-100) 1px,
+      transparent 1px,
+      transparent 7px
+    );
+    opacity: 0.16;
+  }
+
+  /* Visible structural grid, a Brutalism key effect. Hard lines, no mask. */
+  .grid-rule {
+    background-image:
+      linear-gradient(to right, var(--color-ink-300) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-ink-300) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  .dark .grid-rule {
+    background-image:
+      linear-gradient(to right, var(--color-ink-800) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-ink-800) 1px, transparent 1px);
+  }
+
+  /* Loading bar fill, used by <Spinner>. Stepped, not smooth — no easing. */
+  @keyframes taptim-bar {
+    to {
+      background-position: left;
+    }
+  }
+
+  /* Marquee ticker for the stats rail. */
+  .marquee {
+    animation: marquee 32s linear infinite;
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /*
+    Entrance: a hard clip-reveal rather than a soft fade-up. Matches the
+    Stagger List motion tier (300-450ms, back.out) without pulling in GSAP.
+  */
   .reveal {
-    animation: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: reveal-block 0.42s cubic-bezier(0.34, 1.4, 0.64, 1) both;
   }
   .reveal-delay-1 {
-    animation-delay: 0.08s;
+    animation-delay: 0.06s;
   }
   .reveal-delay-2 {
-    animation-delay: 0.16s;
+    animation-delay: 0.12s;
   }
   .reveal-delay-3 {
-    animation-delay: 0.24s;
+    animation-delay: 0.18s;
   }
 
-  @keyframes reveal-up {
+  @keyframes reveal-block {
     from {
       opacity: 0;
       transform: translateY(14px);
+      clip-path: inset(0 0 100% 0);
     }
     to {
       opacity: 1;
       transform: none;
+      clip-path: inset(0 0 0 0);
     }
   }
 
-  /* Slow drift on the hero glow so the page is not perfectly static. */
-  .glow-drift {
-    animation: glow-drift 14s ease-in-out infinite alternate;
-  }
-
-  @keyframes glow-drift {
-    from {
-      transform: translate(-50%, 0) scale(1);
-      opacity: 0.75;
-    }
-    to {
-      transform: translate(-50%, 22px) scale(1.08);
-      opacity: 1;
-    }
-  }
-
-  .grid-backdrop {
-    background-image:
-      linear-gradient(to right, rgb(99 102 241 / 0.07) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(99 102 241 / 0.07) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  }
-
-  /* One global guard rather than per-component opt-outs: anything animated
-     resolves immediately for readers who ask for reduced motion. */
+  /*
+    One global guard rather than per-component opt-outs: anything animated
+    resolves immediately for readers who ask for reduced motion.
+  */
   @media (prefers-reduced-motion: reduce) {
     .reveal,
-    .glow-drift {
+    .marquee {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
+      clip-path: none !important;
+    }
+
+    .brut-press:hover,
+    .brut-press:active {
+      transform: none;
     }
   }
 }

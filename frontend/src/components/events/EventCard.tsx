@@ -1,3 +1,4 @@
+import { cn } from '../../lib/cn';
 import { formatDateRange, formatParticipants, formatTeamSize } from '../../lib/format';
 import type { EventItem } from '../../lib/types';
 import { Badge } from '../ui/Badge';
@@ -12,8 +13,8 @@ const MODE_LABEL: Record<EventItem['mode'], string> = {
 
 function MetaRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 text-sm text-ink-600 dark:text-ink-400">
-      <span className="text-ink-400 dark:text-ink-500">{icon}</span>
+    <div className="flex items-center gap-2.5 font-mono text-xs text-ink-700 dark:text-ink-300">
+      <span className="text-accent-text">{icon}</span>
       <span>{children}</span>
     </div>
   );
@@ -33,15 +34,12 @@ const iconProps = {
 export function EventCard({ event }: { event: EventItem }) {
   return (
     <Card interactive className="group relative flex h-full flex-col overflow-hidden">
-      {/* Featured cards get an accent rail so they read at a glance in a grid. */}
+      {/* Featured cards get a solid accent rail so they read at a glance. */}
       {event.featured && (
-        <span
-          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 to-accent-400"
-          aria-hidden="true"
-        />
+        <span className="absolute inset-x-0 top-0 h-2 bg-flame-600" aria-hidden="true" />
       )}
 
-      <div className="flex items-start justify-between gap-3">
+      <div className={cn('flex items-start justify-between gap-3', event.featured && 'mt-2')}>
         <Badge tone="brand">{event.category}</Badge>
         {event.featured && (
           <Badge tone="accent">
@@ -53,10 +51,10 @@ export function EventCard({ event }: { event: EventItem }) {
         )}
       </div>
 
-      <h3 className="mt-4 text-lg font-semibold tracking-tight text-ink-900 transition-colors group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-300">
+      <h3 className="mt-5 text-lg font-bold uppercase leading-tight tracking-tight text-ink-950 dark:text-white">
         {event.name}
       </h3>
-      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
+      <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
         {event.description}
       </p>
 
@@ -94,7 +92,7 @@ export function EventCard({ event }: { event: EventItem }) {
         </MetaRow>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5 border-t-2 border-ink-200 pt-5 dark:border-ink-800">
         {event.tags.map((tag) => (
           <Badge key={tag} tone="neutral">
             {tag}
@@ -102,13 +100,15 @@ export function EventCard({ event }: { event: EventItem }) {
         ))}
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-3 border-t border-ink-200 pt-5 dark:border-ink-800">
-        <div className="text-sm">
+      <div className="mt-auto flex items-center justify-between gap-3 border-t-2 border-ink-950 pt-5 dark:border-ink-100">
+        <div>
           {event.prizePool && (
-            <p className="font-semibold text-ink-900 dark:text-white">{event.prizePool}</p>
+            <p className="font-mono text-lg font-bold tracking-tight text-ink-950 dark:text-white">
+              {event.prizePool}
+            </p>
           )}
-          <p className="text-xs text-ink-500 dark:text-ink-400">
-            {formatParticipants(event.participants)} participants
+          <p className="type-label mt-0.5 text-ink-600 dark:text-ink-400">
+            {formatParticipants(event.participants)} joined
           </p>
         </div>
         <Button size="sm" variant="outline" to="/events">

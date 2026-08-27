@@ -8,15 +8,15 @@ interface CategoryFilterProps {
   total?: number;
 }
 
+/**
+ * A hard-edged control strip. Filters are left-aligned rather than centred so
+ * they read as a toolbar attached to the grid below, not a floating pill row.
+ */
 export function CategoryFilter({ categories, active, onChange, total }: CategoryFilterProps) {
   const options = [{ name: 'All', count: total ?? 0 }, ...categories];
 
   return (
-    <div
-      role="tablist"
-      aria-label="Event categories"
-      className="flex flex-wrap justify-center gap-2"
-    >
+    <div role="tablist" aria-label="Event categories" className="flex flex-wrap gap-2">
       {options.map((option) => {
         const isActive = option.name === active;
         return (
@@ -27,16 +27,16 @@ export function CategoryFilter({ categories, active, onChange, total }: Category
             aria-selected={isActive}
             onClick={() => onChange(option.name)}
             className={cn(
-              'cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200',
+              'type-label cursor-pointer border-2 px-3 py-2 transition-colors duration-150',
               isActive
-                ? 'border-brand-500 bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                : 'border-ink-200 bg-white text-ink-600 hover:border-brand-400 hover:text-brand-600 ' +
-                    'dark:border-ink-800 dark:bg-ink-900/60 dark:text-ink-300 dark:hover:border-brand-500 dark:hover:text-brand-300',
+                ? 'border-ink-950 bg-flame-600 text-ink-950 dark:border-ink-100'
+                : 'border-ink-950 bg-white text-ink-700 hover:bg-ink-950 hover:text-ink-50 ' +
+                    'dark:border-ink-400 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-100 dark:hover:text-ink-950',
             )}
           >
             {option.name}
             {option.count > 0 && (
-              <span className={cn('ml-2 text-xs', isActive ? 'text-brand-100' : 'text-ink-400')}>
+              <span className={cn('ml-2 font-bold', isActive ? 'opacity-60' : 'opacity-50')}>
                 {option.count}
               </span>
             )}

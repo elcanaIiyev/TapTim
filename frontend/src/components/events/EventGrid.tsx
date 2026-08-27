@@ -1,5 +1,4 @@
 import type { EventItem } from '../../lib/types';
-import { Card } from '../ui/Card';
 import { EventCard } from './EventCard';
 
 interface EventGridProps {
@@ -11,15 +10,30 @@ interface EventGridProps {
 
 function SkeletonCard() {
   return (
-    <Card className="animate-pulse space-y-4">
-      <div className="h-6 w-24 rounded-full bg-ink-200 dark:bg-ink-800" />
-      <div className="h-5 w-3/4 rounded bg-ink-200 dark:bg-ink-800" />
+    <div className="brut-box brut-shadow animate-pulse space-y-4 p-6">
+      <div className="h-5 w-24 bg-ink-200 dark:bg-ink-800" />
+      <div className="h-6 w-3/4 bg-ink-200 dark:bg-ink-800" />
       <div className="space-y-2">
-        <div className="h-3 rounded bg-ink-200 dark:bg-ink-800" />
-        <div className="h-3 w-5/6 rounded bg-ink-200 dark:bg-ink-800" />
+        <div className="h-3 bg-ink-200 dark:bg-ink-800" />
+        <div className="h-3 w-5/6 bg-ink-200 dark:bg-ink-800" />
       </div>
-      <div className="h-20 rounded bg-ink-100 dark:bg-ink-800/60" />
-    </Card>
+      <div className="h-20 bg-ink-100 dark:bg-ink-800/60" />
+    </div>
+  );
+}
+
+/** Shared shell for the error and empty states — a framed block on hatching. */
+function StatePanel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="relative border-2 border-ink-950 dark:border-ink-100">
+      <div className="hatch pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="relative px-6 py-14 text-center">
+        <p className="type-section text-ink-950 dark:text-white">{title}</p>
+        <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+          {children}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -35,22 +49,14 @@ export function EventGrid({ events, loading, error, skeletonCount = 6 }: EventGr
   }
 
   if (error) {
-    return (
-      <Card className="mx-auto max-w-md text-center">
-        <p className="font-semibold text-ink-900 dark:text-white">Could not load events</p>
-        <p className="mt-2 text-sm text-ink-600 dark:text-ink-400">{error}</p>
-      </Card>
-    );
+    return <StatePanel title="Could not load events">{error}</StatePanel>;
   }
 
   if (events.length === 0) {
     return (
-      <Card className="mx-auto max-w-md text-center">
-        <p className="font-semibold text-ink-900 dark:text-white">No events match your filters</p>
-        <p className="mt-2 text-sm text-ink-600 dark:text-ink-400">
-          Try a different category or clear your search.
-        </p>
-      </Card>
+      <StatePanel title="Nothing matches">
+        No events fit these filters. Try a different category or clear your search.
+      </StatePanel>
     );
   }
 

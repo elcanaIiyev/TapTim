@@ -17,14 +17,14 @@
       fallback immediately and upgrade to Inter once the CSS arrives.
     -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@1,400;1,500&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'; this.onload=null;"
     />
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@1,400;1,500&display=swap"
         rel="stylesheet"
       />
     </noscript>
@@ -41,10 +41,10 @@
         color-scheme: dark;
       }
       html {
-        background: #f8fafc;
+        background: #f2f0eb;
       }
       html.dark {
-        background: #020617;
+        background: #0b0a08;
       }
       body {
         margin: 0;
@@ -55,23 +55,28 @@
         place-items: center;
         min-height: 100vh;
       }
+      /* A hard block that fills, not a spinner — same language as the app. */
       #root:empty::after {
         content: '';
-        width: 28px;
-        height: 28px;
-        border-radius: 9999px;
-        border: 3px solid rgb(99 102 241 / 0.25);
-        border-top-color: #6366f1;
-        animation: taptim-spin 0.7s linear infinite;
+        width: 44px;
+        height: 12px;
+        border: 2px solid #0b0a08;
+        background: linear-gradient(to right, #ea580c 50%, transparent 50%) right / 200% 100%
+          no-repeat;
+        animation: taptim-load 0.9s steps(6, end) infinite;
       }
-      @keyframes taptim-spin {
+      html.dark #root:empty::after {
+        border-color: #f2f0eb;
+      }
+      @keyframes taptim-load {
         to {
-          transform: rotate(360deg);
+          background-position: left;
         }
       }
       @media (prefers-reduced-motion: reduce) {
         #root:empty::after {
-          animation-duration: 2s;
+          animation: none;
+          background-position: left;
         }
       }
     </style>

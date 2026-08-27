@@ -33,32 +33,31 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
   // Any navigation closes the mobile drawer.
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
-  // `after:` draws the active underline, so the indicator needs no extra element.
+  // Active state is a solid block, not an underline gradient. Mono + uppercase
+  // keeps the bar reading as a control strip rather than a marketing header.
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'relative rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-      'after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-full',
-      'after:bg-gradient-to-r after:from-brand-500 after:to-accent-400 after:transition-transform',
-      'after:duration-200 after:content-[""]',
+      'type-label border-2 px-2.5 py-2 transition-colors duration-150',
       isActive
-        ? 'text-brand-600 after:scale-x-100 dark:text-brand-400'
-        : 'text-ink-600 after:scale-x-0 hover:text-ink-900 dark:text-ink-400 dark:hover:text-white',
+        ? 'border-ink-950 bg-ink-950 text-ink-50 dark:border-ink-100 dark:bg-ink-100 dark:text-ink-950'
+        : 'border-transparent text-ink-600 hover:border-ink-950 hover:text-ink-950 dark:text-ink-400 dark:hover:border-ink-100 dark:hover:text-white',
     );
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 border-b transition-all duration-200',
-        scrolled
-          ? 'border-ink-200 bg-white/85 backdrop-blur-lg dark:border-ink-800 dark:bg-ink-950/85'
-          : 'border-transparent bg-transparent',
+        // Always opaque: a translucent blur bar over a hard-edged page reads as
+        // a different design system. Scroll only thickens the bottom rule.
+        'sticky top-0 z-40 bg-ink-100 transition-shadow duration-150 dark:bg-ink-950',
+        'border-b-2 border-ink-950 dark:border-ink-100',
+        scrolled && 'shadow-[0_4px_0_0_var(--color-flame-600)]',
       )}
     >
       <Container>
         <nav className="flex h-16 items-center justify-between gap-4" aria-label="Main">
           <Logo />
 
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1.5 md:flex">
             {NAV_LINKS.map((link) => (
               <NavLink key={link.to} to={link.to} className={linkClass} end={link.to === '/'}>
                 {link.label}
@@ -72,7 +71,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
             <div className="hidden items-center gap-2 md:flex">
               {user ? (
                 <>
-                  <span className="max-w-[12rem] truncate text-sm text-ink-600 dark:text-ink-300">
+                  <span className="type-label max-w-[10rem] truncate text-ink-600 dark:text-ink-300">
                     {user.fullName}
                   </span>
                   <Button variant="outline" size="sm" onClick={logout}>
@@ -96,9 +95,9 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
               onClick={() => setMobileOpen((open) => !open)}
               aria-expanded={mobileOpen}
               aria-label="Toggle navigation menu"
-              className="grid h-9 w-9 cursor-pointer place-items-center rounded-lg text-ink-600 hover:bg-ink-100 md:hidden dark:text-ink-300 dark:hover:bg-ink-800"
+              className="icon-btn grid h-9 w-9 cursor-pointer place-items-center border-2 border-ink-950 text-ink-950 transition-colors duration-150 hover:bg-ink-950 hover:text-ink-50 md:hidden dark:border-ink-100 dark:text-ink-100 dark:hover:bg-ink-100 dark:hover:text-ink-950"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                 {mobileOpen ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
               </svg>
             </button>
@@ -107,8 +106,8 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
       </Container>
 
       {mobileOpen && (
-        <div className="border-t border-ink-200 bg-white md:hidden dark:border-ink-800 dark:bg-ink-950">
-          <Container className="space-y-1 py-4">
+        <div className="border-t-2 border-ink-950 bg-ink-100 md:hidden dark:border-ink-100 dark:bg-ink-950">
+          <Container className="space-y-1.5 py-4">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -116,10 +115,10 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
                 end={link.to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'block rounded-lg px-3 py-2.5 text-sm font-medium',
+                    'type-label block border-2 px-3 py-3',
                     isActive
-                      ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400'
-                      : 'text-ink-700 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800',
+                      ? 'border-ink-950 bg-flame-600 text-ink-950 dark:border-ink-100'
+                      : 'border-ink-950 text-ink-800 dark:border-ink-400 dark:text-ink-200',
                   )
                 }
               >

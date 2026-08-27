@@ -4,20 +4,24 @@ import { cn } from '../../lib/cn';
 interface CardProps {
   children: ReactNode;
   className?: string;
-  /** Adds lift + brand border on hover. Use for clickable cards only. */
+  /** Adds the press interaction. Use for clickable cards only. */
   interactive?: boolean;
+  /** Drops the offset shadow — for cards sitting inside an already-framed grid. */
+  flat?: boolean;
 }
 
-export function Card({ children, className, interactive = false }: CardProps) {
+export function Card({ children, className, interactive = false, flat = false }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-ink-200 bg-white p-6 shadow-sm shadow-ink-900/[0.03]',
-        'dark:border-ink-800 dark:bg-ink-900/60 dark:shadow-none',
+        'brut-box p-6',
+        !flat && 'brut-shadow',
+        interactive && !flat && 'brut-press',
+        // Flat cards live in a shared grid, so they signal hover with the
+        // accent rather than by moving — nothing to move into.
         interactive &&
-          'transition-all duration-300 ease-out motion-safe:hover:-translate-y-1 ' +
-            'hover:border-brand-400/70 hover:shadow-xl hover:shadow-brand-500/10 ' +
-            'dark:hover:border-brand-500/50 dark:hover:shadow-brand-500/[0.07]',
+          flat &&
+          'transition-colors duration-150 hover:bg-flame-50 dark:hover:bg-ink-800',
         className,
       )}
     >

@@ -23,12 +23,28 @@ const FOOTER_COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-950">
-      <Container className="py-12 lg:py-16">
+    <footer className="surface-dark mt-auto border-t-2 border-ink-950 bg-ink-950 text-ink-100 dark:border-ink-100">
+      {/* Full-bleed statement line: the footer opens with type, not links. */}
+      <Container className="border-b-2 border-ink-800 py-10 lg:py-14">
+        <p className="type-display max-w-4xl text-ink-50">
+          Build the team,
+          <br />
+          <span className="text-flame-500">then build the thing.</span>
+        </p>
+      </Container>
+
+      <Container className="py-12">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Logo />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-500 dark:text-ink-400">
+            {/*
+              The footer sits on ink-950, so only the wordmark's base colour is
+              overridden. Scoped to the direct child span so the nested "Tim"
+              keeps its flame accent.
+            */}
+            <div className="[&>a>span:last-child]:text-ink-50">
+              <Logo />
+            </div>
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-400">
               TapTim turns a room full of strangers into balanced teams — matched on skills,
               roles, and how people actually like to work.
             </p>
@@ -36,13 +52,15 @@ export function Footer() {
 
           {FOOTER_COLUMNS.map((column) => (
             <div key={column.title}>
-              <h3 className="text-sm font-semibold text-ink-900 dark:text-white">{column.title}</h3>
-              <ul className="mt-4 space-y-2.5">
+              <h3 className="type-label border-b-2 border-ink-700 pb-2 text-flame-500">
+                {column.title}
+              </h3>
+              <ul className="mt-4 space-y-3">
                 {column.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       to={link.to}
-                      className="text-sm text-ink-500 transition-colors hover:text-brand-600 dark:text-ink-400 dark:hover:text-brand-400"
+                      className="inline-block py-1 text-sm font-medium text-ink-300 transition-colors duration-150 hover:text-flame-400"
                     >
                       {link.label}
                     </Link>
@@ -53,13 +71,13 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between dark:border-ink-800 dark:text-ink-400">
-          <p>© {new Date().getFullYear()} TapTim. Sprint 1 MVP.</p>
+        <div className="type-label mt-14 flex flex-col gap-3 border-t-2 border-ink-800 pt-6 text-ink-400 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} TapTim / Sprint 1 MVP</p>
           <a
             href={`${API_URL}/api/docs`}
             target="_blank"
             rel="noreferrer"
-            className="transition-colors hover:text-brand-600 dark:hover:text-brand-400"
+            className="transition-colors duration-150 hover:text-flame-400"
           >
             API documentation ↗
           </a>

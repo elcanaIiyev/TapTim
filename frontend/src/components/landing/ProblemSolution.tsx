@@ -46,47 +46,56 @@ const SOLUTIONS = [
 
 export function ProblemSolution() {
   return (
-    <section className="border-y border-ink-200 bg-white py-20 sm:py-24 dark:border-ink-800 dark:bg-ink-900/30">
+    <section className="border-b-2 border-ink-950 bg-ink-50 py-20 sm:py-24 dark:border-ink-100 dark:bg-ink-900/40">
       <Container>
         <SectionHeading
+          index="01"
           overline="Problem & Solution"
           title="Great hackathon ideas die on mismatched teams"
           description="Most participants pick teammates in the first ten minutes, with almost no information. TapTim replaces that scramble with a structured match."
         />
 
         <div className="mt-14 grid gap-8 lg:grid-cols-5 lg:gap-10">
-          <Card className="lg:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 dark:text-red-400">
-              The problem
-            </p>
-            <h3 className="mt-3 text-xl font-semibold text-ink-900 dark:text-white">
+          {/* The problem panel is inverted — a black block against the paper. */}
+          <div className="surface-dark brut-shadow border-2 border-ink-950 bg-ink-950 p-6 lg:col-span-2 dark:border-ink-100">
+            <p className="type-label text-flame-500">The problem</p>
+            <h3 className="mt-4 text-xl font-bold uppercase tracking-tight text-white">
               Team formation is guesswork
             </h3>
-            <ul className="mt-6 space-y-4">
-              {PROBLEMS.map((problem) => (
-                <li key={problem} className="flex gap-3 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-red-500/12 text-red-500">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
+            <ul className="mt-7 divide-y-2 divide-ink-800">
+              {PROBLEMS.map((problem, i) => (
+                <li key={problem} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                  <span className="font-mono text-xs font-bold text-flame-500" aria-hidden="true">
+                    {String(i + 1).padStart(2, '0')}
                   </span>
-                  {problem}
+                  <span className="text-sm leading-relaxed text-ink-300">{problem}</span>
                 </li>
               ))}
             </ul>
-          </Card>
+          </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-1">
             {SOLUTIONS.map((solution) => (
               <Card key={solution.title} className="flex gap-4 sm:items-start">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500/15 to-accent-500/15 text-brand-600 ring-1 ring-inset ring-brand-500/20 dark:text-brand-400">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="grid h-11 w-11 shrink-0 place-items-center border-2 border-ink-950 bg-flame-600 text-white dark:border-ink-100">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     {solution.icon}
                   </svg>
                 </span>
                 <div>
-                  <h3 className="font-semibold text-ink-900 dark:text-white">{solution.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-600 dark:text-ink-400">
+                  <h3 className="font-bold uppercase tracking-tight text-ink-950 dark:text-white">
+                    {solution.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
                     {solution.description}
                   </p>
                 </div>

@@ -14,9 +14,10 @@ export function EventShowcase() {
   const totalAcrossCategories = categories.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <section className="py-20 sm:py-24">
+    <section className="border-b-2 border-ink-950 py-20 sm:py-24 dark:border-ink-100">
       <Container>
         <SectionHeading
+          index="02"
           overline="Event Showcase"
           title="Pick an event, then build the team for it"
           description="Browse hackathons, AI sprints, design jams, and CTFs. Every listing shows the team size it expects, so you know what you are recruiting for."
@@ -36,7 +37,7 @@ export function EventShowcase() {
         </div>
 
         {!loading && !error && total > events.length && (
-          <div className="mt-10 text-center">
+          <div className="mt-12">
             <Button variant="outline" to="/events">
               View all {total} events
             </Button>

@@ -26,22 +26,24 @@ export function EventsPage() {
 
   return (
     <Container className="py-14 sm:py-20">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl dark:text-white">
-          Explore <span className="text-gradient">Events</span>
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-ink-600 sm:text-lg dark:text-ink-400">
+      {/* Masthead: title left, live count right, sitting on a hard rule. */}
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-ink-950 pb-8 dark:border-ink-100">
+        <div>
+          <span className="type-label text-accent-text">Catalogue</span>
+          <h1 className="type-display mt-4 text-ink-950 dark:text-white">Explore events</h1>
+        </div>
+        <p className="max-w-sm text-sm leading-relaxed text-ink-600 dark:text-ink-300">
           Hackathons, AI sprints, design jams, and CTFs — filtered the way you think about them.
         </p>
       </div>
 
-      <div className="mx-auto mt-8 max-w-md">
+      <div className="mt-8">
         <label htmlFor="event-search" className="sr-only">
           Search events
         </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <div className="relative max-w-lg">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-accent-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" />
             </svg>
@@ -52,12 +54,12 @@ export function EventsPage() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search by name, tag, or location…"
-            className="w-full rounded-xl border border-ink-300 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-900 placeholder:text-ink-400 hover:border-ink-400 focus:border-brand-500 dark:border-ink-700 dark:bg-ink-950/60 dark:text-white dark:hover:border-ink-600"
+            className="w-full border-2 border-ink-950 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-950 transition-colors duration-150 placeholder:text-ink-400 hover:border-flame-600 dark:border-ink-400 dark:bg-ink-950 dark:text-white dark:hover:border-flame-500"
           />
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <CategoryFilter
           categories={categories}
           active={category}
@@ -67,12 +69,12 @@ export function EventsPage() {
       </div>
 
       {!loading && !error && (
-        <p className="mt-8 text-center text-sm text-ink-500 dark:text-ink-400">
+        <p className="type-label mt-8 border-l-4 border-flame-600 pl-3 text-ink-600 dark:text-ink-400">
           {total} {total === 1 ? 'event' : 'events'} found
         </p>
       )}
 
-      <div className="mt-8">
+      <div className="mt-6">
         <EventGrid events={events} loading={loading} error={error} skeletonCount={9} />
       </div>
     </Container>

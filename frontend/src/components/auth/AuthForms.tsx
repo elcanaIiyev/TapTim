@@ -45,7 +45,7 @@ function FormError({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300"
+      className="flex items-start gap-2.5 border-2 border-signal-bad bg-signal-bad px-4 py-3 text-sm font-medium text-white"
     >
       {message}
     </div>
@@ -108,12 +108,12 @@ export function LoginForm({ onSuccess, onSwitch }: FormProps) {
       </Button>
 
       {onSwitch && (
-        <p className="text-center text-sm text-ink-500 dark:text-ink-400">
+        <p className="text-center text-sm text-ink-600 dark:text-ink-400">
           No account yet?{' '}
           <button
             type="button"
             onClick={onSwitch}
-            className="cursor-pointer font-semibold text-brand-600 hover:underline dark:text-brand-400"
+            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400"
           >
             Create one
           </button>
@@ -215,12 +215,12 @@ export function SignupForm({ onSuccess, onSwitch }: FormProps) {
       </Button>
 
       {onSwitch && (
-        <p className="text-center text-sm text-ink-500 dark:text-ink-400">
+        <p className="text-center text-sm text-ink-600 dark:text-ink-400">
           Already have an account?{' '}
           <button
             type="button"
             onClick={onSwitch}
-            className="cursor-pointer font-semibold text-brand-600 hover:underline dark:text-brand-400"
+            className="cursor-pointer font-bold uppercase tracking-wide text-accent-text underline decoration-2 underline-offset-4 hover:text-flame-700 dark:hover:text-flame-400"
           >
             Log in
           </button>

@@ -7,34 +7,39 @@ type Size = 'sm' | 'md' | 'lg';
 
 // `cursor-pointer` is explicit: browsers default <button> to an arrow cursor,
 // and Tailwind v4's preflight no longer overrides it.
+//
+// Brutalist buttons are hard rectangles with a 2px frame. Instead of lifting on
+// hover they travel into their own offset shadow (`brut-press`), which reads as
+// a physical key press rather than the usual float-and-glow.
 const BASE =
-  'inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-xl font-semibold ' +
-  'transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-55 ' +
-  'disabled:pointer-events-none whitespace-nowrap';
+  'group/btn relative inline-flex cursor-pointer select-none items-center justify-center gap-2 ' +
+  'border-2 font-semibold uppercase tracking-[0.08em] whitespace-nowrap ' +
+  'disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none';
 
 const VARIANTS: Record<Variant, string> = {
+  // Near-black on safety orange, not white: white only reaches 3.56:1 here,
+  // while ink-950 gives 5.56:1 (7.06:1 on the flame-500 hover). This is also
+  // what the generated design system specifies as "On Accent".
   primary:
-    'bg-brand-600 text-white shadow-lg shadow-brand-600/25 hover:bg-brand-500 ' +
-    'hover:shadow-xl hover:shadow-brand-500/40 motion-safe:hover:-translate-y-0.5 ' +
-    'active:translate-y-0 active:shadow-md',
+    'brut-press brut-shadow border-ink-950 bg-flame-600 text-ink-950 hover:bg-flame-500 ' +
+    'dark:border-ink-100',
   secondary:
-    'bg-ink-900 text-white shadow-lg shadow-ink-900/15 hover:bg-ink-800 ' +
-    'motion-safe:hover:-translate-y-0.5 active:translate-y-0 ' +
-    'dark:bg-white dark:text-ink-900 dark:shadow-white/10 dark:hover:bg-ink-100',
+    'brut-press brut-shadow border-ink-950 bg-ink-950 text-ink-50 hover:bg-ink-800 ' +
+    'dark:border-ink-100 dark:bg-ink-100 dark:text-ink-950 dark:hover:bg-white',
   outline:
-    'border border-ink-300 text-ink-700 hover:border-brand-400 hover:bg-brand-500/5 ' +
-    'hover:text-brand-600 active:bg-brand-500/10 ' +
-    'dark:border-ink-700 dark:text-ink-200 dark:hover:border-brand-500 ' +
-    'dark:hover:bg-brand-500/10 dark:hover:text-brand-300',
+    'brut-press brut-shadow border-ink-950 bg-white text-ink-950 hover:bg-flame-50 ' +
+    'dark:border-ink-100 dark:bg-ink-900 dark:text-ink-100 dark:hover:bg-ink-800',
+  // The one non-boxed variant, for tertiary actions inside dense toolbars.
   ghost:
-    'text-ink-600 hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 ' +
-    'dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white dark:active:bg-ink-700',
+    'border-transparent text-ink-700 transition-colors duration-150 hover:border-ink-950 ' +
+    'hover:bg-ink-950 hover:text-ink-50 dark:text-ink-300 dark:hover:border-ink-100 ' +
+    'dark:hover:bg-ink-100 dark:hover:text-ink-950',
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-3.5 text-sm',
-  md: 'h-11 px-5 text-sm',
-  lg: 'h-13 px-7 text-base',
+  sm: 'h-9 px-3.5 text-[0.6875rem]',
+  md: 'h-11 px-5 text-xs',
+  lg: 'h-14 px-8 text-sm',
 };
 
 interface CommonProps {

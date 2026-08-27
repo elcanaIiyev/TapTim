@@ -3,35 +3,39 @@ import { Container } from '../ui/Container';
 
 export function CtaBand({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="py-20 sm:py-24">
-      <Container>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-ink-900 px-6 py-16 text-center sm:px-12">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle at 20% 20%, rgba(34,211,238,.35), transparent 45%), radial-gradient(circle at 80% 70%, rgba(129,140,248,.35), transparent 45%)',
-            }}
-            aria-hidden="true"
-          />
-
-          <div className="relative mx-auto max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Your next team is already registered
+    <section className="border-y-2 border-ink-950 bg-flame-600 dark:border-ink-100">
+      <Container className="py-16 sm:py-20">
+        {/* Asymmetric: the statement takes the left, the actions sit right. */}
+        <div className="grid items-end gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <span className="type-label text-ink-950">Last call</span>
+            <h2 className="type-display mt-4 text-white">
+              Your next team
+              <br />
+              is already registered.
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-brand-100">
+          </div>
+
+          <div className="lg:col-span-5">
+            <p className="max-w-md text-base leading-relaxed text-ink-950">
               Create a profile in under a minute and let TapTim do the matching before the
               opening ceremony starts.
             </p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            {/*
+              `flex-wrap` matters at exactly the lg breakpoint: this column is
+              5 of 12 tracks, and two nowrap buttons side by side are wider
+              than it, which pushed the page into horizontal scroll at 1024px.
+            */}
+            <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
               <Button size="lg" variant="secondary" onClick={onGetStarted}>
-                Create your profile
+                Create profile
               </Button>
-              <Button
-                size="lg"
-                to="/events"
-                className="border border-white/25 bg-white/10 text-white hover:bg-white/20"
-              >
+              {/*
+                Plain `outline` here: white panel, black frame, black text. On
+                the orange band that is the highest-contrast pairing available,
+                and it needs no colour overrides to stay legible.
+              */}
+              <Button size="lg" variant="outline" to="/events">
                 Browse events
               </Button>
             </div>

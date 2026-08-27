@@ -49,14 +49,18 @@ export function CompatibilityPage() {
 
   return (
     <Container className="py-14 sm:py-20">
-      <div className="mx-auto max-w-2xl text-center">
-        <Badge tone="accent" className="mb-5">
-          Preview · Full engine ships in Sprint 2
-        </Badge>
-        <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl dark:text-white">
-          Compatibility <span className="text-gradient">Calculator</span>
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-ink-600 sm:text-lg dark:text-ink-400">
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-ink-950 pb-8 dark:border-ink-100">
+        <div>
+          <Badge tone="accent" className="mb-5">
+            Preview · Engine ships in Sprint 2
+          </Badge>
+          <h1 className="type-display text-ink-950 dark:text-white">
+            Compatibility
+            <br />
+            calculator
+          </h1>
+        </div>
+        <p className="max-w-sm text-sm leading-relaxed text-ink-600 dark:text-ink-300">
           Pick two roles to see how TapTim will present a match. The final score will also weigh
           skills, availability, and working style.
         </p>
@@ -88,26 +92,41 @@ export function CompatibilityPage() {
           </Select>
         </div>
 
-        <div className="mt-10 flex flex-col items-center gap-4 border-t border-ink-200 pt-10 dark:border-ink-800">
-          <div
-            className="grid h-40 w-40 place-items-center rounded-full"
-            style={{
-              background: `conic-gradient(var(--color-brand-500) ${score * 3.6}deg, var(--color-ink-200) 0deg)`,
-            }}
-          >
-            <div className="grid h-32 w-32 place-items-center rounded-full bg-white dark:bg-ink-900">
-              <div className="text-center">
-                <p className="text-4xl font-extrabold tracking-tight text-ink-900 dark:text-white">
-                  {score}%
-                </p>
-                <p className="text-xs text-ink-500 dark:text-ink-400">match</p>
-              </div>
+        <div className="mt-10 border-t-2 border-ink-950 pt-10 dark:border-ink-100">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <p className="font-mono text-[clamp(3.5rem,12vw,6rem)] font-bold leading-none tracking-tighter text-accent-text">
+              {score}
+              <span className="text-3xl">%</span>
+            </p>
+            <div className="pb-2">
+              <Badge tone={verdict.tone}>{verdict.label}</Badge>
             </div>
           </div>
 
-          <Badge tone={verdict.tone}>{verdict.label}</Badge>
+          {/*
+            A 20-segment meter instead of a donut. It reads the score at a
+            glance without introducing the only round shape in the system, and
+            the filled-segment count is legible even at small sizes.
+          */}
+          <div
+            className="mt-6 flex gap-1 border-2 border-ink-950 p-1 dark:border-ink-100"
+            role="img"
+            aria-label={`Compatibility score ${score} out of 100`}
+          >
+            {Array.from({ length: 20 }, (_, i) => (
+              <span
+                key={i}
+                className={
+                  'h-7 flex-1 ' +
+                  (i < Math.round(score / 5)
+                    ? 'bg-flame-600'
+                    : 'bg-ink-200 dark:bg-ink-800')
+                }
+              />
+            ))}
+          </div>
 
-          <p className="max-w-md text-center text-sm leading-relaxed text-ink-600 dark:text-ink-400">
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-ink-600 dark:text-ink-300">
             {score >= 90
               ? `A ${roleA} and a ${roleB} cover different parts of the build, which is exactly what a 48-hour team needs.`
               : score >= 70

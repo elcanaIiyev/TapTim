@@ -19,7 +19,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: AuthModalProps)
         <h2 className="text-2xl font-bold tracking-tight text-ink-900 dark:text-white">
           {isLogin ? 'Welcome back' : 'Join TapTim'}
         </h2>
-        <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
+        <p className="mt-2 text-sm text-ink-600 dark:text-ink-400">
           {isLogin
             ? 'Log in to pick up your team search where you left off.'
             : 'Tell us your role and skills, and we will start matching you with teammates.'}
