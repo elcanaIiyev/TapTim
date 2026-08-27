@@ -15,6 +15,10 @@ export function formatDateRange(startIso: string, endIso: string): string {
   const end = new Date(endIso);
 
   if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    // A single-day event has no range to show; "28 – 28 Sept" reads as a typo.
+    if (start.getDate() === end.getDate()) {
+      return dateFormatter.format(end);
+    }
     return `${start.getDate()} – ${dateFormatter.format(end)}`;
   }
   return `${shortDateFormatter.format(start)} – ${dateFormatter.format(end)}`;
