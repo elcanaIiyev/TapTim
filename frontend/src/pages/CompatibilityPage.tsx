@@ -112,7 +112,7 @@ export function CompatibilityPage() {
               ? `A ${roleA} and a ${roleB} cover different parts of the build, which is exactly what a 48-hour team needs.`
               : score >= 70
                 ? `A ${roleA} and a ${roleB} can ship together, though you may still want a third role to round the team out.`
-                : `Two ${roleA}s will duplicate effort. Consider recruiting a different role to fill the gap.`}
+                : `Two ${roleA} profiles will duplicate effort. Consider recruiting a different role to fill the gap.`}
           </p>
         </div>
       </Card>
