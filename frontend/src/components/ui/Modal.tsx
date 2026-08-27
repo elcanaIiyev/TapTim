@@ -15,8 +15,43 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   useEffect(() => {
     if (!open) return;
 
+    const FOCUSABLE =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      // aria-modal tells assistive tech the rest of the page is inert, but the
+      // browser still tabs into it. Cycle focus inside the panel so Tab cannot
+      // reach the navigation sitting behind the backdrop.
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const outside = !panel.contains(active);
+
+      if (event.shiftKey && (active === first || active === panel || outside)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || outside)) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
     // Opening the dialog moves focus into it, so remember where focus came
