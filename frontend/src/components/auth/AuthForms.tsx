@@ -16,9 +16,17 @@ function useSubmitState() {
 
   const handleFailure = (error: unknown) => {
     if (error instanceof ApiError) {
-      setFormError(error.message);
       setFieldErrors(
         Object.fromEntries(error.issues.map((issue) => [issue.field, issue.message])),
+      );
+      // A validation response carries per-field issues and a message written
+      // for developers ("Request validation failed."), which must never reach
+      // a signup form. The inputs already say what to fix, so the banner just
+      // points at them. Messages sent without issues — "An account with this
+      // email already exists.", "Incorrect email or password." — are written
+      // for the user and are shown as-is.
+      setFormError(
+        error.issues.length > 0 ? 'Please fix the highlighted fields below.' : error.message,
       );
     } else {
       setFormError('Something went wrong. Please try again.');
