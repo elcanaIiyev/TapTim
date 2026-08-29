@@ -1,6 +1,6 @@
 # TapTim
 
-**Find your perfect hackathon team.** TapTim matches hackathon and tech-event participants into
+**Find your perfect hackathon team.** TapTim! matches hackathon and tech-event participants into
 balanced teams based on skills, roles, personality, and compatibility.
 
 > **Sprint 1 (MVP Foundation) — complete.** Full architecture notes, operations log, API
