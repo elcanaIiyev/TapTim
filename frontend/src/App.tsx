@@ -4,6 +4,8 @@ import { AuthModal } from './components/auth/AuthModal';
 import type { AuthMode } from './components/auth/AuthModal';
 import { Footer } from './components/layout/Footer';
 import { Navbar } from './components/layout/Navbar';
+import { ADMIN_CONSOLE_PATH } from './lib/routes';
+import { AdminConsolePage } from './pages/AdminConsolePage';
 import { CompatibilityPage } from './pages/CompatibilityPage';
 import { EventsPage } from './pages/EventsPage';
 import { HomePage } from './pages/HomePage';
@@ -42,6 +44,14 @@ export default function App() {
           <Route path="/compatibility" element={<CompatibilityPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+
+          {/* Admin console. Reachable only from the Site/Admin switch in the
+              nav bar, which renders for admins alone — it is in no footer and
+              no sitemap, and the page renders the 404 for anyone who is not an
+              admin. The obscure path only keeps it off the radar; the access
+              check that matters is server-side. */}
+          <Route path={ADMIN_CONSOLE_PATH} element={<AdminConsolePage />} />
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

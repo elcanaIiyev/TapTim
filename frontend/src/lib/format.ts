@@ -37,3 +37,8 @@ export function formatTeamSize({ min, max }: { min: number; max: number }): stri
 export function formatParticipants(count: number): string {
   return count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
 }
+
+/** "14 Mar 2026" — a single instant, same UTC pinning as the range formatter. */
+export function formatDate(iso: string): string {
+  return dateFormatter.format(new Date(iso));
+}

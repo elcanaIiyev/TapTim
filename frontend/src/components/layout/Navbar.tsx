@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/cn';
+import { ADMIN_CONSOLE_PATH } from '../../lib/routes';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
+import { AdminModeSwitch } from './AdminModeSwitch';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -20,8 +22,23 @@ interface NavbarProps {
 export function Navbar({ onOpenAuth }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [lastSitePath, setLastSitePath] = useState('/');
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  /**
+   * Signing out always lands on the landing page.
+   *
+   * Staying put is wrong for any page that needed the session to render: the
+   * admin console answers a signed-out viewer with its 404, so logging out
+   * there left you stranded on "this page did not make the team". Going home is
+   * also simply what people expect from a log-out button.
+   */
+  const handleLogout = useCallback(() => {
+    logout();
+    navigate('/');
+  }, [logout, navigate]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -32,6 +49,15 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
 
   // Any navigation closes the mobile drawer.
   useEffect(() => setMobileOpen(false), [location.pathname]);
+
+  // Remember where on the site the admin was, so switching back returns them
+  // there rather than dumping them on the home page. The Navbar outlives every
+  // route change, so plain state is enough to hold this.
+  useEffect(() => {
+    if (!location.pathname.startsWith(ADMIN_CONSOLE_PATH)) {
+      setLastSitePath(`${location.pathname}${location.search}`);
+    }
+  }, [location.pathname, location.search]);
 
   // Active state is a solid block, not an underline gradient. Mono + uppercase
   // keeps the bar reading as a control strip rather than a marketing header.
@@ -66,6 +92,10 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Renders only for admins; nothing else in the bar links to the
+                console, so this is the only way in short of typing the URL. */}
+            <AdminModeSwitch siteHref={lastSitePath} className="hidden md:grid" />
+
             <ThemeToggle />
 
             <div className="hidden items-center gap-2 md:flex">
@@ -74,7 +104,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
                   <span className="type-label max-w-[10rem] truncate text-ink-600 dark:text-ink-300">
                     {user.fullName}
                   </span>
-                  <Button variant="outline" size="sm" onClick={logout}>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
                     Log out
                   </Button>
                 </>
@@ -126,9 +156,11 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
               </NavLink>
             ))}
 
+            <AdminModeSwitch siteHref={lastSitePath} className="mt-3 grid w-full" />
+
             <div className="flex flex-col gap-2 pt-3">
               {user ? (
-                <Button variant="outline" onClick={logout}>
+                <Button variant="outline" onClick={handleLogout}>
                   Log out ({user.fullName})
                 </Button>
               ) : (

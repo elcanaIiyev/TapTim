@@ -1,4 +1,6 @@
 import type {
+  AdminAccount,
+  AdminSummary,
   AuthResult,
   CategoryCount,
   EventItem,
@@ -125,6 +127,47 @@ export const eventsApi = {
 
   categories: () =>
     request<{ data: CategoryCount[] }>('/api/events/categories').then((r) => r.data),
+};
+
+export interface AdminAccountQuery {
+  search?: string;
+  /** Site role — user, moderator, admin. */
+  accountRole?: string;
+  verified?: boolean;
+}
+
+/**
+ * Admin console client.
+ *
+ * Mounted at `/api/ops`, not `/api/admin`, and absent from the Swagger
+ * document. Every route behind it answers anyone below `moderator` with **404**,
+ * so a `NOT_FOUND` here means "you are not staff" just as often as it means the
+ * record is missing — the console treats both the same way and shows the
+ * ordinary not-found page. Changing a site role additionally needs `admin`, and
+ * that one *does* return 403, because by then the caller is known staff.
+ */
+export const adminApi = {
+  accounts(query: AdminAccountQuery = {}) {
+    const params = new URLSearchParams();
+    if (query.search) params.set('search', query.search);
+    if (query.accountRole && query.accountRole !== 'All') {
+      params.set('accountRole', query.accountRole);
+    }
+    if (query.verified !== undefined) params.set('verified', String(query.verified));
+    params.set('limit', '100');
+
+    return request<{
+      data: AdminAccount[];
+      meta: { total: number; summary: AdminSummary };
+    }>(`/api/ops/accounts?${params.toString()}`);
+  },
+
+  updateAccount(id: string, body: { accountRole: string }) {
+    return request<{ data: AdminAccount }>(`/api/ops/accounts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }).then((r) => r.data);
+  },
 };
 
 export { API_URL };

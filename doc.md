@@ -28,7 +28,9 @@ design system. The matching engine itself is scheduled for Sprint 2.
 | Validation | Zod | One schema drives both runtime validation and the TypeScript types. |
 | Auth | JWT (`jsonwebtoken`) + `bcryptjs` | Stateless tokens suit a SPA; bcrypt is the standard for password hashing. |
 | API docs | `swagger-ui-express` + hand-authored OpenAPI 3.0.3 | A hand-written spec object is type-checked at build time and cannot drift into invalid YAML the way JSDoc annotations can. |
-| Persistence | In-memory store | Sprint 1 needs no durable data. The store is repository-shaped, so swapping in Postgres touches exactly one file. |
+| Persistence | Supabase Postgres via `pg` | Sprint 2 replaced the in-memory store. Plain SQL over `pg` rather than an ORM: the compatibility queries want array operators (`&&`), partial unique indexes, and `for update` locks, all of which an ORM would obscure. |
+| Migrations | Hand-written SQL, tracked in `_migrations` | One file per change, applied in a transaction, recorded by filename. No migration tool to learn, and the SQL is exactly what runs. |
+| Certificate verification | Claude (`@anthropic-ai/sdk`), rule-based fallback | Optional by design — the endpoint works identically without an API key, so the API is never blocked on a credential. |
 | Frontend | React 18 + Vite 6 + TypeScript | Fast dev server, minimal config, standard tooling. |
 | Styling | Tailwind CSS v4 | Design tokens are declared once in `@theme` and consumed as utilities; class-based dark mode. |
 | Routing | React Router 6 | Client-side routes for Home, Events, Compatibility, and Auth. |
@@ -46,10 +48,17 @@ Browser (React SPA, :5173)
 Express API (:4000)
    │
    ├── helmet · cors · json body parser · morgan
-   ├── /api/auth    → validate → controller → service → store
-   ├── /api/events  → validate → controller → service → static data
-   ├── /api/docs    → Swagger UI over the OpenAPI document
+   ├── /api/auth           → validate → controller → service → store
+   ├── /api/users          → validate → controller → service → store
+   ├── /api/events         → validate → controller → service → store
+   ├── /api/teams          → validate → controller → service → store
+   ├── /api/compatibility  → validate → controller → service → engine (pure)
+   ├── /api/certificates   → validate → controller → service → verifier
+   ├── /api/docs           → Swagger UI over the OpenAPI document
    └── notFound → errorHandler  (single JSON error envelope)
+   │
+   ▼
+Supabase Postgres (pooled, TLS)
 ```
 
 Each backend module follows the same four-file shape, so a new resource is added by copying
@@ -75,22 +84,36 @@ TapTim/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── .env.example
+│   ├── scripts/copy-sql.mjs      copies migrations into dist/ at build time
 │   └── src/
-│       ├── server.ts             listen + graceful shutdown
+│       ├── server.ts             connect → migrate → listen → graceful shutdown
 │       ├── app.ts                middleware pipeline + route mounting
 │       ├── config/env.ts         Zod-validated environment
-│       ├── data/user.store.ts    in-memory repository
-│       ├── docs/openapi.ts       OpenAPI 3.0.3 document
+│       ├── db/
+│       │   ├── pool.ts           pg Pool, query/queryOne/withTransaction
+│       │   ├── migrate.ts        applies src/db/migrations/*.sql once each
+│       │   ├── seed.ts           idempotent upsert of events + demo users
+│       │   └── migrations/001_init.sql
+│       ├── data/                 repositories — the only place SQL is written
+│       │   ├── user.store.ts
+│       │   ├── event.store.ts
+│       │   ├── team.store.ts
+│       │   └── certificate.store.ts
+│       ├── docs/openapi.ts       OpenAPI 3.0.3 document (26 paths, 36 operations)
 │       ├── middleware/
-│       │   ├── auth.middleware.ts       requireAuth (Bearer)
+│       │   ├── auth.middleware.ts       requireAuth · optionalAuth (Bearer)
 │       │   ├── error.middleware.ts      notFoundHandler + errorHandler
-│       │   └── validate.middleware.ts   validateBody / validateQuery
+│       │   └── validate.middleware.ts   validateBody / validateQuery / validateParams
 │       ├── modules/
-│       │   ├── auth/     schema · service · controller · routes
-│       │   ├── events/   schema · service · controller · routes · data · model
-│       │   └── users/    user.model.ts (record, public projection, roles)
+│       │   ├── auth/           schema · service · controller · routes
+│       │   ├── users/          model · schema · service · controller · routes
+│       │   ├── events/         model · schema · service · controller · routes · data
+│       │   ├── teams/          model · schema · service · controller · routes
+│       │   ├── compatibility/  model · engine (pure) · schema · service · controller · routes
+│       │   └── certificates/   model · verifier · schema · service · controller · routes
 │       └── utils/
 │           ├── async-handler.ts  forwards async rejections to the error handler
+│           ├── dates.ts          Date → ISO-8601 for row mappers
 │           ├── http-error.ts     HttpError with status + code factories
 │           └── token.ts          sign / verify / decode JWTs
 │
@@ -119,7 +142,7 @@ TapTim/
 
 ### 1.5 Setup & run instructions
 
-**Prerequisites:** Node.js 20 or newer, npm 10 or newer.
+**Prerequisites:** Node.js 20 or newer, npm 10 or newer, and a Supabase project.
 
 ```bash
 # 1. Install every workspace's dependencies from the repo root
@@ -129,9 +152,29 @@ npm install
 cd backend && cp .env.example .env && cd ..
 #    Windows PowerShell: Copy-Item backend\.env.example backend\.env
 
-# 3. Run the API and the web app together
+# 3. Set DATABASE_URL in backend/.env  (see "Getting the Supabase URL" below)
+
+# 4. Create the schema and load the starter data
+npm run db:migrate --workspace backend
+npm run db:seed --workspace backend
+
+# 5. Run the API and the web app together
 npm run dev
 ```
+
+**Getting the Supabase URL** — Supabase dashboard → **Project Settings → Database →
+Connection string → URI**, and pick the **Session pooler** entry:
+
+```
+postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+Use the pooler rather than the direct connection: Supabase's direct host is IPv6-only, which
+most home and office networks cannot reach. Percent-encode the password if it contains
+`@ : / ? #` or `%`.
+
+`npm run dev` runs migrations itself at boot, so step 4 is only needed to load the seed data —
+but running it explicitly gives a clearer error if the connection string is wrong.
 
 | Service | URL |
 | --- | --- |
@@ -165,6 +208,11 @@ npm run preview --workspace frontend
 | `CORS_ORIGIN` | `http://localhost:5173,http://localhost:4173` | Comma-separated allowed origins. |
 | `JWT_SECRET` | `dev-only-secret-change-me` | Token signing secret. Boot **fails** if left at the default when `NODE_ENV=production`. |
 | `JWT_EXPIRES_IN` | `7d` | Access-token lifetime. |
+| `DATABASE_URL` | — | **Required.** Supabase Postgres connection string. Boot fails with a readable message if it is missing or wrong. |
+| `DATABASE_SSL` | `no-verify` | `no-verify` (encrypted, chain not validated — what the pooler expects) \| `require` \| `disable`. |
+| `DATABASE_POOL_MAX` | `10` | Maximum pooled connections. |
+| `ANTHROPIC_API_KEY` | — | Optional. When set, certificate claims are assessed by Claude; otherwise a deterministic rule verifier runs. |
+| `CERT_VERIFIER_MODEL` | `claude-opus-5` | Model used when `ANTHROPIC_API_KEY` is set. |
 
 `frontend/.env` accepts `VITE_API_URL` (default `http://localhost:4000`) if the API moves.
 
@@ -327,16 +375,73 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 
 ### 3.2 Endpoints
 
+36 operations across 26 paths. 🔒 = requires `Authorization: Bearer <token>`.
+
+**Health & auth**
+
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `GET` | `/health` | — | Liveness, uptime, environment |
+| `GET` | `/health` | — | Liveness **and** readiness; **503** when the database is unreachable |
 | `GET` | `/` | — | API metadata and doc links |
 | `POST` | `/api/auth/signup` | — | Register; returns user + JWT (**201**) |
 | `POST` | `/api/auth/login` | — | Authenticate; returns user + JWT (**200**) |
-| `GET` | `/api/auth/me` | Bearer | Current user profile (**200**) |
-| `GET` | `/api/events` | — | List events; filter by category, search, featured |
-| `GET` | `/api/events/categories` | — | Categories with event counts |
+| `GET` | `/api/auth/me` | 🔒 | Current user profile |
+
+**Participants** — profile fields are the matching inputs
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/users` | optional | Directory; filter by role, skills, experience, availability, verified |
+| `GET` | `/api/users/me` | 🔒 | Own profile, with `profileCompleteness` |
+| `PATCH` | `/api/users/me` | 🔒 | Update skills, availability, working style, links |
+| `GET` | `/api/users/{id}` | — | A participant profile (no email) |
+
+**Events** — full CRUD; the seeded catalogue is read-only
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/events` | — | List; filter by category, search, mode, featured |
+| `POST` | `/api/events` | 🔒 | Create; caller becomes the organiser (**201**) |
+| `GET` | `/api/events/categories` | — | All eight categories with live counts |
 | `GET` | `/api/events/{id}` | — | Single event |
+| `PATCH` | `/api/events/{id}` | 🔒 | Organiser only |
+| `DELETE` | `/api/events/{id}` | 🔒 | Organiser only; cascades to the event's teams (**204**) |
+
+**Teams** — formation, invitations, and applications
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/teams` | optional | Browse; filter by event, status, needed role, open seats, `mine` |
+| `POST` | `/api/teams` | 🔒 | Create; caller becomes owner and first member (**201**) |
+| `GET` | `/api/teams/requests` | 🔒 | My incoming or outgoing invitations and applications |
+| `PATCH` | `/api/teams/requests/{requestId}` | 🔒 | `accept` \| `decline` \| `cancel` |
+| `GET` | `/api/teams/{id}` | — | Team with full roster |
+| `PATCH` | `/api/teams/{id}` | 🔒 | Owner only |
+| `DELETE` | `/api/teams/{id}` | 🔒 | Owner only (**204**) |
+| `POST` | `/api/teams/{id}/applications` | 🔒 | Ask to join (**201**) |
+| `POST` | `/api/teams/{id}/invitations` | 🔒 | Owner invites a participant (**201**) |
+| `GET` | `/api/teams/{id}/suggestions` | 🔒 | Ranked candidates for the open seats |
+| `POST` | `/api/teams/{id}/leave` | 🔒 | Leave; owners must transfer first (**204**) |
+| `POST` | `/api/teams/{id}/transfer-ownership` | 🔒 | Hand the team to another member |
+| `DELETE` | `/api/teams/{id}/members/{userId}` | 🔒 | Owner removes a member (**204**) |
+
+**Compatibility**
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/api/compatibility` | 🔒 | Score a pair; one id scores them against you |
+| `GET` | `/api/compatibility/matches` | 🔒 | My ranked matches, optionally scoped to an event |
+
+**Certificates**
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/certificates` | 🔒 | My certificates |
+| `POST` | `/api/certificates` | 🔒 | Submit; verification runs in the same request (**201**) |
+| `GET` | `/api/certificates/{id}` | 🔒 | One of mine |
+| `PATCH` | `/api/certificates/{id}` | 🔒 | Edit; clears the verdict and re-verifies |
+| `DELETE` | `/api/certificates/{id}` | 🔒 | Delete; re-syncs the Verified badge (**204**) |
+| `POST` | `/api/certificates/{id}/verify` | 🔒 | Re-run verification |
 
 ### 3.3 Request / response models
 
@@ -538,7 +643,10 @@ available in this environment. Rendering, visual layout, and interactive behavio
 confirmed only insofar as the production build compiles and the dev server transforms every
 module. A manual pass at http://localhost:5173 is the remaining step.
 
-### 5.4 Known limitations (by design for Sprint 1)
+### 5.4 Known limitations at the end of Sprint 1
+
+*(Items 1, 4, 5 and 6 were addressed in Sprint 2 — see section 6.)*
+
 
 1. **Users live in memory** — every restart clears registrations. Swap `user.store.ts` for a real database in Sprint 2.
 2. **No refresh tokens** — a single 7-day access token; no rotation or revocation list yet.
@@ -560,7 +668,156 @@ module. A manual pass at http://localhost:5173 is the remaining step.
 
 ---
 
-## 6. Dev vs. production load characteristics
+## 6. Sprint 2 — Backend & Database
+
+> Status: **backend complete, frontend integration outstanding.**
+
+### 6.1 Database schema
+
+Supabase Postgres. One migration, `backend/src/db/migrations/001_init.sql`, applied in a
+transaction and recorded in `_migrations` by filename.
+
+| Table | Purpose | Notable constraints |
+| --- | --- | --- |
+| `users` | Accounts **and** matching inputs — skills, availability slots, hours, timezone, working-style scores | GIN index on `skills`; checks on experience level, hours, timezone |
+| `events` | Event catalogue, now writable by organisers | `text` primary key so the seeded `evt-001` ids the frontend links to stay valid; date and team-size checks |
+| `teams` | One team per event per owner | Case-insensitive unique name per event |
+| `team_members` | Roster, with the `is_owner` flag | PK `(team_id, user_id)` |
+| `team_event_membership` | Enforces "one team per participant per event" | PK `(user_id, event_id)` — the database arbitrates, not the service layer |
+| `team_requests` | Invitations *and* applications in one table | Partial unique index on `(team_id, user_id, kind) where status = 'pending'`, so resolved rows stay as history without blocking a re-application |
+| `certificates` | Credential claims and their verdicts | Confidence bounded 0–1; status checked |
+
+**Row Level Security is enabled on every table with no policies.** The API connects as the
+owner role and bypasses RLS; Supabase's `anon` and `authenticated` PostgREST roles see nothing.
+Without this, anyone holding the project's public anon key could read the `users` table
+directly, bypassing the API entirely.
+
+**Concurrency.** Two rules cannot be enforced by an application-level "check then insert",
+because two simultaneous requests both pass the check:
+
+- *Last seat in a team* — `insertMembership` takes `select … for update` on the team row before
+  counting members, so the second request blocks and then fails.
+- *One team per event* — the `team_event_membership` primary key rejects the second insert; the
+  store translates the 23505 into a 409.
+
+### 6.2 Compatibility engine
+
+`backend/src/modules/compatibility/compatibility.engine.ts` is pure and synchronous —
+everything it needs arrives as arguments, so a score can be recomputed without a database and
+the same function serves pair scoring, ranked matches, and team suggestions.
+
+| Component | Weight | How it scores |
+| --- | --- | --- |
+| Skill complementarity | 25 | Combined breadth (saturating) plus an overlap term that peaks near 30% shared — enough common vocabulary to communicate, enough difference to cover ground |
+| Role synergy | 25 | Roles map to capability axes (client, server, data, ml, design, product, infra, security, mobile); the score is how much of the union each person uniquely covers, floored at 0.25 so two people in the same role are not scored as incompatible |
+| Availability overlap | 20 | Shared time slots as a fraction of the *smaller* schedule, plus hours-per-week and timezone proximity |
+| Working style | 20 | Per trait: leadership rewards difference (someone has to lead), communication is limited by whichever person syncs least, structure/pace/risk reward similarity |
+| Verified credentials | 10 | The Verified badge and the count of verified certificates |
+
+Unknown inputs score a neutral 0.5, not 0 — an unfilled profile should read as *"we don't know
+yet"*, not as a bad match. Every component returns its own score **and a plain-language
+explanation**, so the UI can always justify the number to a participant.
+
+Team fit (`scoreAgainstTeam`) is the mean pair score against the current roster, plus up to 20
+points for filling a role in `lookingFor` or covering a `requiredSkills` entry.
+
+### 6.3 Certificate verification
+
+Two verifiers behind one function. With `ANTHROPIC_API_KEY` set, Claude assesses the claim
+under a structured-output constraint; without it, a deterministic rule verifier weighs five
+signals (recognised issuer, verification link, link on the issuer's own domain, credential id,
+plausible issue date). A Claude failure falls back to the rules rather than failing the request,
+and `verifiedBy` records which one actually ran, so the fallback is visible rather than silent.
+
+**Scope, stated honestly:** both verifiers assess *plausibility from the submitted metadata*.
+Neither opens the credential URL, so a verdict is evidence for the badge, not proof the
+credential exists. Live credential lookup is follow-up work. This limitation is written into
+the Swagger description for `POST /api/certificates` so no consumer over-reads the badge.
+
+The `verified` flag on `users` is always recomputed from the certificates table after a verdict
+or a delete, so the badge and its evidence cannot drift apart.
+
+### 6.4 Site roles and the admin console
+
+`users.account_role` is an ordered set — `user` -> `moderator` -> `admin` — so a
+permission check is a comparison rather than a list of equality tests that has to be
+revisited every time a tier is added. It replaced the `is_admin` boolean from migration
+002, which could only ever say "staff or not" and had no way to express the middle tier.
+
+**This is not `users.primary_role`.** That column is the *profession* someone practises on
+a team (Frontend Developer, Designer, …). It is profile data — a stat the participant sets
+about themselves, alongside skills and availability — and it feeds the matching engine.
+`account_role` is *authority on the site* and feeds nothing but the console.
+
+**The console does not touch profile data at all.** Site role is the only editable field,
+and `AdminAccount` carries no profession, skills, or bio. An administrator has no more
+business rewriting someone's job title than their skill list; both belong on the profile.
+`updateAccountSchema` accepts `accountRole` and nothing else, so a request carrying
+`primaryRole` is rejected at validation rather than quietly ignored.
+
+| Role | Can |
+| --- | --- |
+| `user` | Build a profile, join and run teams, submit certificates. |
+| `moderator` | Everything above, plus: open the console and see every account, and delete any team or organiser-created event regardless of who owns it. |
+| `admin` | Everything above, plus: change any account's site role, including promoting other admins. |
+
+Moderation is a real power, not a label. A team whose owner has gone quiet can only be
+removed by that owner — which is exactly who is unreachable — so `deleteTeam` and
+`deleteEvent` let a moderator act on content they do not own. The seeded catalogue stays
+immutable even for admins: it is reference data, not something a person created.
+
+| | |
+| --- | --- |
+| Page | `/staff/ops-console` — reachable only from the Site/Admin switch in the nav bar |
+| Switch | `components/layout/AdminModeSwitch.tsx`, in the bar and the mobile drawer |
+| API | `/api/ops/accounts` — not the guessable `/api/admin`, and **deliberately absent from Swagger** |
+| Gate | `requireRole('moderator')`, checked server-side on every request |
+| First admin | `npm run admin:grant --workspace backend -- <email> [role]` |
+
+**Below `moderator` gets 404, not 403.** A 403 would confirm the endpoint exists and that
+authority is the only thing missing, turning a probe into reconnaissance. Anonymous
+requests, ordinary users, and demoted staff all get the answer the router gives for a URL
+that was never built — and the SPA page renders the ordinary 404 to match. That is also
+why the router uses `optionalAuth` rather than `requireAuth`: a 401 would be a tell.
+Changing a site role *does* return 403, because by that point the caller is known staff.
+
+**The switch cannot leak.** It renders only for staff, and `accountRole` appears on exactly
+one record: the viewer's own. `toDirectoryUser` strips it alongside the email from every
+other profile, so no response shape lights the control up for the wrong person.
+
+**Authority is unreachable from the public API.** `accountRole` is not in
+`updateProfileSchema`, so a `PATCH /api/users/me` carrying `accountRole: 'admin'` has the
+key stripped by Zod — verified by test. Only an admin through the console, or the CLI,
+which needs shell access to the machine holding `DATABASE_URL`.
+
+**Two guards against locking yourself out.** You cannot lower your own role. And
+`setAccountRoleGuarded` counts the remaining admins inside a transaction that first locks
+every admin row — without that lock, two admins demoting each other at the same instant
+would both read "2 remain", both pass, and leave a console nobody can open. The CLI
+bypasses both on purpose: it is the escape hatch, and it can grant access back.
+
+**Changing a profession changes it everywhere.** `userStore.update` runs in a transaction
+and, whenever the patch touches `primaryRole`, rewrites every `team_members.role` row for
+that person too. The sync lives in the repository rather than in a caller because *any*
+path that changes a profession needs it — otherwise a roster keeps showing the role
+someone held when they joined, and each team's `lookingFor` gaps get computed against
+stale data.
+
+### 6.5 Still outstanding
+
+1. **Frontend integration** — the Sprint 2 frontend deliverables (core user flows against the
+   new endpoints, form validation, loading/empty/error states, responsive new pages) have not
+   been started. The API is ready for them; `frontend/src/lib/api.ts` still calls only the
+   Sprint 1 auth and events endpoints.
+2. **No automated tests** — still the largest gap. The pure compatibility engine is the
+   cheapest place to start, since it needs no database.
+3. **No rate limiting** on the auth routes.
+4. **No refresh tokens** — still a single 7-day access token.
+5. **Helmet CSP is still off** so Swagger UI renders.
+
+---
+
+## 7. Dev vs. production load characteristics
 
 Measured on 26 August 2026, this machine, warm dependency cache.
 

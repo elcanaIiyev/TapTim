@@ -37,3 +37,20 @@ export function validateQuery(schema: ZodTypeAny): RequestHandler {
 export function getValidatedQuery<T>(req: Request): T {
   return Reflect.get(req, VALIDATED_QUERY) as T;
 }
+
+/**
+ * Validates `req.params`. Without this, a malformed `:id` reaches Postgres and
+ * comes back as a 500 ("invalid input syntax for type uuid") instead of the
+ * 400 the client deserves.
+ */
+export function validateParams(schema: ZodTypeAny): RequestHandler {
+  return (req, _res, next) => {
+    const result = schema.safeParse(req.params);
+    if (!result.success) {
+      next(result.error);
+      return;
+    }
+    Object.assign(req.params, result.data);
+    next();
+  };
+}

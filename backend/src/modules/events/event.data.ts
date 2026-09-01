@@ -1,10 +1,16 @@
 import type { EventItem } from './event.model.js';
 
 /**
- * Sprint 1 placeholder catalogue. Replaced by a real events table (and an
- * organiser-facing CRUD surface) in a later sprint.
+ * The starter event catalogue. It is no longer read at request time — Sprint 2
+ * moved events into Postgres — but it remains the source `npm run db:seed`
+ * loads from, so the ids the frontend already links to stay stable.
+ *
+ * `createdBy` and the timestamps are omitted: the database assigns them, and a
+ * seeded event has no organiser account behind it.
  */
-export const MOCK_EVENTS: EventItem[] = [
+export type EventSeed = Omit<EventItem, 'createdBy' | 'createdAt' | 'updatedAt'>;
+
+export const MOCK_EVENTS: EventSeed[] = [
   {
     id: 'evt-001',
     name: 'TapTim Global Hack 2026',

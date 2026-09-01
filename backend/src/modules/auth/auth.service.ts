@@ -37,9 +37,6 @@ export async function signup(input: SignupInput): Promise<AuthResult> {
     fullName: input.fullName,
     primaryRole: input.primaryRole,
     skills: input.skills ?? [],
-    bio: null,
-    avatarUrl: null,
-    verified: false,
   });
 
   return buildAuthResult(user);
