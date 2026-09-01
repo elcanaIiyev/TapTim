@@ -44,6 +44,29 @@ function pct(value: number): number {
   return Math.round(clamp01(value) * 100);
 }
 
+/**
+ * The single highest or lowest entry by `of`, in one pass.
+ *
+ * Sorting a copy just to read `[0]` is the obvious way to write this and does
+ * O(n log n) work plus an allocation to answer an O(n) question. Ties keep the
+ * earliest entry, which matches what a stable sort would have returned, so the
+ * summaries this feeds are unchanged.
+ */
+function pickExtreme<T>(items: readonly T[], of: (item: T) => number, want: 'max' | 'min'): T {
+  let best = items[0];
+  let bestValue = of(best);
+
+  for (let index = 1; index < items.length; index += 1) {
+    const value = of(items[index]);
+    if (want === 'max' ? value > bestValue : value < bestValue) {
+      best = items[index];
+      bestValue = value;
+    }
+  }
+
+  return best;
+}
+
 // -- skills -------------------------------------------------------------------
 
 interface SkillOutcome {
@@ -206,8 +229,8 @@ function scoreWorkingStyle(
     };
   }
 
-  const best = [...known].sort((x, y) => y.fit - x.fit)[0];
-  const worst = [...known].sort((x, y) => x.fit - y.fit)[0];
+  const best = pickExtreme(known, (entry) => entry.fit, 'max');
+  const worst = pickExtreme(known, (entry) => entry.fit, 'min');
 
   const explanation =
     best.trait === worst.trait
@@ -256,43 +279,25 @@ export function scorePair(
   const workingStyle = scoreWorkingStyle(a.personality, b.personality);
   const credibility = scoreCredibility(a, b, certificateCounts);
 
-  const components: ScoreComponent[] = [
-    {
-      key: 'skills',
-      label: 'Skill complementarity',
-      score: pct(skills.score),
-      weight: WEIGHTS.skills,
-      explanation: skills.explanation,
-    },
-    {
-      key: 'roles',
-      label: 'Role synergy',
-      score: pct(roles.score),
-      weight: WEIGHTS.roles,
-      explanation: roles.explanation,
-    },
-    {
-      key: 'availability',
-      label: 'Availability overlap',
-      score: pct(availability.score),
-      weight: WEIGHTS.availability,
-      explanation: availability.explanation,
-    },
-    {
-      key: 'workingStyle',
-      label: 'Working style',
-      score: pct(workingStyle.score),
-      weight: WEIGHTS.workingStyle,
-      explanation: workingStyle.explanation,
-    },
-    {
-      key: 'credibility',
-      label: 'Verified credentials',
-      score: pct(credibility.score),
-      weight: WEIGHTS.credibility,
-      explanation: credibility.explanation,
-    },
-  ];
+  // One row per component, in the order the UI shows them. Previously this was
+  // five near-identical object literals; driving it from the outcomes means a
+  // new component is one entry here plus one weight, and the label and weight
+  // for a component can no longer drift apart across edits.
+  const components: ScoreComponent[] = (
+    [
+      ['skills', 'Skill complementarity', skills],
+      ['roles', 'Role synergy', roles],
+      ['availability', 'Availability overlap', availability],
+      ['workingStyle', 'Working style', workingStyle],
+      ['credibility', 'Verified credentials', credibility],
+    ] as const
+  ).map(([key, label, outcome]) => ({
+    key,
+    label,
+    score: pct(outcome.score),
+    weight: WEIGHTS[key],
+    explanation: outcome.explanation,
+  }));
 
   const totalWeight = components.reduce((total, component) => total + component.weight, 0);
   const weighted = components.reduce(
@@ -302,8 +307,8 @@ export function scorePair(
   const score = Math.round(weighted / totalWeight);
   const band = bandFor(score);
 
-  const strongest = [...components].sort((x, y) => y.score - x.score)[0];
-  const weakest = [...components].sort((x, y) => x.score - y.score)[0];
+  const strongest = pickExtreme(components, (component) => component.score, 'max');
+  const weakest = pickExtreme(components, (component) => component.score, 'min');
 
   return {
     score,
@@ -316,6 +321,18 @@ export function scorePair(
   };
 }
 
+/** How a candidate scores against one team's current roster and stated gaps. */
+export interface TeamFitResult {
+  /** 0–100, pair fit plus the bonus for filling a stated gap. */
+  score: number;
+  band: CompatibilityResult['band'];
+  /** Mean compatibility with the current members, before any bonus. */
+  averagePairScore: number;
+  fillsNeededRole: boolean;
+  matchedRequiredSkills: string[];
+  summary: string;
+}
+
 /**
  * How well a candidate fits an existing team: the average of their pair scores
  * against each member, adjusted by whether they fill a role or skill the team
@@ -326,14 +343,7 @@ export function scoreAgainstTeam(
   members: readonly UserRecord[],
   team: { lookingFor: readonly string[]; requiredSkills: readonly string[] },
   certificateCounts: Map<string, number> = new Map(),
-): {
-  score: number;
-  band: CompatibilityResult['band'];
-  averagePairScore: number;
-  fillsNeededRole: boolean;
-  matchedRequiredSkills: string[];
-  summary: string;
-} {
+): TeamFitResult {
   const pairScores = members.map(
     (member) => scorePair(candidate, member, certificateCounts).score,
   );
