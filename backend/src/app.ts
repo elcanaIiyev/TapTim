@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 import { adminRouter } from './modules/admin/admin.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { certificateRouter } from './modules/certificates/certificate.routes.js';
+import { connectionRouter } from './modules/connections/connection.routes.js';
 import { compatibilityRouter } from './modules/compatibility/compatibility.routes.js';
 import { eventRouter } from './modules/events/event.routes.js';
 import { teamRouter } from './modules/teams/team.routes.js';
@@ -85,6 +86,7 @@ export function createApp() {
   app.use('/api/teams', teamRouter);
   app.use('/api/compatibility', compatibilityRouter);
   app.use('/api/certificates', certificateRouter);
+  app.use('/api/connections', connectionRouter);
 
   // The admin console. Mounted under `/api/ops` rather than the obvious
   // `/api/admin`, and absent from the OpenAPI document on purpose — publishing

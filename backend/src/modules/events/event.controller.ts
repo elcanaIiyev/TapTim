@@ -3,6 +3,7 @@ import { getValidatedQuery } from '../../middleware/validate.middleware.js';
 import { HttpError } from '../../utils/http-error.js';
 import type { CreateEventInput, ListEventsQuery, UpdateEventInput } from './event.schema.js';
 import * as eventService from './event.service.js';
+import * as eventStats from './event-stats.service.js';
 
 function requireUser(req: Request) {
   if (!req.user) throw HttpError.unauthorized();
@@ -43,4 +44,18 @@ export async function deleteEventHandler(req: Request, res: Response) {
   const user = requireUser(req);
   await eventService.deleteEvent(req.params.id, user);
   res.status(204).send();
+}
+
+
+// -- per-event stats ----------------------------------------------------------
+
+/** What this event rewards, plus how busy it is. Public. */
+export async function eventStatsHandler(req: Request, res: Response) {
+  res.status(200).json({ data: await eventStats.eventStats(req.params.id) });
+}
+
+/** My stat sheet for this event — the profile, filtered to what this event needs. */
+export async function myEventFitHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  res.status(200).json({ data: await eventStats.fitForUser(req.params.id, user) });
 }

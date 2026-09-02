@@ -34,4 +34,13 @@ export class HttpError extends Error {
   static conflict(message: string, details?: unknown) {
     return new HttpError(409, 'CONFLICT', message, details);
   }
+
+  /**
+   * A suspended account. Its own code rather than a plain 403 so the client can
+   * tell "you are banned" from "you lack permission" and show the reason and
+   * expiry instead of a generic refusal.
+   */
+  static banned(message: string, details?: unknown) {
+    return new HttpError(403, 'ACCOUNT_SUSPENDED', message, details);
+  }
 }

@@ -61,7 +61,7 @@ export async function findMatches(
   }
 
   const { items: candidates } = await userStore.list({
-    primaryRole: query.primaryRole,
+    roles: query.roles,
     lookingForTeam: true,
     excludeUserIds,
     limit: 50,

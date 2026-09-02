@@ -5,7 +5,7 @@ import { mapEventRow, type EventItem, type EventRow } from '../modules/events/ev
 const COLUMNS = `
   id, name, description, category, tags, start_date, end_date, location, mode,
   team_size_min, team_size_max, prize_pool, registration_deadline, participants,
-  featured, created_by, created_at, updated_at
+  featured, stat_profile, created_by, created_at, updated_at
 `;
 
 export interface ListEventsFilter {

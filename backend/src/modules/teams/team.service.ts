@@ -10,8 +10,13 @@ import { userStore } from '../../data/user.store.js';
 import { isUniqueViolation } from '../../db/pool.js';
 import { canModerate } from '../../middleware/admin.middleware.js';
 import { HttpError } from '../../utils/http-error.js';
-import { scoreAgainstTeam } from '../compatibility/compatibility.engine.js';
-import { toDirectoryUser, type DirectoryUser, type UserRecord } from '../users/user.model.js';
+import { scoreAgainstTeam, type TeamFitResult } from '../compatibility/compatibility.engine.js';
+import {
+  displayRole,
+  toDirectoryUser,
+  type DirectoryUser,
+  type UserRecord,
+} from '../users/user.model.js';
 import type { TeamDetail, TeamRecord, TeamRequestRecord } from './team.model.js';
 import type {
   ApplyToTeamInput,
@@ -112,7 +117,10 @@ export async function createTeam(input: CreateTeamInput, owner: UserRecord): Pro
     return await teamStore.create({
       eventId: input.eventId,
       ownerId: owner.id,
-      ownerRole: owner.primaryRole,
+      // `team_members.role` is the position this person plays *on this team* —
+      // still singular, because a roster slot is one seat. Their first-listed
+      // role is the sensible default; a per-team override is a separate feature.
+      ownerRole: displayRole(owner.roles) ?? 'Full-Stack Developer',
       name: input.name,
       description: input.description,
       lookingFor: input.lookingFor,
@@ -376,7 +384,10 @@ export async function respondToRequest(
   }
 
   try {
-    const accepted = await teamStore.acceptRequest(requestId, joiner.primaryRole);
+    const accepted = await teamStore.acceptRequest(
+      requestId,
+      displayRole(joiner.roles) ?? 'Full-Stack Developer',
+    );
     if (!accepted) throw HttpError.conflict('This request is no longer pending.');
     return accepted;
   } catch (error) {
@@ -409,15 +420,15 @@ export async function listRequests(
 
 // -- suggestions --------------------------------------------------------------
 
-export interface MemberSuggestion {
-  user: DirectoryUser;
-  score: number;
-  band: 'excellent' | 'strong' | 'moderate' | 'weak';
-  averagePairScore: number;
-  fillsNeededRole: boolean;
-  matchedRequiredSkills: string[];
-  summary: string;
-}
+/**
+ * A ranked candidate for a team's open seat: the person, plus the engine's
+ * verdict on them.
+ *
+ * The fit fields come straight from `TeamFitResult` rather than being restated
+ * here — a second copy of that shape would silently go stale the moment the
+ * engine gained or renamed a field.
+ */
+export type MemberSuggestion = { user: DirectoryUser } & TeamFitResult;
 
 /**
  * Ranks participants who could fill a team's open seats. Candidates already on
@@ -437,7 +448,7 @@ export async function suggestMembers(
 
   const { items: candidates } = await userStore.list({
     lookingForTeam: true,
-    primaryRole: undefined,
+    roles: undefined,
     excludeUserIds: takenUserIds.length > 0 ? takenUserIds : undefined,
     // Over-fetch relative to `limit`: scoring happens in the application, so
     // the database cannot order by fit and the top N must be picked here.

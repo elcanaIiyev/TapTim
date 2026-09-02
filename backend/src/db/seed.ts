@@ -15,7 +15,16 @@ const DEMO_PASSWORD = 'demo1234';
 interface DemoUser {
   email: string;
   fullName: string;
-  primaryRole: string;
+  roles: string[];
+  /**
+   * Skill -> proficiency 0..100.
+   *
+   * Set explicitly rather than left to the default, because the default is the
+   * same number for everybody and per-event coverage is computed from depth —
+   * without real spread here, every demo user covers every area identically and
+   * the ranking has nothing to rank on.
+   */
+  skillLevels: Record<string, number>;
   skills: string[];
   bio: string;
   experienceLevel: string;
@@ -34,8 +43,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'ada@taptim.dev',
     fullName: 'Ada Rzayeva',
-    primaryRole: 'Backend Developer',
+    roles: ['Backend Developer', 'Documentation Lead'],
     skills: ['Node.js', 'PostgreSQL', 'TypeScript', 'Docker'],
+    skillLevels: { 'Node.js': 88, 'PostgreSQL': 82, 'TypeScript': 74, 'Docker': 55 },
     bio: 'API and data-model person. I like getting the schema right before anyone writes a component.',
     experienceLevel: 'advanced',
     availability: ['weekday-evenings', 'weekend-mornings', 'weekend-afternoons'],
@@ -46,8 +56,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'kenan@taptim.dev',
     fullName: 'Kenan Mammadov',
-    primaryRole: 'Frontend Developer',
+    roles: ['Frontend Developer', 'Demo Builder'],
     skills: ['React', 'TypeScript', 'Tailwind CSS', 'Vite'],
+    skillLevels: { 'React': 78, 'TypeScript': 70, 'Tailwind CSS': 72, 'Vite': 58 },
     bio: 'I build the parts people actually touch. Obsessive about loading and empty states.',
     experienceLevel: 'intermediate',
     availability: ['weekday-evenings', 'weekend-afternoons'],
@@ -58,8 +69,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'leyla@taptim.dev',
     fullName: 'Leyla Hasanova',
-    primaryRole: 'UI/UX Designer',
+    roles: ['UI/UX Designer', 'Graphic Artist', 'Presenter'],
     skills: ['Figma', 'Design Systems', 'Prototyping', 'User Research'],
+    skillLevels: { 'Figma': 92, 'Design Systems': 80, 'Prototyping': 78, 'User Research': 62 },
     bio: 'Designer who ships. I prototype in Figma and stay in the room while it gets built.',
     experienceLevel: 'advanced',
     availability: ['weekday-mornings', 'weekday-afternoons', 'weekend-afternoons'],
@@ -70,8 +82,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'tural@taptim.dev',
     fullName: 'Tural Aliyev',
-    primaryRole: 'AI / ML Engineer',
+    roles: ['AI / ML Engineer', 'Researcher'],
     skills: ['Python', 'PyTorch', 'LLMs', 'Vector Search'],
+    skillLevels: { 'Python': 90, 'PyTorch': 88, 'LLMs': 84, 'Vector Search': 70 },
     bio: 'Applied ML. I care more about evaluation than about the demo looking clever.',
     experienceLevel: 'expert',
     availability: ['weekday-evenings', 'weekend-mornings'],
@@ -82,8 +95,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'nigar@taptim.dev',
     fullName: 'Nigar Quliyeva',
-    primaryRole: 'Product Manager',
+    roles: ['Product Manager', 'Presenter', 'Pitch Writer', 'Business Analyst'],
     skills: ['Roadmapping', 'User Research', 'Analytics', 'Pitching'],
+    skillLevels: { 'Roadmapping': 80, 'User Research': 74, 'Analytics': 62, 'Pitching': 86 },
     bio: 'I keep scope honest and make sure we can explain the thing in one sentence.',
     experienceLevel: 'intermediate',
     availability: ['weekday-mornings', 'weekday-afternoons', 'weekday-evenings'],
@@ -94,8 +108,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'orkhan@taptim.dev',
     fullName: 'Orkhan Suleymanli',
-    primaryRole: 'DevOps Engineer',
+    roles: ['DevOps Engineer', 'Cybersecurity'],
     skills: ['Docker', 'CI/CD', 'AWS', 'Terraform'],
+    skillLevels: { 'Docker': 88, 'CI/CD': 84, 'AWS': 76, 'Terraform': 68 },
     bio: 'Deploys, pipelines, and the boring reliability work nobody volunteers for.',
     experienceLevel: 'advanced',
     availability: ['weekend-mornings', 'weekend-afternoons', 'weekend-evenings'],
@@ -106,8 +121,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'sabina@taptim.dev',
     fullName: 'Sabina Karimova',
-    primaryRole: 'Data Scientist',
+    roles: ['Data Scientist', 'Business Analyst'],
     skills: ['Python', 'Pandas', 'SQL', 'Visualisation'],
+    skillLevels: { 'Python': 72, 'Pandas': 78, 'SQL': 70, 'Visualisation': 64 },
     bio: 'I turn the messy CSV into the chart that decides the argument.',
     experienceLevel: 'intermediate',
     availability: ['weekday-afternoons', 'weekend-mornings'],
@@ -118,8 +134,9 @@ const DEMO_USERS: DemoUser[] = [
   {
     email: 'emin@taptim.dev',
     fullName: 'Emin Bayramov',
-    primaryRole: 'Full-Stack Developer',
+    roles: ['Full-Stack Developer', 'QA / Tester', 'Demo Builder'],
     skills: ['React', 'Node.js', 'PostgreSQL', 'GraphQL'],
+    skillLevels: { 'React': 68, 'Node.js': 72, 'PostgreSQL': 60, 'GraphQL': 55 },
     bio: 'Comfortable anywhere in the stack. Happiest gluing the last 20% together.',
     experienceLevel: 'advanced',
     availability: ['weekday-evenings', 'weekend-mornings', 'weekend-evenings'],
@@ -180,14 +197,15 @@ async function seedUsers(): Promise<number> {
   for (const user of DEMO_USERS) {
     await query(
       `insert into users (
-         email, password_hash, full_name, primary_role, skills, bio,
+         email, password_hash, full_name, roles, skills, skill_levels, bio,
          experience_level, availability, hours_per_week, timezone_offset,
          personality, looking_for_team
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,true)
+       ) values ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12::jsonb,true)
        on conflict (email) do update set
          full_name = excluded.full_name,
-         primary_role = excluded.primary_role,
+         roles = excluded.roles,
          skills = excluded.skills,
+         skill_levels = excluded.skill_levels,
          bio = excluded.bio,
          experience_level = excluded.experience_level,
          availability = excluded.availability,
@@ -198,8 +216,9 @@ async function seedUsers(): Promise<number> {
         user.email,
         passwordHash,
         user.fullName,
-        user.primaryRole,
+        user.roles,
         user.skills,
+        JSON.stringify(user.skillLevels),
         user.bio,
         user.experienceLevel,
         user.availability,

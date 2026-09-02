@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { runMigrations } from './db/migrate.js';
 import { assertDatabaseConnection, closePool } from './db/pool.js';
+import { ensureAvatarBucket } from './services/storage.js';
 
 /**
  * Boot order matters: the database is checked and migrated *before* the port is
@@ -24,6 +25,11 @@ for (const file of applied) {
   console.log(`  [migrate] applied ${file}`);
 }
 
+// Creating the avatar bucket is idempotent and non-fatal: an unconfigured or
+// unreachable storage service must not stop the API from serving everything
+// that does not involve images.
+await ensureAvatarBucket();
+
 const app = createApp();
 
 const server = app.listen(env.port, () => {
@@ -33,7 +39,25 @@ const server = app.listen(env.port, () => {
   console.log(`  • Health    http://localhost:${env.port}/health`);
   console.log(`  • Env       ${env.nodeEnv}`);
   console.log(
-    `  • Verifier  ${env.anthropicApiKey ? `Claude (${env.certVerifierModel})` : 'rule-based (no ANTHROPIC_API_KEY)'}\n`,
+    `  • Verifier  ${env.anthropicApiKey ? `LLM (${env.certVerifierModel})` : 'rule-based (no ANTHROPIC_API_KEY)'}`,
+  );
+  // Each integration reports itself at boot, so a missing key is obvious here
+  // rather than at the moment somebody first tries to use the feature.
+  console.log(
+    `  • Email     ${env.mail.configured ? 'Resend' : 'not configured — confirmation links print to this log'}`,
+  );
+  console.log(
+    `  • OAuth     ${
+      [
+        env.oauth.google.configured ? 'Google' : null,
+        env.oauth.linkedin.configured ? 'LinkedIn' : null,
+      ]
+        .filter(Boolean)
+        .join(', ') || 'none configured'
+    }`,
+  );
+  console.log(
+    `  • Avatars   ${env.storage.configured ? `Supabase Storage (${env.storage.bucket})` : 'not configured'}\n`,
   );
 });
 

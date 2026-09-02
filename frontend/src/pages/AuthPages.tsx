@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { LoginForm, SignupForm } from '../components/auth/AuthForms';
+import { LoginForm } from '../components/auth/AuthForms';
+import { SignupWizard } from '../components/auth/SignupWizard';
 import { Card } from '../components/ui/Card';
 import { Container } from '../components/ui/Container';
 import { useAuth } from '../context/AuthContext';
@@ -33,10 +34,14 @@ function AuthShell({
 }
 
 export function LoginPage() {
-  const { user } = useAuth();
+  const { user, pendingStep } = useAuth();
   const navigate = useNavigate();
 
-  if (user) return <Navigate to="/" replace />;
+  // Only bounce an already-signed-in visitor away once there is no pending
+  // step. Redirecting unconditionally races `PostAuthRedirect` — both fire on
+  // the same render, and this one would win, dropping someone on the home page
+  // instead of the email-confirmation screen they were being sent to.
+  if (user && !pendingStep) return <Navigate to="/" replace />;
 
   return (
     <AuthShell
@@ -57,15 +62,15 @@ export function LoginPage() {
 }
 
 export function SignupPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user, pendingStep } = useAuth();
 
-  if (user) return <Navigate to="/" replace />;
+  // See LoginPage: `pendingStep` is what stops this racing PostAuthRedirect.
+  if (user && !pendingStep) return <Navigate to="/" replace />;
 
   return (
     <AuthShell
       title="Join TapTim"
-      subtitle="Tell us your role and skills, and we will start matching you with teammates."
+      subtitle="Three quick steps, then we build your profile together."
       footer={
         <>
           Already have an account?{' '}
@@ -75,7 +80,7 @@ export function SignupPage() {
         </>
       }
     >
-      <SignupForm onSuccess={() => navigate('/')} />
+      <SignupWizard />
     </AuthShell>
   );
 }

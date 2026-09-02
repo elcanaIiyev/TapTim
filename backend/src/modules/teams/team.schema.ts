@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { PRIMARY_ROLES } from '../users/user.model.js';
+import { TEAM_ROLES } from '../users/user.model.js';
 import { TEAM_STATUSES } from './team.model.js';
 
 const roleList = z
   .array(
-    z.enum(PRIMARY_ROLES, {
-      errorMap: () => ({ message: `Roles must be from: ${PRIMARY_ROLES.join(', ')}` }),
+    z.enum(TEAM_ROLES, {
+      errorMap: () => ({ message: `Roles must be from: ${TEAM_ROLES.join(', ')}` }),
     }),
   )
   .max(10);
@@ -48,7 +48,7 @@ export const updateTeamSchema = z
 export const listTeamsQuerySchema = z.object({
   eventId: z.string().trim().max(64).optional(),
   status: z.enum(TEAM_STATUSES).optional(),
-  lookingForRole: z.enum(PRIMARY_ROLES).optional(),
+  lookingForRole: z.enum(TEAM_ROLES).optional(),
   search: z.string().trim().max(80).optional(),
   hasOpenSeats: z
     .enum(['true', 'false'])

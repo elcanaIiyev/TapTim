@@ -1,7 +1,7 @@
 /**
  * Site roles — what someone is allowed to do on TapTim.
  *
- * Not to be confused with `PRIMARY_ROLES`, which is the profession a
+ * Not to be confused with `TEAM_ROLES`, which is the profession a
  * participant practises on a team. Nothing in the matching engine reads this
  * file, and nothing in the console reads that one.
  */

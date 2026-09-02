@@ -375,7 +375,11 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 
 ### 3.2 Endpoints
 
-36 operations across 26 paths. 🔒 = requires `Authorization: Bearer <token>`.
+65 operations across 47 paths. 🔒 = requires `Authorization: Bearer <token>`.
+
+The spec in `backend/src/docs/openapi.ts` is hand-authored, so nothing keeps it in step
+with the routers automatically. `npm run audit:openapi --workspace backend` compares the two and fails if
+a route is undocumented or a documented path is not mounted — run it after adding a route.
 
 **Health & auth**
 
@@ -386,6 +390,14 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 | `POST` | `/api/auth/signup` | — | Register; returns user + JWT (**201**) |
 | `POST` | `/api/auth/login` | — | Authenticate; returns user + JWT (**200**) |
 | `GET` | `/api/auth/me` | 🔒 | Current user profile |
+| `POST` | `/api/auth/check-email` | — | Step 1 of signup: is this address free? |
+| `POST` | `/api/auth/verify-email` | — | Consume the confirmation token |
+| `POST` | `/api/auth/resend-verification` | — | Send the confirmation email again |
+| `GET` | `/api/auth/providers` | — | Which social sign-ins are configured |
+| `GET` | `/api/auth/oauth/{provider}` | — | Browser entry point; **302** to the consent screen |
+| `GET` | `/api/auth/oauth/{provider}/callback` | — | Provider redirect target; **302** back with the token in the URL *fragment* |
+| `GET` | `/api/auth/oauth/{provider}/connect` | 🔒 | Link a provider to the signed-in account |
+| `DELETE` | `/api/auth/oauth/{provider}` | 🔒 | Unlink; refused if it would lock the account out |
 
 **Participants** — profile fields are the matching inputs
 
@@ -395,6 +407,13 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 | `GET` | `/api/users/me` | 🔒 | Own profile, with `profileCompleteness` |
 | `PATCH` | `/api/users/me` | 🔒 | Update skills, availability, working style, links |
 | `GET` | `/api/users/{id}` | — | A participant profile (no email) |
+| `GET` | `/api/users/profile-options` | — | Every closed list the profile builder renders |
+| `POST` | `/api/users/me/avatar` | 🔒 | Upload a picture (multipart, ≤ 2 MB) |
+| `DELETE` | `/api/users/me/avatar` | 🔒 | Remove it |
+| `GET` | `/api/users/me/experiences` | 🔒 | My past hackathons, jobs, and projects |
+| `POST` | `/api/users/me/experiences` | 🔒 | Add one (**201**) |
+| `PATCH` | `/api/users/me/experiences/{id}` | 🔒 | Edit one of mine |
+| `DELETE` | `/api/users/me/experiences/{id}` | 🔒 | Delete one of mine (**204**) |
 
 **Events** — full CRUD; the seeded catalogue is read-only
 
@@ -402,10 +421,12 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 | --- | --- | --- | --- |
 | `GET` | `/api/events` | — | List; filter by category, search, mode, featured |
 | `POST` | `/api/events` | 🔒 | Create; caller becomes the organiser (**201**) |
-| `GET` | `/api/events/categories` | — | All eight categories with live counts |
+| `GET` | `/api/events/categories` | — | All nine categories with live counts |
 | `GET` | `/api/events/{id}` | — | Single event |
 | `PATCH` | `/api/events/{id}` | 🔒 | Organiser only |
 | `DELETE` | `/api/events/{id}` | 🔒 | Organiser only; cascades to the event's teams (**204**) |
+| `GET` | `/api/events/{id}/stats` | — | What this event rewards, and how busy it is |
+| `GET` | `/api/events/{id}/my-fit` | 🔒 | My stat sheet for this event |
 
 **Teams** — formation, invitations, and applications
 
@@ -420,7 +441,8 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 | `DELETE` | `/api/teams/{id}` | 🔒 | Owner only (**204**) |
 | `POST` | `/api/teams/{id}/applications` | 🔒 | Ask to join (**201**) |
 | `POST` | `/api/teams/{id}/invitations` | 🔒 | Owner invites a participant (**201**) |
-| `GET` | `/api/teams/{id}/suggestions` | 🔒 | Ranked candidates for the open seats |
+| `GET` | `/api/teams/{id}/gaps` | — | What this team is missing for its event |
+| `GET` | `/api/teams/{id}/suggestions` | 🔒 | Ranked candidates, scored under the event's weights |
 | `POST` | `/api/teams/{id}/leave` | 🔒 | Leave; owners must transfer first (**204**) |
 | `POST` | `/api/teams/{id}/transfer-ownership` | 🔒 | Hand the team to another member |
 | `DELETE` | `/api/teams/{id}/members/{userId}` | 🔒 | Owner removes a member (**204**) |
@@ -442,6 +464,30 @@ Codes in use: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `N
 | `PATCH` | `/api/certificates/{id}` | 🔒 | Edit; clears the verdict and re-verifies |
 | `DELETE` | `/api/certificates/{id}` | 🔒 | Delete; re-syncs the Verified badge (**204**) |
 | `POST` | `/api/certificates/{id}/verify` | 🔒 | Re-run verification |
+
+**Connections** — the people you know, and the conversations with them
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/connections` | 🔒 | My connections plus requests in both directions |
+| `POST` | `/api/connections` | 🔒 | Ask to connect (**201**) |
+| `PATCH` | `/api/connections/{id}` | 🔒 | `accept` \| `decline` \| `cancel` |
+| `DELETE` | `/api/connections/{id}` | 🔒 | Disconnect; the conversation is kept (**204**) |
+| `GET` | `/api/connections/messages/{userId}` | 🔒 | Read a thread; also marks it read |
+| `POST` | `/api/connections/messages/{userId}` | 🔒 | Send (**201**); **403** unless connected |
+
+**Staff console** — mounted at `/api/ops`, not `/api/admin`
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/ops/accounts` | 🔒 | Every account; search and filter |
+| `PATCH` | `/api/ops/accounts/{id}` | 🔒 | Change a site role |
+| `POST` | `/api/ops/accounts/{id}/ban` | 🔒 | Suspend for a duration, or permanently |
+| `DELETE` | `/api/ops/accounts/{id}/ban` | 🔒 | Lift a suspension |
+| `POST` | `/api/ops/accounts/{id}/delete` | 🔒 | Admin only; irreversible, needs the email typed back |
+
+Every route here answers **404** rather than 401 or 403 to anyone without the rank, so probing
+does not confirm the console exists.
 
 ### 3.3 Request / response models
 
@@ -670,12 +716,13 @@ module. A manual pass at http://localhost:5173 is the remaining step.
 
 ## 6. Sprint 2 — Backend & Database
 
-> Status: **backend complete, frontend integration outstanding.**
+> Status: **complete**, backend and frontend. Extended by Sprint 3 (§7).
 
 ### 6.1 Database schema
 
-Supabase Postgres. One migration, `backend/src/db/migrations/001_init.sql`, applied in a
-transaction and recorded in `_migrations` by filename.
+Supabase Postgres. Migrations live in `backend/src/db/migrations/`, are applied in a
+transaction, and are recorded in `_migrations` by filename. The table below is `001_init.sql`;
+§7.1 covers what the later migrations added.
 
 | Table | Purpose | Notable constraints |
 | --- | --- | --- |
@@ -805,19 +852,249 @@ stale data.
 
 ### 6.5 Still outstanding
 
-1. **Frontend integration** — the Sprint 2 frontend deliverables (core user flows against the
-   new endpoints, form validation, loading/empty/error states, responsive new pages) have not
-   been started. The API is ready for them; `frontend/src/lib/api.ts` still calls only the
-   Sprint 1 auth and events endpoints.
-2. **No automated tests** — still the largest gap. The pure compatibility engine is the
+Frontend integration, listed here through Sprint 2, is **done** — see §7.
+
+1. **No automated tests in the repository.** The largest remaining gap. Everything below has
+   been verified by end-to-end suites run against the real database, but those suites live in
+   a session scratchpad rather than in `backend/`, so nothing runs on `npm test` or in CI.
+   Porting them is the single highest-value next task; the pure compatibility engine is the
    cheapest place to start, since it needs no database.
-3. **No rate limiting** on the auth routes.
-4. **No refresh tokens** — still a single 7-day access token.
-5. **Helmet CSP is still off** so Swagger UI renders.
+2. **No rate limiting** on the auth routes.
+3. **No refresh tokens** — still a single 7-day access token.
+4. **Helmet CSP is still off** so Swagger UI renders.
+5. **Chat is polled, not pushed** — a 5-second interval, paused while the tab is hidden. Fine
+   at this size; a websocket is the answer if conversations get busy.
 
 ---
 
-## 7. Dev vs. production load characteristics
+## 7. Sprint 3 — Onboarding, moderation, and per-event matching
+
+> Status: **complete**, verified end to end against the live database.
+
+Three things changed the product rather than extending it: registration became a guided
+multi-step flow, the site grew a moderation tier, and **matching became per-event**.
+
+### 7.1 Migrations after `001_init`
+
+| Migration | What it added |
+| --- | --- |
+| `002_admin` | `users.is_admin` — superseded and dropped by `003` |
+| `003_account_roles` | `account_role` (`user` / `moderator` / `admin`), backfilled from `is_admin` |
+| `004_onboarding` | Split names, nullable `password_hash` (OAuth-only accounts), date of birth, pronouns, location, languages, interest domains, goals, Discord handle, `email_verified`, `onboarding_completed`, `avatar_path`; new `email_verification_tokens`, `oauth_identities`, `experiences` |
+| `005_skill_levels` | `skill_levels jsonb` beside `skills text[]` |
+| `006_moderation` | `banned_until` / `banned_reason` / `banned_at` / `banned_by` |
+| `007_event_stats` | `events.stat_profile jsonb` — a per-event override of the category archetype |
+| `008_connections` | `connections` and `messages` |
+| `009_skill_scale` | Proficiency rescaled 1–5 → 0–100, with a range constraint |
+| `010_team_roles` | `primary_role` → `roles text[]`, 1–5 entries, GIN-indexed |
+
+Two schema decisions worth keeping:
+
+- **`skills text[]` stays canonical, `skill_levels jsonb` rides alongside.** The array keeps its
+  GIN index and the `&&` overlap operator, which is what makes skill filtering fast; the JSONB
+  holds proficiency per skill. Collapsing both into JSONB would have cost the index.
+- **`banned_until` carries three states in one nullable column** — `NULL` is active, a timestamp
+  is a suspension, and `'infinity'` is permanent. No second boolean can contradict it. Note that
+  `pg` hands back the JS number `Infinity` for the Postgres literal, not a string; `mapUserRow`
+  normalises it, and forgetting that turns every permanent ban into a 500.
+- **`connections` stores each pair once**, ordered `check (user_a < user_b)`, so a relationship
+  cannot exist twice with the sides swapped.
+- **`roles` replaced `primary_role` rather than joining it.** Two columns describing the same
+  thing is how they drift — some code reads one, some the other, and a profile edited through
+  either path disagrees with itself. The 1–5 cap is a check constraint, not just Zod: without
+  one, selecting every role strictly beats choosing honestly.
+
+### 7.2 Per-event matching
+
+Previously one score ranked a person for everything. That is wrong in an obvious way: strong
+cybersecurity skills should barely move someone's ranking at a game jam.
+
+`backend/src/modules/events/event-stats.ts` gives every event category an **archetype** — a
+weighting over the five scoring components, the skill areas that matter, and the roles a team
+there needs. An event may override its archetype through `stat_profile`.
+
+| Component | Hackathons | Gaming | Cybersecurity |
+| --- | --- | --- | --- |
+| Skills | 22 | 34 | 36 |
+| Roles | 28 | 26 | 20 |
+| Availability | 28 | 22 | 14 |
+| Working style | 17 | 15 | 12 |
+| Credibility | 5 | **3** | **18** |
+
+Each column sums to 100. Credibility is the clearest case: a verified certificate genuinely
+means something in security, and almost nothing at a game jam.
+
+The engine was not forked to do this. `scorePair` and `scoreAgainstTeam` already returned
+per-component explanations, so they take an optional weight override and default to the old
+constants — every existing caller is unchanged.
+
+Three surfaces come out of it:
+
+- `GET /api/events/{id}/stats` — what the event rewards.
+- `GET /api/events/{id}/my-fit` — one person's stat sheet, re-weighted to this event.
+- `GET /api/teams/{id}/gaps` and `/suggestions` — what the roster is missing *for this event*,
+  and who closes it. A suggestion blends team compatibility under the event's weights (60%)
+  with the candidate's own event fit (40%), then adds +9 per gap closed and +12 for filling a
+  missing key role.
+
+Calibration check: an ideal candidate scores 100, a partial match 34, and a specialist covering
+two of four focus areas 54 — the scale uses its range instead of clustering everyone near 70.
+
+"One team per participant per event" was already enforced by `team_event_membership`, so
+different teams for different events needed no schema change.
+
+### 7.3 Depth, roles, and the recruit brief
+
+Four changes after the first pass, all from the same observation: the numbers
+were counting the wrong things.
+
+**Coverage counts depth, not quantity.** The original formula multiplied a
+saturating breadth term by mean proficiency:
+
+```
+breadth = min(1, matched / 3);  score = breadth * (depth / 5) * 100
+```
+
+That capped a single skill at 33 however good you were at it, so "Backend, and
+I am an expert at Node" scored **20**. It also ranked three people who had each
+opened a tutorial *above* one person who could actually do the work. Coverage is
+now anchored on the strongest skill in an area, with breadth as a modest
+multiplier (`DEPTH_SHARE = 0.78`):
+
+| Backend, with… | Old | New |
+| --- | --- | --- |
+| Node.js at Expert | 20 | **70** |
+| Node.js at Strong | 20 | 55 |
+| Node.js at Learning | 4 | 8 |
+| three backend skills, all Learning | 20 | 15 |
+| three backend skills, all Expert | 100 | 90 |
+
+Anchoring on the best skill rather than the mean is deliberate: under a mean,
+adding a skill you are honest about being new at *lowers* your score, which
+teaches people to hide things.
+
+**Proficiency runs 0–100.** Five steps could not separate "can build with it"
+from "have shipped it for three years", which is the distinction coverage needs.
+The labels survive as bands over the number (`009_skill_scale.sql` maps old
+values to band midpoints, so nobody was re-rated by the migration).
+
+**Roles are a set, and no longer only engineering.** `primary_role` became
+`roles text[]`, capped at five, and the catalogue grew to twenty — including
+Presenter, Business Analyst, Pitch Writer, and Demo Builder. A team with nobody
+willing to pitch loses for reasons unrelated to its code, and a single-choice
+field hid that. Role synergy is now compared as *axis sets*, so claiming more
+roles cannot inflate a score: the component measures the share of combined axes
+only one side covers, and adding a role the other person already has moves it
+down.
+
+**The compatibility page asks a different question.** It was a Sprint 1
+placeholder — two dropdowns and a hand-written heuristic, never connected to the
+engine. It now reads a real team: `GET /api/teams/{id}/gaps` returns the roster's
+coverage under that event's weighting plus a **recruit brief** — the positions
+nobody plays, the areas worth recruiting for, and the proficiency a recruit needs
+to bring (pitched above the team's current level, floored at Comfortable, capped
+at 85).
+
+The brief ships with the gaps rather than behind its own endpoint because it is
+derived entirely from them. It is a description rather than a search result,
+which is the point: a team with an empty candidate list still learns what to go
+and find.
+
+One bug fixed along the way: `suggestions` sorted by a blended score and then
+**stripped it**, so the UI rendered `teamFit` beside a list ordered by something
+else and the numbers looked shuffled. The ranking score is now returned as
+`score` and is what the badge shows.
+
+### 7.4 Onboarding
+
+**Email confirmation is switched off** (`REQUIRE_EMAIL_VERIFICATION`, default
+`false`). Not removed — switched off. Resend's shared `onboarding@resend.dev`
+sender only delivers to the address that owns the API key, so with the gate on,
+every signup but one landed on a "check your inbox" screen for a message that
+was never going to arrive. A gate that locks out everyone except the developer
+is worse than no gate.
+
+Everything stays wired: the tokens, the mailer, the confirmation page and
+`POST /api/auth/verify-email` all still work, so an outstanding link keeps
+working and turning the gate back on is one environment variable after verifying
+a domain in Resend.
+
+Two details worth keeping:
+
+- New accounts are written with `email_verified = true` while the gate is off,
+  rather than left `false` and ignored. A row claiming an address is unconfirmed
+  on an account nobody will ever ask to confirm is a lie in the database — and
+  turning the gate on later would lock out everyone who signed up in the interim.
+- `/api/auth/me` now returns `next`, the same routing decision login and signup
+  return. The SPA was re-deriving it from `emailVerified` and
+  `onboardingCompleted`, which meant the rule lived in two places and only one
+  of them got updated — `handleGetStarted` kept sending people to a confirmation
+  page the server had stopped asking for.
+
+Signup is a wizard: check the address is free, collect name and credentials, confirm by email,
+then a spotlight tour that dims the page and highlights only the next control, leading into the
+profile builder.
+
+- **Skills** — 194 in 14 categories. 25 popular ones as chips, a prefix-ranked search over the
+  rest, and a 0–100 proficiency slider per *selected* skill only, stepped in fives and labelled
+  with its band. The tour suggests five to start.
+- **Roles** — grouped Build / Shape / Tell rather than listed flat, capped at five. At the cap
+  the unpicked chips disable rather than silently refusing a click.
+- **Confirmation** is its own success screen with an explicit button. It was briefly a 1.2-second
+  flash before an automatic redirect, which read as though nothing had happened.
+- **OAuth** returns the token in the URL **fragment**. Fragments are never sent to a server, so
+  the token stays out of access logs, proxies, and `Referer` headers.
+
+### 7.5 Moderation
+
+Suspension is open to moderators; deletion is admin-only. Both refuse to act on an account at
+or above the caller's own rank, so a moderator cannot ban an admin or another moderator.
+
+Deletion is a `POST .../delete`, not a `DELETE`, because the confirmation email has to travel
+in a body and DELETE bodies are widely dropped by proxies and ignored by `fetch`.
+
+The "last admin" guard lives inside a transaction that locks the admin rows and counts them
+there. An earlier version checked the count before the write, which two simultaneous
+demotions would both have passed.
+
+### 7.6 Connections and chat
+
+Connections are mutual: you can message someone once, and only once, you are connected. That
+one rule is what stops the inbox becoming a channel strangers can push into. Asking someone who
+has already asked you accepts immediately rather than opening a second request.
+
+Conversations **outlive the connection** — disconnecting and reconnecting picks the thread back
+up, as every messenger does.
+
+Chat polls every 5 seconds and pauses while the tab is hidden, rather than opening a websocket.
+Both people are usually looking at the page, so the felt latency is the same for a fraction of
+the moving parts.
+
+**LinkedIn sync is a labelled placeholder**, as asked — the space is reserved and marked
+*coming soon*; nothing is integrated.
+
+### 7.7 Verification
+
+Every suite below ran against the live Supabase database, not mocks or fixtures.
+
+| Suite | Covers | Checks |
+| --- | --- | --- |
+| `e2e` | matching, teams, events, certificates | 44 |
+| `roles-e2e` | site roles and console access | 27 |
+| `signup-e2e` | registration, confirmation, profile, experiences | 47 |
+| `moderation-e2e` | ban, unban, delete, cascade | 28 |
+| `event-stats-e2e` | archetypes, per-event fit, gaps, suggestions | 29 |
+| `connections-e2e` | requests, chat, unread counts, gating | 30 |
+| `roles-e2e2` | multi-roles, the 0–100 scale, depth scoring, the brief | 39 |
+
+All passing; 244 checks in total. Browser flows were driven through Chrome with Playwright.
+
+**These suites are not in the repository** — they were written in a session scratchpad. §6.5
+item 1 is about moving them in.
+
+---
+
+## 8. Dev vs. production load characteristics
 
 Measured on 26 August 2026, this machine, warm dependency cache.
 
@@ -842,4 +1119,4 @@ API without further configuration.
 
 ---
 
-*Last updated: 26 August 2026 — end of Sprint 1.*
+*Last updated: 2 September 2026.*

@@ -1,22 +1,54 @@
-import type { PrimaryRole } from '../users/user.model.js';
+import type { TeamRole } from '../users/user.model.js';
 
 /**
- * Capability axes each primary role covers. Scoring role synergy from these
- * rather than from a hand-written 10×10 matrix keeps the rule explainable
- * ("you two cover client and server") and means adding a role is one line.
+ * Capability axes each role covers. Scoring role synergy from these rather than
+ * from a hand-written matrix keeps the rule explainable ("you two cover client
+ * and server") and means adding a role is one line rather than one row and one
+ * column.
+ *
+ * The non-engineering roles are here for the same reason they exist at all: a
+ * team where nobody covers `pitch` loses points it did not have to lose, and
+ * the axis is what makes that visible instead of implicit.
  */
-export const ROLE_AXES: Record<PrimaryRole, readonly string[]> = {
+export const ROLE_AXES: Record<TeamRole, readonly string[]> = {
+  // Build
   'Frontend Developer': ['client'],
   'Backend Developer': ['server'],
   'Full-Stack Developer': ['client', 'server'],
   'Mobile Developer': ['client', 'mobile'],
+  'Game Developer': ['client', 'game'],
   'AI / ML Engineer': ['ml', 'data'],
   'Data Scientist': ['data'],
-  'UI/UX Designer': ['design'],
-  'Product Manager': ['product'],
   'DevOps Engineer': ['infra', 'server'],
   Cybersecurity: ['security'],
+  'QA / Tester': ['quality'],
+  'Hardware / IoT': ['hardware'],
+  // Shape
+  'UI/UX Designer': ['design'],
+  'Graphic Artist': ['design', 'art'],
+  'Product Manager': ['product'],
+  'Business Analyst': ['product', 'research'],
+  Researcher: ['research'],
+  // Tell
+  Presenter: ['pitch'],
+  'Pitch Writer': ['pitch', 'writing'],
+  'Demo Builder': ['pitch', 'client'],
+  'Documentation Lead': ['writing'],
 };
+
+/** Every axis any role covers — the denominator for "how much is covered". */
+export const ALL_ROLE_AXES: readonly string[] = Object.freeze([
+  ...new Set(Object.values(ROLE_AXES).flat()),
+]);
+
+/** The union of axes a set of roles covers. */
+export function axesOf(roles: readonly TeamRole[]): Set<string> {
+  const axes = new Set<string>();
+  for (const role of roles) {
+    for (const axis of ROLE_AXES[role] ?? []) axes.add(axis);
+  }
+  return axes;
+}
 
 /** One weighted component of a compatibility score. */
 export interface ScoreComponent {

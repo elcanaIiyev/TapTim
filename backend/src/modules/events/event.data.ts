@@ -6,9 +6,14 @@ import type { EventItem } from './event.model.js';
  * loads from, so the ids the frontend already links to stay stable.
  *
  * `createdBy` and the timestamps are omitted: the database assigns them, and a
- * seeded event has no organiser account behind it.
+ * seeded event has no organiser account behind it. `statProfile` is omitted
+ * too — every seeded event is a normal example of its category, so it uses that
+ * category's archetype rather than carrying an override.
  */
-export type EventSeed = Omit<EventItem, 'createdBy' | 'createdAt' | 'updatedAt'>;
+export type EventSeed = Omit<
+  EventItem,
+  'createdBy' | 'createdAt' | 'updatedAt' | 'statProfile'
+>;
 
 export const MOCK_EVENTS: EventSeed[] = [
   {
@@ -214,5 +219,22 @@ export const MOCK_EVENTS: EventSeed[] = [
     registrationDeadline: '2026-12-13T23:59:00.000Z',
     participants: 420,
     featured: false,
+  },
+  {
+    id: 'evt-013',
+    name: 'Caspian Game Jam',
+    description:
+      'A 72-hour game jam on a theme announced at kickoff. Engine skill and art carry it — ship something playable.',
+    category: 'Gaming',
+    tags: ['72h', 'Unity', 'Godot', 'Theme reveal'],
+    startDate: '2026-10-16T18:00:00.000Z',
+    endDate: '2026-10-19T18:00:00.000Z',
+    location: 'Baku, Azerbaijan',
+    mode: 'hybrid',
+    teamSize: { min: 2, max: 5 },
+    prizePool: '$6,000',
+    registrationDeadline: '2026-10-12T23:59:00.000Z',
+    participants: 210,
+    featured: true,
   },
 ];

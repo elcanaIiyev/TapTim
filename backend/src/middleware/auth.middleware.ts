@@ -1,6 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { userStore } from '../data/user.store.js';
-import type { UserRecord } from '../modules/users/user.model.js';
+import { assertNotBanned } from '../modules/auth/auth.service.js';
+import { isBanned, type UserRecord } from '../modules/users/user.model.js';
 import { HttpError } from '../utils/http-error.js';
 import { verifyAccessToken } from '../utils/token.js';
 
@@ -36,6 +37,10 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
         next(HttpError.unauthorized('The account for this token no longer exists.'));
         return;
       }
+      // A token issued before the ban is still cryptographically valid, so the
+      // suspension has to be enforced per request or it does not start until
+      // the token expires — up to seven days later.
+      assertNotBanned(user);
       req.user = user;
       next();
     } catch (error) {
@@ -63,7 +68,10 @@ export const optionalAuth: RequestHandler = (req, _res, next) => {
     try {
       const payload = verifyAccessToken(token);
       const user = await userStore.findById(payload.sub);
-      if (user) req.user = user;
+      // A suspended account is treated as signed out on public pages rather
+      // than being refused: those pages work fine anonymously, and an error
+      // banner on the events list helps nobody.
+      if (user && !isBanned(user)) req.user = user;
     } catch {
       /* anonymous request */
     }

@@ -8,8 +8,19 @@ import {
   validateQuery,
 } from '../../middleware/validate.middleware.js';
 import { asyncHandler } from '../../utils/async-handler.js';
-import { listAccountsHandler, updateAccountHandler } from './admin.controller.js';
-import { listAccountsQuerySchema, updateAccountSchema } from './admin.schema.js';
+import {
+  banAccountHandler,
+  deleteAccountHandler,
+  listAccountsHandler,
+  unbanAccountHandler,
+  updateAccountHandler,
+} from './admin.controller.js';
+import {
+  banAccountSchema,
+  deleteAccountSchema,
+  listAccountsQuerySchema,
+  updateAccountSchema,
+} from './admin.schema.js';
 
 const idParam = z.object({ id: z.string().uuid('Account id must be a UUID.') });
 
@@ -32,4 +43,30 @@ adminRouter.patch(
   validateParams(idParam),
   validateBody(updateAccountSchema),
   asyncHandler(updateAccountHandler),
+);
+
+// -- moderation ---------------------------------------------------------------
+// Suspension is open to moderators — it is what the tier exists for — while
+// deletion stays admin-only, checked in the service. Both refuse to act on an
+// account at or above the caller's own rank.
+
+adminRouter.post(
+  '/accounts/:id/ban',
+  validateParams(idParam),
+  validateBody(banAccountSchema),
+  asyncHandler(banAccountHandler),
+);
+
+adminRouter.delete('/accounts/:id/ban', validateParams(idParam), asyncHandler(unbanAccountHandler));
+
+/**
+ * Deletion carries a body, so it is a POST rather than a DELETE: the confirmed
+ * email has to travel with the request, and DELETE bodies are widely dropped by
+ * proxies and ignored by fetch implementations.
+ */
+adminRouter.post(
+  '/accounts/:id/delete',
+  validateParams(idParam),
+  validateBody(deleteAccountSchema),
+  asyncHandler(deleteAccountHandler),
 );

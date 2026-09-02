@@ -1,12 +1,31 @@
 import type {
   AdminAccount,
   AdminSummary,
+  ChatMessage,
+  ConnectionsOverview,
+  ConnectionView,
+  Conversation,
+  DirectoryUser,
+  EventCandidate,
+  EventStats,
+  MyEventFit,
+  Team,
+  TeamDetail,
+  TeamEventReport,
+  TeamRequest,
   AuthResult,
   CategoryCount,
   EventItem,
+  Experience,
+  ExperiencePayload,
   FieldIssue,
   LoginPayload,
+  MeResponse,
+  ProfileOptions,
+  ProfilePayload,
+  ProviderStatus,
   SignupPayload,
+  SignupResult,
   User,
 } from './types';
 
@@ -54,7 +73,10 @@ export const tokenStorage = {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body && !headers.has('Content-Type')) {
+  // FormData sets its own multipart Content-Type including the boundary;
+  // naming it here would produce a body the server cannot parse.
+  const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+  if (init.body && !isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -73,7 +95,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   const isJson = response.headers.get('content-type')?.includes('application/json');
-  const payload = isJson ? await response.json() : null;
+  const payload = response.status === 204 || !isJson ? null : await response.json();
 
   if (!response.ok) {
     const error = payload?.error;
@@ -89,8 +111,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const authApi = {
+  /** Step 1 of the wizard: is this address free, before asking for anything else? */
+  checkEmail: (email: string) =>
+    request<{ data: { available: boolean } }>('/api/auth/check-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }).then((r) => r.data.available),
+
   signup: (body: SignupPayload) =>
-    request<{ data: AuthResult }>('/api/auth/signup', {
+    request<{ data: SignupResult }>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(body),
     }).then((r) => r.data),
@@ -101,7 +130,96 @@ export const authApi = {
       body: JSON.stringify(body),
     }).then((r) => r.data),
 
-  me: () => request<{ data: User }>('/api/auth/me').then((r) => r.data),
+  me: () => request<{ data: MeResponse }>('/api/auth/me').then((r) => r.data),
+
+  verifyEmail: (token: string) =>
+    request<{ data: AuthResult }>('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }).then((r) => r.data),
+
+  resendVerification: (email: string) =>
+    request<{ data: { sent: boolean; error: string | null } }>('/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }).then((r) => r.data),
+
+  /** Which providers this deployment can actually offer. */
+  providers: () =>
+    request<{ data: ProviderStatus[] }>('/api/auth/providers').then((r) => r.data),
+
+  /**
+   * Full-page navigation, not fetch: the provider's consent screen has to own
+   * the tab, and it will not render inside XHR.
+   */
+  startOAuth(provider: string) {
+    window.location.href = `${API_URL}/api/auth/oauth/${provider}`;
+  },
+
+  /** Same flow, but attaches the provider to the account already signed in. */
+  connectOAuth: (provider: string) =>
+    request<{ data: { url: string } }>(`/api/auth/oauth/${provider}/connect`).then((r) => r.data.url),
+
+  disconnectOAuth: (provider: string) =>
+    request<void>(`/api/auth/oauth/${provider}`, { method: 'DELETE' }),
+};
+
+export const profileApi = {
+  /** Public — the chips render from this before anyone signs in. */
+  options: () =>
+    request<{ data: ProfileOptions }>('/api/users/profile-options').then((r) => r.data),
+
+  me: () => request<{ data: MeResponse }>('/api/users/me').then((r) => r.data),
+
+  update: (body: ProfilePayload) =>
+    request<{ data: User }>('/api/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
+
+  /**
+   * Multipart, so `Content-Type` is deliberately left unset — the browser has
+   * to add its own `boundary` and would be overridden if we named the type.
+   */
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('avatar', file);
+    return request<{ data: User }>('/api/users/me/avatar', {
+      method: 'POST',
+      body: form,
+    }).then((r) => r.data);
+  },
+
+  removeAvatar: () =>
+    request<{ data: User }>('/api/users/me/avatar', { method: 'DELETE' }).then((r) => r.data),
+
+  /** Everyone open to joining a team. The caller is excluded server-side. */
+  directory: (query: { search?: string; primaryRole?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (query.search) params.set('search', query.search);
+    if (query.primaryRole) params.set('primaryRole', query.primaryRole);
+    params.set('lookingForTeam', 'true');
+    params.set('limit', '50');
+    return request<{ data: DirectoryUser[] }>(`/api/users?${params.toString()}`).then((r) => r.data);
+  },
+
+  experiences: () =>
+    request<{ data: Experience[] }>('/api/users/me/experiences').then((r) => r.data),
+
+  addExperience: (body: ExperiencePayload) =>
+    request<{ data: Experience }>('/api/users/me/experiences', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
+
+  updateExperience: (id: string, body: Partial<ExperiencePayload>) =>
+    request<{ data: Experience }>(`/api/users/me/experiences/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
+
+  removeExperience: (id: string) =>
+    request<void>(`/api/users/me/experiences/${id}`, { method: 'DELETE' }),
 };
 
 export interface EventQuery {
@@ -127,6 +245,89 @@ export const eventsApi = {
 
   categories: () =>
     request<{ data: CategoryCount[] }>('/api/events/categories').then((r) => r.data),
+
+  byId: (id: string) => request<{ data: EventItem }>(`/api/events/${id}`).then((r) => r.data),
+
+  /** What this event rewards. Public — the event page renders it signed out. */
+  stats: (id: string) => request<{ data: EventStats }>(`/api/events/${id}/stats`).then((r) => r.data),
+
+  /** My stat sheet for this event: the profile, filtered to what it needs. */
+  myFit: (id: string) =>
+    request<{ data: MyEventFit }>(`/api/events/${id}/my-fit`).then((r) => r.data),
+};
+
+export interface TeamQuery {
+  eventId?: string;
+  status?: string;
+  hasOpenSeats?: boolean;
+  search?: string;
+  mine?: boolean;
+}
+
+export const teamsApi = {
+  list(query: TeamQuery = {}) {
+    const params = new URLSearchParams();
+    if (query.eventId) params.set('eventId', query.eventId);
+    if (query.status) params.set('status', query.status);
+    if (query.hasOpenSeats !== undefined) params.set('hasOpenSeats', String(query.hasOpenSeats));
+    if (query.search) params.set('search', query.search);
+    if (query.mine) params.set('mine', 'true');
+    params.set('limit', '50');
+
+    return request<{ data: Team[]; meta: { total: number } }>(`/api/teams?${params.toString()}`);
+  },
+
+  byId: (id: string) => request<{ data: TeamDetail }>(`/api/teams/${id}`).then((r) => r.data),
+
+  create: (body: {
+    eventId: string;
+    name: string;
+    description?: string | null;
+    lookingFor?: string[];
+    requiredSkills?: string[];
+    maxSize: number;
+  }) =>
+    request<{ data: TeamDetail }>('/api/teams', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
+
+  remove: (id: string) => request<void>(`/api/teams/${id}`, { method: 'DELETE' }),
+
+  leave: (id: string) => request<void>(`/api/teams/${id}/leave`, { method: 'POST' }),
+
+  apply: (id: string, message: string | null) =>
+    request<{ data: TeamRequest }>(`/api/teams/${id}/applications`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }).then((r) => r.data),
+
+  invite: (id: string, userId: string, message: string | null) =>
+    request<{ data: TeamRequest }>(`/api/teams/${id}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, message }),
+    }).then((r) => r.data),
+
+  /** What this team is missing for its event. */
+  gaps: (id: string) =>
+    request<{ data: TeamEventReport }>(`/api/teams/${id}/gaps`).then((r) => r.data),
+
+  /** Candidates, scored under the event's weights and against the team's gaps. */
+  suggestions: (id: string, limit = 8) =>
+    request<{ data: EventCandidate[] }>(`/api/teams/${id}/suggestions?limit=${limit}`).then(
+      (r) => r.data,
+    ),
+
+  requests: (direction: 'incoming' | 'outgoing' = 'incoming') =>
+    request<{ data: TeamRequest[] }>(`/api/teams/requests?direction=${direction}&status=pending`).then(
+      (r) => r.data,
+    ),
+
+  respond: (requestId: string, action: 'accept' | 'decline' | 'cancel') =>
+    request<{ data: TeamRequest }>(`/api/teams/requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action }),
+    }).then((r) => r.data),
 };
 
 export interface AdminAccountQuery {
@@ -168,6 +369,57 @@ export const adminApi = {
       body: JSON.stringify(body),
     }).then((r) => r.data);
   },
+
+  /** `permanent: true`, or a `durationDays`. A reason is always required. */
+  banAccount: (id: string, body: { permanent?: boolean; durationDays?: number; reason: string }) =>
+    request<{ data: AdminAccount }>(`/api/ops/accounts/${id}/ban`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
+
+  unbanAccount: (id: string) =>
+    request<{ data: AdminAccount }>(`/api/ops/accounts/${id}/ban`, { method: 'DELETE' }).then(
+      (r) => r.data,
+    ),
+
+  /**
+   * POST, not DELETE: the typed-back email has to travel with the request, and
+   * DELETE bodies are dropped by proxies and ignored by some fetch stacks.
+   */
+  deleteAccount: (id: string, confirmEmail: string) =>
+    request<{ data: { deleted: boolean; email: string } }>(`/api/ops/accounts/${id}/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmEmail }),
+    }).then((r) => r.data),
+};
+
+export const connectionsApi = {
+  overview: () =>
+    request<{ data: ConnectionsOverview }>('/api/connections').then((r) => r.data),
+
+  request: (userId: string) =>
+    request<{ data: ConnectionView }>('/api/connections', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }).then((r) => r.data),
+
+  respond: (id: string, action: 'accept' | 'decline' | 'cancel') =>
+    request<{ data: { state: string } }>(`/api/connections/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action }),
+    }).then((r) => r.data),
+
+  disconnect: (id: string) => request<void>(`/api/connections/${id}`, { method: 'DELETE' }),
+
+  /** Reading a thread also marks the other side's messages as read. */
+  conversation: (userId: string) =>
+    request<{ data: Conversation }>(`/api/connections/messages/${userId}`).then((r) => r.data),
+
+  send: (userId: string, body: string) =>
+    request<{ data: ChatMessage }>(`/api/connections/messages/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }).then((r) => r.data),
 };
 
 export { API_URL };

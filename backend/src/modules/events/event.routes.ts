@@ -5,9 +5,11 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createEventHandler,
   deleteEventHandler,
+  eventStatsHandler,
   getEventHandler,
   listCategoriesHandler,
   listEventsHandler,
+  myEventFitHandler,
   updateEventHandler,
 } from './event.controller.js';
 import { createEventSchema, listEventsQuerySchema, updateEventSchema } from './event.schema.js';
@@ -20,6 +22,12 @@ eventRouter.get('/', validateQuery(listEventsQuerySchema), asyncHandler(listEven
 eventRouter.post('/', requireAuth, validateBody(createEventSchema), asyncHandler(createEventHandler));
 
 eventRouter.get('/:id', asyncHandler(getEventHandler));
+
+// What this event rewards, and how the caller measures up against it. Declared
+// after `/:id` is fine — Express matches on the full path, and neither of these
+// can be mistaken for an event id.
+eventRouter.get('/:id/stats', asyncHandler(eventStatsHandler));
+eventRouter.get('/:id/my-fit', requireAuth, asyncHandler(myEventFitHandler));
 eventRouter.patch(
   '/:id',
   requireAuth,

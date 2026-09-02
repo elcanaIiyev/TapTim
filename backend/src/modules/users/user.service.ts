@@ -20,18 +20,50 @@ export interface UserProfileView extends DirectoryUser {
  * Matching quality depends on how much of a profile is filled in, so the API
  * reports completeness rather than leaving the UI to guess which prompt to show.
  */
+/**
+ * Weighted rather than a flat count: the fields the matching engine actually
+ * reads are worth more than the decorative ones. A profile with skills,
+ * availability and working style filled in scores well even with no avatar,
+ * because that profile genuinely matches well — and the number is shown to the
+ * person as a completeness meter, so it has to reward the things that help them.
+ */
+const COMPLETENESS_WEIGHTS: ReadonlyArray<{
+  weight: number;
+  filled: (user: UserRecord) => boolean;
+}> = [
+  { weight: 3, filled: (u) => u.skills.length > 0 },
+  // Rating them is separate from listing them, and now worth its own credit:
+  // per-event coverage is computed from proficiency, so an unrated skill list
+  // is scored at the default and tells a team nothing about depth.
+  {
+    weight: 2,
+    filled: (u) => u.skills.length > 0 && u.skills.every((s) => u.skillLevels[s] !== undefined),
+  },
+  { weight: 3, filled: (u) => u.availability.length > 0 },
+  { weight: 3, filled: (u) => Object.keys(u.personality).length > 0 },
+  { weight: 2, filled: (u) => u.interestDomains.length > 0 },
+  { weight: 2, filled: (u) => u.goals.length > 0 },
+  { weight: 2, filled: (u) => u.bio !== null && u.bio.trim().length > 0 },
+  { weight: 1, filled: (u) => u.languages.length > 0 },
+  { weight: 1, filled: (u) => u.hoursPerWeek !== null },
+  { weight: 1, filled: (u) => u.timezoneOffset !== null },
+  { weight: 1, filled: (u) => u.dateOfBirth !== null },
+  { weight: 1, filled: (u) => u.avatarUrl !== null },
+  { weight: 1, filled: (u) => u.locationCity !== null || u.locationCountry !== null },
+  {
+    weight: 1,
+    filled: (u) => u.githubUrl !== null || u.linkedinUrl !== null || u.portfolioUrl !== null,
+  },
+];
+
+const COMPLETENESS_TOTAL = COMPLETENESS_WEIGHTS.reduce((sum, entry) => sum + entry.weight, 0);
+
 export function profileCompleteness(user: UserRecord): number {
-  const checks = [
-    user.skills.length > 0,
-    user.bio !== null && user.bio.trim().length > 0,
-    user.availability.length > 0,
-    user.hoursPerWeek !== null,
-    user.timezoneOffset !== null,
-    Object.keys(user.personality).length > 0,
-    user.avatarUrl !== null,
-    user.githubUrl !== null || user.linkedinUrl !== null || user.portfolioUrl !== null,
-  ];
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  const earned = COMPLETENESS_WEIGHTS.reduce(
+    (sum, entry) => sum + (entry.filled(user) ? entry.weight : 0),
+    0,
+  );
+  return Math.round((earned / COMPLETENESS_TOTAL) * 100);
 }
 
 export async function getProfile(id: string): Promise<UserProfileView> {
@@ -71,7 +103,7 @@ export async function listUsers(
 ): Promise<ListUsersResult> {
   const { items, total } = await userStore.list({
     search: query.search,
-    primaryRole: query.primaryRole,
+    roles: query.roles,
     skills: query.skills,
     experienceLevel: query.experienceLevel,
     availability: query.availability,

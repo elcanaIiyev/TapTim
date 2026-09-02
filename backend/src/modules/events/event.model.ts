@@ -1,10 +1,12 @@
 import { toIso } from '../../utils/dates.js';
+import type { EventStatProfileOverride } from './event-stats.js';
 
 export const EVENT_CATEGORIES = [
   'Hackathons',
   'AI',
   'Programming',
   'Design',
+  'Gaming',
   'Web3',
   'Cybersecurity',
   'Startup',
@@ -31,6 +33,11 @@ export interface EventItem {
   registrationDeadline: string;
   participants: number;
   featured: boolean;
+  /**
+   * Which skill areas, roles and scoring weights this event rewards. Null means
+   * "whatever this category normally means" — the archetype in `event-stats.ts`.
+   */
+  statProfile: EventStatProfileOverride | null;
   /** Null for the seeded catalogue; set for organiser-created events. */
   createdBy: string | null;
   createdAt: string;
@@ -53,6 +60,7 @@ export interface EventRow {
   registration_deadline: Date;
   participants: number;
   featured: boolean;
+  stat_profile: EventStatProfileOverride | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
@@ -74,6 +82,7 @@ export function mapEventRow(row: EventRow): EventItem {
     registrationDeadline: toIso(row.registration_deadline),
     participants: row.participants,
     featured: row.featured,
+    statProfile: row.stat_profile,
     createdBy: row.created_by,
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),

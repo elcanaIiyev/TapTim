@@ -13,6 +13,7 @@ import type {
   UpdateTeamInput,
 } from './team.schema.js';
 import * as teamService from './team.service.js';
+import * as eventStats from '../events/event-stats.service.js';
 
 function requireUser(req: Request) {
   if (!req.user) throw HttpError.unauthorized();
@@ -99,9 +100,20 @@ export async function transferOwnershipHandler(req: Request, res: Response) {
   res.status(200).json({ data: team });
 }
 
+/**
+ * Suggestions are scored under the *event's* weights and against what this team
+ * is missing for it, rather than in the abstract — a great generalist who
+ * duplicates the team is not the answer a team with a hole wants.
+ */
 export async function suggestMembersHandler(req: Request, res: Response) {
   const user = requireUser(req);
   const query = getValidatedQuery<SuggestionsQuery>(req);
-  const suggestions = await teamService.suggestMembers(req.params.id, query, user.id);
+  const suggestions = await eventStats.suggestForTeam(req.params.id, user.id, query.limit);
   res.status(200).json({ data: suggestions, meta: { total: suggestions.length } });
+}
+
+/** What this team is missing for its event. Owner or member. */
+export async function teamGapsHandler(req: Request, res: Response) {
+  requireUser(req);
+  res.status(200).json({ data: await eventStats.teamReport(req.params.id) });
 }

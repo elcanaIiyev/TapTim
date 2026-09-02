@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ModerationActions } from '../components/admin/ModerationActions';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Container } from '../components/ui/Container';
@@ -178,6 +179,24 @@ export function AdminConsolePage() {
     return () => window.clearTimeout(timer);
   }, [isStaff, load]);
 
+  /** Replaces one row in place after a moderation action. */
+  const replaceAccount = useCallback((updated: AdminAccount) => {
+    setState((previous) => ({
+      ...previous,
+      accounts: previous.accounts.map((a) => (a.id === updated.id ? updated : a)),
+    }));
+  }, []);
+
+  const removeAccount = useCallback((id: string) => {
+    setState((previous) => ({
+      ...previous,
+      accounts: previous.accounts.filter((a) => a.id !== id),
+      // The totals include the deleted account, so they are re-read rather
+      // than decremented — a guess here would drift from the database.
+      summary: previous.summary,
+    }));
+  }, []);
+
   const updateAccount = useCallback(
     async (id: string, accountRole: string) => {
       const updated = await adminApi.updateAccount(id, { accountRole });
@@ -285,10 +304,10 @@ export function AdminConsolePage() {
             {/* Desktop: a real table. Wide content scrolls inside its own
                 container so the page body never scrolls sideways. */}
             <div className="hidden overflow-x-auto rounded-[var(--radius-soft-lg)] border border-ink-200 lg:block dark:border-ink-700">
-              <table className="w-full min-w-[52rem] border-collapse text-left text-sm">
+              <table className="w-full min-w-[68rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-ink-200 bg-ink-50 dark:border-ink-700 dark:bg-ink-900">
-                    {['Participant', 'Joined', 'Signals', 'Site role'].map((heading) => (
+                    {['Participant', 'Joined', 'Signals', 'Site role', 'Moderation'].map((heading) => (
                       <th
                         key={heading}
                         scope="col"
@@ -318,6 +337,11 @@ export function AdminConsolePage() {
                       </td>
                       <td className="px-5 py-4 align-top">
                         <div className="flex flex-wrap gap-1.5">
+                          {account.suspended && (
+                            <Badge tone="warning">
+                              {account.permanentBan ? 'Banned' : 'Suspended'}
+                            </Badge>
+                          )}
                           {account.accountRole !== 'user' && (
                             <Badge tone={ROLE_TONE[account.accountRole]}>
                               {account.accountRole}
@@ -332,12 +356,24 @@ export function AdminConsolePage() {
                           {account.lookingForTeam && <Badge tone="brand">Open to teams</Badge>}
                         </div>
                       </td>
-                      <td className="w-64 px-5 py-4 align-top">
+                      <td className="w-52 px-5 py-4 align-top">
                         <AccountControls
                           account={account}
                           isSelf={account.id === user?.id}
                           canSetRole={canSetRole}
                           onChange={updateAccount}
+                        />
+                      </td>
+                      <td className="w-64 px-5 py-4 align-top">
+                        <ModerationActions
+                          account={account}
+                          viewerRole={user?.accountRole ?? 'user'}
+                          isSelf={account.id === user?.id}
+                          onChange={replaceAccount}
+                          onDeleted={(id) => {
+                            removeAccount(id);
+                            void load();
+                          }}
                         />
                       </td>
                     </tr>
@@ -366,6 +402,11 @@ export function AdminConsolePage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
+                    {account.suspended && (
+                      <Badge tone="warning">
+                        {account.permanentBan ? 'Banned' : 'Suspended'}
+                      </Badge>
+                    )}
                     {account.accountRole !== 'user' && (
                       <Badge tone={ROLE_TONE[account.accountRole]}>{account.accountRole}</Badge>
                     )}
@@ -378,12 +419,22 @@ export function AdminConsolePage() {
                     {account.lookingForTeam && <Badge tone="brand">Open to teams</Badge>}
                   </div>
 
-                  <div className="mt-4 border-t border-ink-200 pt-4 dark:border-ink-800">
+                  <div className="mt-4 space-y-4 border-t border-ink-200 pt-4 dark:border-ink-800">
                     <AccountControls
                       account={account}
                       isSelf={account.id === user?.id}
                       canSetRole={canSetRole}
                       onChange={updateAccount}
+                    />
+                    <ModerationActions
+                      account={account}
+                      viewerRole={user?.accountRole ?? 'user'}
+                      isSelf={account.id === user?.id}
+                      onChange={replaceAccount}
+                      onDeleted={(id) => {
+                        removeAccount(id);
+                        void load();
+                      }}
                     />
                   </div>
                 </li>

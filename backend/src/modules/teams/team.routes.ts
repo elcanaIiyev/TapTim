@@ -19,6 +19,7 @@ import {
   removeMemberHandler,
   respondToRequestHandler,
   suggestMembersHandler,
+  teamGapsHandler,
   transferOwnershipHandler,
   updateTeamHandler,
 } from './team.controller.js';
@@ -84,6 +85,13 @@ teamRouter.post(
   validateParams(idParam),
   validateBody(inviteToTeamSchema),
   asyncHandler(inviteToTeamHandler),
+);
+
+teamRouter.get(
+  '/:id/gaps',
+  requireAuth,
+  validateParams(idParam),
+  asyncHandler(teamGapsHandler),
 );
 
 teamRouter.get(

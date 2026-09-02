@@ -324,3 +324,218 @@
     }
   }
 }
+
+/*
+  ---------------------------------------------------------------------------
+  Onboarding & profile builder — the "console" layer
+  ---------------------------------------------------------------------------
+  The marketing pages stay Soft Editorial. The signup wizard, the guided tour
+  and the profile builder are a different room: this is where someone is
+  *configuring a character*, so it borrows from a game settings screen — glow,
+  scanlines, a grid floor, energy meters — while keeping the same tokens so it
+  never reads as a second product bolted on.
+
+  Every effect here is decorative and additive. Contrast comes from the
+  underlying tokens, not from the glow, so nothing depends on a shadow being
+  visible to be legible.
+*/
+@layer utilities {
+  /* Faint engineering grid. Sits behind content at low opacity. */
+  .grid-floor {
+    background-image:
+      linear-gradient(to right, rgb(124 58 237 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(124 58 237 / 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .dark .grid-floor {
+    background-image:
+      linear-gradient(to right, rgb(167 139 250 / 0.09) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(167 139 250 / 0.09) 1px, transparent 1px);
+  }
+
+  /* A panel that reads as an instrument rather than a card. */
+  .hud {
+    @apply relative rounded-[var(--radius-soft-lg)] border border-iris-200 bg-white/85 backdrop-blur-sm;
+    @apply dark:border-iris-500/25 dark:bg-ink-900/80;
+  }
+
+  /* Corner ticks — the cheapest way to say "interface" without an image. */
+  .hud-ticks::before,
+  .hud-ticks::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: var(--color-iris-600);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .hud-ticks::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+    border-top-left-radius: var(--radius-soft-lg);
+  }
+
+  .hud-ticks::after {
+    right: -1px;
+    bottom: -1px;
+    border-right: 2px solid;
+    border-bottom: 2px solid;
+    border-bottom-right-radius: var(--radius-soft-lg);
+  }
+
+  .dark .hud-ticks::before,
+  .dark .hud-ticks::after {
+    border-color: var(--color-iris-400);
+  }
+
+  /*
+    The selectable chip. Unselected reads as an empty slot; selected lights up
+    green, which is the one strong signal in the whole builder — it means "this
+    is part of you now". Green rather than iris on purpose: iris is already the
+    primary action colour, so a selected chip would be indistinguishable from a
+    button waiting to be pressed.
+  */
+  .chip {
+    @apply relative inline-flex cursor-pointer select-none items-center justify-center gap-2;
+    @apply rounded-full border px-4 py-2 text-sm font-semibold;
+    @apply border-ink-300 bg-white text-ink-700;
+    @apply dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
+  }
+
+  .chip:hover:not(:disabled) {
+    @apply border-fern-400 text-fern-700 dark:border-fern-500 dark:text-fern-300;
+  }
+
+  .chip[aria-pressed='true'] {
+    @apply border-fern-600 bg-fern-600 text-white dark:border-fern-400 dark:bg-fern-500 dark:text-ink-950;
+    box-shadow:
+      0 0 0 3px rgb(5 150 105 / 0.16),
+      0 0 18px -2px rgb(16 185 129 / 0.55);
+  }
+
+  .chip[aria-pressed='true']:hover:not(:disabled) {
+    @apply text-white dark:text-ink-950;
+  }
+
+  /* The lit dot that makes a selected chip read as "powered on". */
+  .chip-dot {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full border;
+    @apply border-ink-400 bg-transparent dark:border-ink-600;
+    transition: all 140ms ease;
+  }
+
+  .chip[aria-pressed='true'] .chip-dot {
+    @apply border-white bg-white dark:border-ink-950 dark:bg-ink-950;
+    box-shadow: 0 0 8px rgb(255 255 255 / 0.85);
+  }
+
+  .chip:disabled {
+    @apply cursor-not-allowed opacity-45;
+  }
+
+  /* Press feedback, suppressed under reduced-motion along with everything else. */
+  @media (prefers-reduced-motion: no-preference) {
+    .chip:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+  }
+
+  /* Energy bar for profile completeness. */
+  .meter-track {
+    @apply relative h-2.5 w-full overflow-hidden rounded-full border border-ink-200 bg-ink-100;
+    @apply dark:border-ink-700 dark:bg-ink-950;
+  }
+
+  .meter-fill {
+    @apply h-full rounded-full;
+    background: linear-gradient(90deg, var(--color-iris-500), var(--color-fern-500));
+    box-shadow: 0 0 12px -1px rgb(16 185 129 / 0.6);
+    transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .meter-fill {
+      transition: none;
+    }
+  }
+
+  /* Step pips for the signup wizard and the tour. */
+  .pip {
+    @apply h-1.5 rounded-full bg-ink-300 dark:bg-ink-700;
+    transition:
+      width 260ms ease,
+      background-color 260ms ease;
+    width: 0.375rem;
+  }
+
+  .pip[data-state='done'] {
+    @apply bg-fern-500;
+  }
+
+  .pip[data-state='active'] {
+    @apply bg-iris-600 dark:bg-iris-400;
+    width: 1.75rem;
+  }
+
+  /*
+    The tour spotlight. A single element with an enormous spread shadow paints
+    everything outside its own box, so one div dims the whole page while
+    leaving a hole exactly around the target — no four-rectangle mask, no SVG,
+    and it follows the target's real bounding box.
+  */
+  .spotlight-ring {
+    @apply pointer-events-none fixed z-[70] rounded-[var(--radius-soft)];
+    box-shadow:
+      0 0 0 9999px rgb(15 10 26 / 0.78),
+      0 0 0 3px var(--color-iris-500),
+      0 0 26px 2px rgb(139 92 246 / 0.75);
+    transition:
+      top 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      left 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spotlight-ring {
+      transition: none;
+    }
+  }
+
+  /* Slow pulse on the element the tour wants clicked. */
+  @keyframes taptim-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(16 185 129 / 0.55);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgb(16 185 129 / 0);
+    }
+  }
+
+  .pulse-cta {
+    animation: taptim-pulse 1.9s ease-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-cta {
+      animation: none;
+    }
+  }
+
+  /* Mono readout for numbers that should look instrument-like. */
+  .readout {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+}

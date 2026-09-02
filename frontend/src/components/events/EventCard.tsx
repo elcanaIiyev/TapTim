@@ -111,7 +111,9 @@ export function EventCard({ event }: { event: EventItem }) {
             {formatParticipants(event.participants)} joined
           </p>
         </div>
-        <Button size="sm" variant="outline" to="/events">
+        {/* The event page is where a team is actually formed, so this is the
+            real entry point rather than a link back to the list it is in. */}
+        <Button size="sm" variant="outline" to={`/events/${event.id}`}>
           View details
         </Button>
       </div>

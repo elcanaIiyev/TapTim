@@ -1,12 +1,12 @@
 import {
   PERSONALITY_TRAITS,
   type Personality,
-  type PrimaryRole,
+  type TeamRole,
   type UserRecord,
 } from '../users/user.model.js';
 import {
+  axesOf,
   bandFor,
-  ROLE_AXES,
   type CompatibilityResult,
   type ScoreComponent,
 } from './compatibility.model.js';
@@ -22,13 +22,27 @@ import {
  * "we don't know yet", not as a bad match.
  */
 
-const WEIGHTS = {
+/**
+ * The platform default. An event can override these — a game jam should barely
+ * weight verified security credentials, a CTF should weight them heavily — by
+ * passing its own set to `scorePair`.
+ */
+const WEIGHTS: ComponentWeights = {
   skills: 25,
   roles: 25,
   availability: 20,
   workingStyle: 20,
   credibility: 10,
-} as const;
+};
+
+/** The five weights, as a shape callers can supply. Should sum to 100. */
+export interface ComponentWeights {
+  skills: number;
+  roles: number;
+  availability: number;
+  workingStyle: number;
+  credibility: number;
+}
 
 const NEUTRAL = 0.5;
 
@@ -42,6 +56,29 @@ function normaliseSkill(skill: string): string {
 
 function pct(value: number): number {
   return Math.round(clamp01(value) * 100);
+}
+
+/**
+ * The single highest or lowest entry by `of`, in one pass.
+ *
+ * Sorting a copy just to read `[0]` is the obvious way to write this and does
+ * O(n log n) work plus an allocation to answer an O(n) question. Ties keep the
+ * earliest entry, which matches what a stable sort would have returned, so the
+ * summaries this feeds are unchanged.
+ */
+function pickExtreme<T>(items: readonly T[], of: (item: T) => number, want: 'max' | 'min'): T {
+  let best = items[0];
+  let bestValue = of(best);
+
+  for (let index = 1; index < items.length; index += 1) {
+    const value = of(items[index]);
+    if (want === 'max' ? value > bestValue : value < bestValue) {
+      best = items[index];
+      bestValue = value;
+    }
+  }
+
+  return best;
 }
 
 // -- skills -------------------------------------------------------------------
@@ -98,25 +135,61 @@ function scoreSkills(a: UserRecord, b: UserRecord): SkillOutcome {
 
 // -- roles --------------------------------------------------------------------
 
-function scoreRoles(roleA: PrimaryRole, roleB: PrimaryRole): { score: number; explanation: string } {
-  const axesA = new Set(ROLE_AXES[roleA] ?? []);
-  const axesB = new Set(ROLE_AXES[roleB] ?? []);
+function listRoles(roles: readonly TeamRole[]): string {
+  if (roles.length === 0) return 'no role';
+  if (roles.length === 1) return roles[0];
+  return `${roles.slice(0, -1).join(', ')} and ${roles[roles.length - 1]}`;
+}
+
+/**
+ * How well two people's roles complement each other.
+ *
+ * Compared as axis *sets*, not as two labels. Once someone can claim several
+ * roles, "are these the same role?" stops being answerable — a Backend
+ * Developer who also presents and a Presenter who also writes backend overlap
+ * partly, and the axes are what express that.
+ *
+ * Nothing here rewards claiming more roles for its own sake. The score is the
+ * share of the combined axes that only one of the two covers, so adding a role
+ * the other person already has moves it *down*, not up. That is the property
+ * that keeps a five-role profile from beating an honest one.
+ */
+function scoreRoles(
+  rolesA: readonly TeamRole[],
+  rolesB: readonly TeamRole[],
+): { score: number; explanation: string } {
+  const axesA = axesOf(rolesA);
+  const axesB = axesOf(rolesB);
+
+  if (axesA.size === 0 && axesB.size === 0) {
+    return { score: NEUTRAL, explanation: 'Neither profile lists a role yet.' };
+  }
 
   const union = new Set([...axesA, ...axesB]);
   const intersection = [...axesA].filter((axis) => axesB.has(axis));
 
   const complement = union.size === 0 ? 0 : (union.size - intersection.length) / union.size;
 
-  // Two people in the same role are not a bad team, just a narrower one, so the
-  // component floors at 0.25 instead of bottoming out.
-  const score = 0.25 + 0.75 * complement;
+  // Two people covering the same ground are not a bad team, just a narrower
+  // one, so the component floors at 0.25 rather than bottoming out.
+  const overlapScore = 0.25 + 0.75 * complement;
+
+  // Breadth counts a little on its own: a pair covering seven axes between them
+  // has more of the event handled than a pair covering two, even if neither
+  // pair overlaps at all. Capped low so it cannot carry the component.
+  const breadth = Math.min(1, union.size / 6);
+  const score = 0.85 * overlapScore + 0.15 * breadth;
+
+  const shared = intersection.length
+    ? ` with ${intersection.join(', ')} in common`
+    : ' with no overlap';
 
   const explanation =
-    roleA === roleB
-      ? `Both of you are ${roleA}s — strong depth, but you cover the same ground.`
-      : `${roleA} and ${roleB} cover ${union.size} area${union.size === 1 ? '' : 's'} between you${
-          intersection.length ? ` with ${intersection.join(', ')} in common` : ' with no overlap'
-        }.`;
+    complement === 0
+      ? `You both cover exactly ${listRoles(rolesA)} ground — strong depth, but the same ground.`
+      : `${listRoles(rolesA)} and ${listRoles(rolesB)} cover ${union.size} area${
+          union.size === 1 ? '' : 's'
+        } between you${shared}.`;
 
   return { score, explanation };
 }
@@ -206,8 +279,8 @@ function scoreWorkingStyle(
     };
   }
 
-  const best = [...known].sort((x, y) => y.fit - x.fit)[0];
-  const worst = [...known].sort((x, y) => x.fit - y.fit)[0];
+  const best = pickExtreme(known, (entry) => entry.fit, 'max');
+  const worst = pickExtreme(known, (entry) => entry.fit, 'min');
 
   const explanation =
     best.trait === worst.trait
@@ -249,50 +322,38 @@ export function scorePair(
   a: UserRecord,
   b: UserRecord,
   certificateCounts: Map<string, number> = new Map(),
+  /**
+   * Per-event weights. Omitted means the platform default — the same score the
+   * engine has always produced, so nothing changes for callers that do not
+   * care which event they are scoring for.
+   */
+  weights: ComponentWeights = WEIGHTS,
 ): CompatibilityResult {
   const skills = scoreSkills(a, b);
-  const roles = scoreRoles(a.primaryRole, b.primaryRole);
+  const roles = scoreRoles(a.roles, b.roles);
   const availability = scoreAvailability(a, b);
   const workingStyle = scoreWorkingStyle(a.personality, b.personality);
   const credibility = scoreCredibility(a, b, certificateCounts);
 
-  const components: ScoreComponent[] = [
-    {
-      key: 'skills',
-      label: 'Skill complementarity',
-      score: pct(skills.score),
-      weight: WEIGHTS.skills,
-      explanation: skills.explanation,
-    },
-    {
-      key: 'roles',
-      label: 'Role synergy',
-      score: pct(roles.score),
-      weight: WEIGHTS.roles,
-      explanation: roles.explanation,
-    },
-    {
-      key: 'availability',
-      label: 'Availability overlap',
-      score: pct(availability.score),
-      weight: WEIGHTS.availability,
-      explanation: availability.explanation,
-    },
-    {
-      key: 'workingStyle',
-      label: 'Working style',
-      score: pct(workingStyle.score),
-      weight: WEIGHTS.workingStyle,
-      explanation: workingStyle.explanation,
-    },
-    {
-      key: 'credibility',
-      label: 'Verified credentials',
-      score: pct(credibility.score),
-      weight: WEIGHTS.credibility,
-      explanation: credibility.explanation,
-    },
-  ];
+  // One row per component, in the order the UI shows them. Previously this was
+  // five near-identical object literals; driving it from the outcomes means a
+  // new component is one entry here plus one weight, and the label and weight
+  // for a component can no longer drift apart across edits.
+  const components: ScoreComponent[] = (
+    [
+      ['skills', 'Skill complementarity', skills],
+      ['roles', 'Role synergy', roles],
+      ['availability', 'Availability overlap', availability],
+      ['workingStyle', 'Working style', workingStyle],
+      ['credibility', 'Verified credentials', credibility],
+    ] as const
+  ).map(([key, label, outcome]) => ({
+    key,
+    label,
+    score: pct(outcome.score),
+    weight: weights[key],
+    explanation: outcome.explanation,
+  }));
 
   const totalWeight = components.reduce((total, component) => total + component.weight, 0);
   const weighted = components.reduce(
@@ -302,8 +363,8 @@ export function scorePair(
   const score = Math.round(weighted / totalWeight);
   const band = bandFor(score);
 
-  const strongest = [...components].sort((x, y) => y.score - x.score)[0];
-  const weakest = [...components].sort((x, y) => x.score - y.score)[0];
+  const strongest = pickExtreme(components, (component) => component.score, 'max');
+  const weakest = pickExtreme(components, (component) => component.score, 'min');
 
   return {
     score,
@@ -316,6 +377,18 @@ export function scorePair(
   };
 }
 
+/** How a candidate scores against one team's current roster and stated gaps. */
+export interface TeamFitResult {
+  /** 0–100, pair fit plus the bonus for filling a stated gap. */
+  score: number;
+  band: CompatibilityResult['band'];
+  /** Mean compatibility with the current members, before any bonus. */
+  averagePairScore: number;
+  fillsNeededRole: boolean;
+  matchedRequiredSkills: string[];
+  summary: string;
+}
+
 /**
  * How well a candidate fits an existing team: the average of their pair scores
  * against each member, adjusted by whether they fill a role or skill the team
@@ -326,23 +399,22 @@ export function scoreAgainstTeam(
   members: readonly UserRecord[],
   team: { lookingFor: readonly string[]; requiredSkills: readonly string[] },
   certificateCounts: Map<string, number> = new Map(),
-): {
-  score: number;
-  band: CompatibilityResult['band'];
-  averagePairScore: number;
-  fillsNeededRole: boolean;
-  matchedRequiredSkills: string[];
-  summary: string;
-} {
+  /** The event's weights, so a suggestion is scored for the event it is for. */
+  weights: ComponentWeights = WEIGHTS,
+): TeamFitResult {
   const pairScores = members.map(
-    (member) => scorePair(candidate, member, certificateCounts).score,
+    (member) => scorePair(candidate, member, certificateCounts, weights).score,
   );
   const averagePairScore =
     pairScores.length === 0
       ? 50
       : Math.round(pairScores.reduce((total, value) => total + value, 0) / pairScores.length);
 
-  const fillsNeededRole = team.lookingFor.includes(candidate.primaryRole);
+  // Any one of the candidate's roles filling an open seat counts. Only the
+  // first match is credited — someone who claims three of the seats a team is
+  // short does not get the bonus three times.
+  const filledRoles = candidate.roles.filter((role) => team.lookingFor.includes(role));
+  const fillsNeededRole = filledRoles.length > 0;
 
   const candidateSkills = new Set(candidate.skills.map(normaliseSkill));
   const matchedRequiredSkills = team.requiredSkills.filter((skill) =>
@@ -360,7 +432,7 @@ export function scoreAgainstTeam(
   const score = Math.min(100, averagePairScore + bonus);
 
   const reasons = [
-    fillsNeededRole ? `fills the open ${candidate.primaryRole} seat` : null,
+    fillsNeededRole ? `fills the open ${filledRoles[0]} seat` : null,
     matchedRequiredSkills.length > 0
       ? `covers ${matchedRequiredSkills.join(', ')}`
       : null,

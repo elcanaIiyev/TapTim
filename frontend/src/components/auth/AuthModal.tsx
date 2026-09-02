@@ -1,5 +1,6 @@
 import { Modal } from '../ui/Modal';
-import { LoginForm, SignupForm } from './AuthForms';
+import { LoginForm } from './AuthForms';
+import { SignupWizard } from './SignupWizard';
 
 export type AuthMode = 'login' | 'signup';
 
@@ -22,14 +23,14 @@ export function AuthModal({ open, mode, onClose, onModeChange }: AuthModalProps)
         <p className="mt-2 text-sm text-ink-600 dark:text-ink-400">
           {isLogin
             ? 'Log in to pick up your team search where you left off.'
-            : 'Tell us your role and skills, and we will start matching you with teammates.'}
+            : 'Three quick steps, then we build your profile together.'}
         </p>
       </div>
 
       {isLogin ? (
         <LoginForm onSuccess={onClose} onSwitch={() => onModeChange('signup')} />
       ) : (
-        <SignupForm onSuccess={onClose} onSwitch={() => onModeChange('login')} />
+        <SignupWizard onSuccess={onClose} onSwitch={() => onModeChange('login')} />
       )}
     </Modal>
   );

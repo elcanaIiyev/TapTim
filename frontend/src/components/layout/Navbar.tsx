@@ -9,9 +9,20 @@ import { AdminModeSwitch } from './AdminModeSwitch';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 
-const NAV_LINKS = [
+/** Shown to everyone. */
+const PUBLIC_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Events', to: '/events' },
+];
+
+/**
+ * Added once signed in. Teams and Connections are meaningless signed out — one
+ * lists teams you are on, the other is a directory that needs a session — so
+ * they appear rather than sitting there as a prompt to log in.
+ */
+const MEMBER_LINKS = [
+  { label: 'Teams', to: '/teams' },
+  { label: 'Connections', to: '/connections' },
   { label: 'Compatibility', to: '/compatibility' },
 ];
 
@@ -61,6 +72,8 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
 
   // Active state is a solid block, not an underline gradient. Mono + uppercase
   // keeps the bar reading as a control strip rather than a marketing header.
+  const navLinks = user ? [...PUBLIC_LINKS, ...MEMBER_LINKS] : PUBLIC_LINKS;
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'type-label border px-2.5 py-2 transition-colors duration-150',
@@ -84,7 +97,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
           <Logo />
 
           <div className="hidden items-center gap-1.5 md:flex">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <NavLink key={link.to} to={link.to} className={linkClass} end={link.to === '/'}>
                 {link.label}
               </NavLink>
@@ -101,9 +114,31 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
             <div className="hidden items-center gap-2 md:flex">
               {user ? (
                 <>
-                  <span className="type-label max-w-[10rem] truncate text-ink-600 dark:text-ink-300">
-                    {user.fullName}
-                  </span>
+                  {/* The name is the link to the profile — a signed-in person
+                      looking for their own settings clicks their name first. */}
+                  <NavLink
+                    to="/profile"
+                    className={({ isActive }) =>
+                      cn(
+                        'type-label flex max-w-[12rem] items-center gap-2 truncate rounded-full border px-2.5 py-1.5 transition-colors',
+                        isActive
+                          ? 'border-iris-600 text-accent-text'
+                          : 'border-transparent text-ink-600 hover:border-ink-300 hover:text-ink-900 dark:text-ink-300 dark:hover:border-ink-600 dark:hover:text-white',
+                      )
+                    }
+                  >
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-iris-600 text-[0.6rem] font-bold text-white"
+                      >
+                        {user.firstName?.[0]?.toUpperCase() ?? '?'}
+                      </span>
+                    )}
+                    <span className="truncate">{user.firstName}</span>
+                  </NavLink>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     Log out
                   </Button>
@@ -138,7 +173,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
       {mobileOpen && (
         <div className="border-t border-ink-200 bg-ink-100 md:hidden dark:border-ink-700 dark:bg-ink-950">
           <Container className="space-y-1.5 py-4">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
@@ -160,9 +195,14 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
 
             <div className="flex flex-col gap-2 pt-3">
               {user ? (
-                <Button variant="outline" onClick={handleLogout}>
-                  Log out ({user.fullName})
-                </Button>
+                <>
+                  <Button variant="outline" to="/profile">
+                    My profile
+                  </Button>
+                  <Button variant="outline" onClick={handleLogout}>
+                    Log out ({user.fullName})
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button variant="outline" onClick={() => onOpenAuth('login')}>

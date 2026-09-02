@@ -13,7 +13,7 @@ import {
 import {
   mapUserRow,
   toDirectoryUser,
-  type PrimaryRole,
+  type TeamRole,
   type UserRow,
 } from '../modules/users/user.model.js';
 
@@ -27,11 +27,24 @@ const REQUEST_COLUMNS = `
   id, team_id, user_id, kind, status, message, created_by, created_at, updated_at
 `;
 
+/**
+ * Every column `mapUserRow` reads, prefixed for the join.
+ *
+ * Kept exhaustive on purpose: a missing column here does not fail loudly, it
+ * silently yields `undefined` for that field on every team member — so a
+ * roster would quietly lose people's languages or age while everything still
+ * appeared to work. Adding a user column means adding it here too.
+ */
 const USER_COLUMNS_PREFIXED = `
-  u.id, u.email, u.password_hash, u.full_name, u.primary_role, u.skills, u.bio,
-  u.avatar_url, u.verified, u.experience_level, u.availability, u.hours_per_week,
-  u.timezone_offset, u.personality, u.looking_for_team, u.github_url,
-  u.linkedin_url, u.portfolio_url, u.account_role, u.created_at, u.updated_at
+  u.id, u.email, u.password_hash, u.full_name, u.first_name, u.last_name,
+  u.roles, u.skills, u.bio, u.avatar_url, u.avatar_path, u.verified,
+  u.experience_level, u.availability, u.hours_per_week, u.timezone_offset,
+  u.personality, u.skill_levels, u.looking_for_team, u.github_url, u.linkedin_url,
+  u.portfolio_url, u.account_role, u.date_of_birth, u.pronouns,
+  u.location_city, u.location_country, u.languages, u.interest_domains,
+  u.goals, u.hackathons_attended, u.preferred_team_size, u.discord_handle,
+  u.email_verified, u.onboarding_completed, u.banned_until, u.banned_reason,
+  u.banned_at, u.banned_by, u.created_at, u.updated_at
 `;
 
 export interface ListTeamsFilter {
@@ -50,7 +63,7 @@ export interface ListTeamsFilter {
 export interface CreateTeamInput {
   eventId: string;
   ownerId: string;
-  ownerRole: PrimaryRole;
+  ownerRole: TeamRole;
   name: string;
   description: string | null;
   lookingFor: string[];
@@ -95,7 +108,7 @@ interface MemberRow extends UserRow {
 function mapMemberRow(row: MemberRow): TeamMember {
   return {
     userId: row.id,
-    role: row.member_role as PrimaryRole,
+    role: row.member_role as TeamRole,
     isOwner: row.is_owner,
     joinedAt: row.joined_at.toISOString(),
     user: toDirectoryUser(mapUserRow(row)),

@@ -1,5 +1,5 @@
 import { toIso } from '../../utils/dates.js';
-import type { DirectoryUser, PrimaryRole } from '../users/user.model.js';
+import type { DirectoryUser, TeamRole } from '../users/user.model.js';
 
 export const TEAM_STATUSES = ['recruiting', 'full', 'locked', 'disbanded'] as const;
 export type TeamStatus = (typeof TEAM_STATUSES)[number];
@@ -16,7 +16,7 @@ export interface TeamRecord {
   ownerId: string;
   name: string;
   description: string | null;
-  lookingFor: PrimaryRole[];
+  lookingFor: TeamRole[];
   requiredSkills: string[];
   maxSize: number;
   status: TeamStatus;
@@ -28,7 +28,7 @@ export interface TeamRecord {
 
 export interface TeamMember {
   userId: string;
-  role: PrimaryRole;
+  role: TeamRole;
   isOwner: boolean;
   joinedAt: string;
   user: DirectoryUser;
@@ -73,7 +73,7 @@ export function mapTeamRow(row: TeamRow): TeamRecord {
     ownerId: row.owner_id,
     name: row.name,
     description: row.description,
-    lookingFor: (row.looking_for ?? []) as PrimaryRole[],
+    lookingFor: (row.looking_for ?? []) as TeamRole[],
     requiredSkills: row.required_skills ?? [],
     maxSize: row.max_size,
     status: row.status as TeamStatus,
