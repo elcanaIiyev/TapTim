@@ -332,7 +332,10 @@ export interface EventItem {
   id: string;
   name: string;
   description: string;
-  category: string;
+  /** How the event runs. Drives the scoring weights. */
+  format: string;
+  /** What it is about, 1–4. Drives the focus areas. */
+  domains: string[];
   tags: string[];
   startDate: string;
   endDate: string;
@@ -343,13 +346,24 @@ export interface EventItem {
   registrationDeadline: string;
   participants: number;
   featured: boolean;
-  /** Cover image. Null falls back to a generated cover keyed on the category. */
+  /** Cover image. Null falls back to a generated cover keyed on the format. */
   coverImageUrl: string | null;
 }
 
-export interface CategoryCount {
+export interface FacetCount {
   name: string;
   count: number;
+}
+
+/**
+ * Both filter axes with live counts.
+ *
+ * Domain counts are not a partition: an event tagged Web *and* Design is
+ * counted under both, so they sum to more than the number of events.
+ */
+export interface EventFacets {
+  formats: FacetCount[];
+  domains: FacetCount[];
 }
 
 export interface SignupPayload {

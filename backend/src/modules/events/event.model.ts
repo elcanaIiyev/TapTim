@@ -1,19 +1,50 @@
 import { toIso } from '../../utils/dates.js';
 import type { EventStatProfileOverride } from './event-stats.js';
 
-export const EVENT_CATEGORIES = [
-  'Hackathons',
-  'AI',
-  'Programming',
-  'Design',
-  'Gaming',
-  'Web3',
-  'Cybersecurity',
-  'Startup',
-  'Data Science',
+/**
+ * How an event runs.
+ *
+ * This is the axis that decides *scoring*: a weekend build lives on overlapping
+ * hours and a broad roster, a capture-the-flag lives on proven depth. It says
+ * nothing about subject matter — that is `EVENT_DOMAINS`.
+ */
+export const EVENT_FORMATS = [
+  'Hackathon',
+  'Jam',
+  'Capture the Flag',
+  'Competitive contest',
+  'Sprint',
+  'Startup weekend',
 ] as const;
 
-export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+export type EventFormat = (typeof EVENT_FORMATS)[number];
+
+/**
+ * What an event is about.
+ *
+ * Several per event, because most events genuinely are: a hackathon judged on
+ * a working product is Web *and* Product & business, and a game jam is Game
+ * development *and* Design. Forcing one was the whole problem with the old
+ * single `category` — a design hackathon had nowhere to sit, and filing it
+ * under either axis hid it from the people looking along the other.
+ */
+export const EVENT_DOMAINS = [
+  'AI & ML',
+  'Data',
+  'Web',
+  'Mobile',
+  'Game development',
+  'Design',
+  'Security',
+  'Web3',
+  'Hardware & IoT',
+  'Product & business',
+] as const;
+
+export type EventDomain = (typeof EVENT_DOMAINS)[number];
+
+/** Mirrors the check constraint in `016_event_taxonomy.sql`. */
+export const MAX_EVENT_DOMAINS = 4;
 
 export const EVENT_MODES = ['onsite', 'online', 'hybrid'] as const;
 export type EventMode = (typeof EVENT_MODES)[number];
@@ -22,7 +53,9 @@ export interface EventItem {
   id: string;
   name: string;
   description: string;
-  category: EventCategory;
+  format: EventFormat;
+  /** What it is about, 1–4. */
+  domains: EventDomain[];
   tags: string[];
   startDate: string;
   endDate: string;
@@ -53,7 +86,8 @@ export interface EventRow {
   id: string;
   name: string;
   description: string;
-  category: string;
+  format: string;
+  domains: string[];
   tags: string[];
   start_date: Date;
   end_date: Date;
@@ -77,7 +111,8 @@ export function mapEventRow(row: EventRow): EventItem {
     id: row.id,
     name: row.name,
     description: row.description,
-    category: row.category as EventCategory,
+    format: row.format as EventFormat,
+    domains: (row.domains ?? []) as EventDomain[],
     tags: row.tags ?? [],
     startDate: toIso(row.start_date),
     endDate: toIso(row.end_date),

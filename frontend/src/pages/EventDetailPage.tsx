@@ -271,7 +271,12 @@ export function EventDetailPage() {
         <div className="grid-floor pointer-events-none absolute inset-0" aria-hidden="true" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="brand">{event.category}</Badge>
+            <Badge tone="brand">{event.format}</Badge>
+            {event.domains.map((domain) => (
+              <Badge key={domain} tone="accent">
+                {domain}
+              </Badge>
+            ))}
             <Badge tone="neutral">{event.mode}</Badge>
             {event.featured && <Badge tone="accent">Featured</Badge>}
           </div>

@@ -150,14 +150,15 @@ async function seedEvents(): Promise<number> {
   for (const event of MOCK_EVENTS) {
     await query(
       `insert into events (
-         id, name, description, category, tags, start_date, end_date, location,
-         mode, team_size_min, team_size_max, prize_pool, registration_deadline,
-         participants, featured, cover_image_url
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         id, name, description, format, domains, tags, start_date, end_date,
+         location, mode, team_size_min, team_size_max, prize_pool,
+         registration_deadline, participants, featured, cover_image_url
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        on conflict (id) do update set
          name = excluded.name,
          description = excluded.description,
-         category = excluded.category,
+         format = excluded.format,
+         domains = excluded.domains,
          tags = excluded.tags,
          start_date = excluded.start_date,
          end_date = excluded.end_date,
@@ -174,7 +175,8 @@ async function seedEvents(): Promise<number> {
         event.id,
         event.name,
         event.description,
-        event.category,
+        event.format,
+        event.domains,
         event.tags,
         event.startDate,
         event.endDate,

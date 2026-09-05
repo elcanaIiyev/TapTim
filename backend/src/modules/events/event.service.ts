@@ -2,7 +2,7 @@ import { eventStore, type EventUpdate } from '../../data/event.store.js';
 import { canModerate } from '../../middleware/admin.middleware.js';
 import { HttpError } from '../../utils/http-error.js';
 import type { UserRecord } from '../users/user.model.js';
-import { EVENT_CATEGORIES, type EventItem } from './event.model.js';
+import { EVENT_DOMAINS, EVENT_FORMATS, type EventItem } from './event.model.js';
 import type { CreateEventInput, ListEventsQuery, UpdateEventInput } from './event.schema.js';
 
 export interface ListEventsResult {
@@ -14,7 +14,8 @@ export interface ListEventsResult {
 
 export async function listEvents(query: ListEventsQuery): Promise<ListEventsResult> {
   const { items, total } = await eventStore.list({
-    category: query.category,
+    format: query.format,
+    domains: query.domains,
     search: query.search,
     featured: query.featured,
     mode: query.mode,
@@ -33,17 +34,35 @@ export async function getEventById(id: string): Promise<EventItem> {
   return event;
 }
 
-/** Category list with live counts, used to render the frontend filter bar. */
-export async function listCategories(): Promise<Array<{ name: string; count: number }>> {
-  const counts = new Map(
-    (await eventStore.categoryCounts()).map((entry) => [entry.name, entry.count]),
-  );
-  // Every category is returned, including empty ones: the filter bar renders
-  // the full set and would otherwise change shape as data comes and goes.
-  return EVENT_CATEGORIES.map((category) => ({
-    name: category,
-    count: counts.get(category) ?? 0,
-  }));
+export interface EventFacets {
+  formats: Array<{ name: string; count: number }>;
+  domains: Array<{ name: string; count: number }>;
+}
+
+/**
+ * Both filter axes with live counts.
+ *
+ * The full set is returned including empty entries: the filter bar renders all
+ * of them, and would otherwise change shape as data comes and goes.
+ *
+ * A domain count is not a partition — an event tagged Web *and* Design is
+ * counted under both, so the domain counts deliberately sum to more than the
+ * number of events. That is the whole point of the axis, and the UI says so
+ * rather than showing a total that does not add up.
+ */
+export async function listFacets(): Promise<EventFacets> {
+  const [formats, domains] = await Promise.all([
+    eventStore.formatCounts(),
+    eventStore.domainCounts(),
+  ]);
+
+  const byFormat = new Map(formats.map((entry) => [entry.name, entry.count]));
+  const byDomain = new Map(domains.map((entry) => [entry.name, entry.count]));
+
+  return {
+    formats: EVENT_FORMATS.map((name) => ({ name, count: byFormat.get(name) ?? 0 })),
+    domains: EVENT_DOMAINS.map((name) => ({ name, count: byDomain.get(name) ?? 0 })),
+  };
 }
 
 export async function createEvent(
@@ -54,7 +73,8 @@ export async function createEvent(
     {
       name: input.name,
       description: input.description,
-      category: input.category,
+      format: input.format,
+      domains: input.domains,
       tags: input.tags,
       startDate: input.startDate,
       endDate: input.endDate,
@@ -116,7 +136,8 @@ export async function updateEvent(
   const patch: EventUpdate = {
     name: input.name,
     description: input.description,
-    category: input.category,
+    format: input.format,
+    domains: input.domains,
     tags: input.tags,
     startDate: input.startDate,
     endDate: input.endDate,

@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { useCategories, useEvents } from '../../hooks/useEvents';
-import { CategoryFilter } from '../events/CategoryFilter';
+import { useEventFacets, useEvents } from '../../hooks/useEvents';
+import { EventFilters } from '../events/EventFilters';
 import { EventGrid } from '../events/EventGrid';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
 import { SectionHeading } from '../ui/SectionHeading';
 
 export function EventShowcase() {
-  const [category, setCategory] = useState('All');
-  const categories = useCategories();
-  const { events, total, loading, error } = useEvents({ category, limit: 6 });
+  const [format, setFormat] = useState('All');
+  const [domains, setDomains] = useState<string[]>([]);
+  const facets = useEventFacets();
+  const { events, total, loading, error } = useEvents({ format, domains, limit: 6 });
 
-  const totalAcrossCategories = categories.reduce((sum, item) => sum + item.count, 0);
+  const allEvents = (facets?.formats ?? []).reduce((sum, item) => sum + item.count, 0);
 
   return (
     <section className="border-b border-ink-200 py-20 sm:py-24 dark:border-ink-700">
@@ -24,11 +25,13 @@ export function EventShowcase() {
         />
 
         <div className="mt-10">
-          <CategoryFilter
-            categories={categories}
-            active={category}
-            onChange={setCategory}
-            total={totalAcrossCategories}
+          <EventFilters
+            facets={facets}
+            format={format}
+            domains={domains}
+            onFormatChange={setFormat}
+            onDomainsChange={setDomains}
+            total={allEvents}
           />
         </div>
 

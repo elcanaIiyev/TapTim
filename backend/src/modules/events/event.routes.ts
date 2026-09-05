@@ -7,7 +7,7 @@ import {
   deleteEventHandler,
   eventStatsHandler,
   getEventHandler,
-  listCategoriesHandler,
+  listFacetsHandler,
   listEventsHandler,
   myEventFitHandler,
   updateEventHandler,
@@ -16,8 +16,10 @@ import { createEventSchema, listEventsQuerySchema, updateEventSchema } from './e
 
 export const eventRouter = Router();
 
-// Declared before `/:id` so "categories" is not swallowed by the param route.
-eventRouter.get('/categories', asyncHandler(listCategoriesHandler));
+// Declared before `/:id` so "facets" is not swallowed by the param route.
+// Two filter axes rather than one list: `format` is how an event runs,
+// `domains` is what it is about, and they are orthogonal.
+eventRouter.get('/facets', asyncHandler(listFacetsHandler));
 eventRouter.get('/', validateQuery(listEventsQuerySchema), asyncHandler(listEventsHandler));
 eventRouter.post('/', requireAuth, validateBody(createEventSchema), asyncHandler(createEventHandler));
 

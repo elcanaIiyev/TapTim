@@ -56,7 +56,7 @@ export function EventCard({ event }: { event: EventItem }) {
       <div className="relative">
         <EventCover
           name={event.name}
-          category={event.category}
+          format={event.format}
           src={event.coverImageUrl}
           className="h-40 w-full"
         />
@@ -65,7 +65,7 @@ export function EventCard({ event }: { event: EventItem }) {
             and putting them here buys the text block below more room. */}
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
           <span className="rounded-full bg-black/55 px-2.5 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-            {event.category}
+            {event.format}
           </span>
           {event.featured && (
             <span className="flex items-center gap-1 rounded-full bg-fern-600 px-2.5 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-wider text-white">
@@ -135,20 +135,21 @@ export function EventCard({ event }: { event: EventItem }) {
           </MetaRow>
         </div>
 
-        {event.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {/* Capped at three: the fourth pushed cards to uneven heights and
-                added nothing anyone filters on from here. */}
-            {event.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} tone="neutral">
-                {tag}
-              </Badge>
-            ))}
-            {event.tags.length > 3 && (
-              <Badge tone="neutral">+{event.tags.length - 3}</Badge>
-            )}
-          </div>
-        )}
+        {/* Domains before tags: what the event is *about* is the thing someone
+            scanning the grid is actually filtering on, and the format is
+            already on the cover. Tags are free text and say less. */}
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {event.domains.map((domain) => (
+            <Badge key={domain} tone="brand">
+              {domain}
+            </Badge>
+          ))}
+          {event.tags.slice(0, 2).map((tag) => (
+            <Badge key={tag} tone="neutral">
+              {tag}
+            </Badge>
+          ))}
+        </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-ink-200 pt-4 dark:border-ink-700">
           <p className="type-label text-ink-600 dark:text-ink-400">

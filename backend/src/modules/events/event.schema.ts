@@ -1,11 +1,28 @@
 import { z } from 'zod';
-import { EVENT_CATEGORIES, EVENT_MODES } from './event.model.js';
+import {
+  EVENT_DOMAINS,
+  EVENT_FORMATS,
+  EVENT_MODES,
+  MAX_EVENT_DOMAINS,
+} from './event.model.js';
 
 export const listEventsQuerySchema = z.object({
-  category: z
-    .union([z.enum(EVENT_CATEGORIES), z.literal('All')])
+  format: z
+    .union([z.enum(EVENT_FORMATS), z.literal('All')])
     .optional()
     .default('All'),
+  // Repeatable, or comma-joined. Matches any of them, so "Design,Web3" asks for
+  // everything touching either rather than only events that are both.
+  domains: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : (Array.isArray(value) ? value : value.split(','))
+            .map((entry) => entry.trim())
+            .filter(Boolean),
+    ),
   search: z.string().trim().max(80).optional(),
   mode: z.enum(EVENT_MODES).optional(),
   featured: z
@@ -27,9 +44,18 @@ const eventFields = z.object({
     .trim()
     .min(20, 'Description must be at least 20 characters.')
     .max(2000),
-  category: z.enum(EVENT_CATEGORIES, {
-    errorMap: () => ({ message: `Category must be one of: ${EVENT_CATEGORIES.join(', ')}` }),
+  format: z.enum(EVENT_FORMATS, {
+    errorMap: () => ({ message: `Format must be one of: ${EVENT_FORMATS.join(', ')}` }),
   }),
+  domains: z
+    .array(
+      z.enum(EVENT_DOMAINS, {
+        errorMap: () => ({ message: `Domains must be from: ${EVENT_DOMAINS.join(', ')}` }),
+      }),
+    )
+    .min(1, 'Pick at least one domain — it is what participants filter on.')
+    .max(MAX_EVENT_DOMAINS, `Pick at most ${MAX_EVENT_DOMAINS} domains.`)
+    .transform((entries) => [...new Set(entries)]),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).default([]),
   startDate: isoDate,
   endDate: isoDate,

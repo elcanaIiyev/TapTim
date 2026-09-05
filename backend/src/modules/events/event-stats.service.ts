@@ -37,7 +37,7 @@ async function requireEvent(eventId: string): Promise<EventItem> {
 }
 
 export function profileFor(event: EventItem): EventStatProfile {
-  return resolveStatProfile(event.category, event.statProfile);
+  return resolveStatProfile(event.format, event.domains, event.statProfile);
 }
 
 export interface EventStatsView {

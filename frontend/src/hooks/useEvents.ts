@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { eventsApi } from '../lib/api';
 import type { EventQuery } from '../lib/api';
-import type { CategoryCount, EventItem } from '../lib/types';
+import type { EventFacets, EventItem } from '../lib/types';
 
 interface EventsState {
   events: EventItem[];
@@ -19,14 +19,18 @@ export function useEvents(query: EventQuery): EventsState {
     error: null,
   });
 
-  const { category, search, featured, limit } = query;
+  const { format, domains, search, featured, limit } = query;
+
+  // Joined for the dependency list: a fresh array each render would otherwise
+  // refetch on every keystroke elsewhere on the page.
+  const domainKey = (domains ?? []).join(',');
 
   useEffect(() => {
     let cancelled = false;
     setState((previous) => ({ ...previous, loading: true, error: null }));
 
     eventsApi
-      .list({ category, search, featured, limit })
+      .list({ format, domains, search, featured, limit })
       .then((response) => {
         if (cancelled) return;
         setState({
@@ -49,23 +53,26 @@ export function useEvents(query: EventQuery): EventsState {
     return () => {
       cancelled = true;
     };
-  }, [category, search, featured, limit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- domainKey stands in for `domains`
+  }, [format, domainKey, search, featured, limit]);
 
   return state;
 }
 
-export function useCategories(): CategoryCount[] {
-  const [categories, setCategories] = useState<CategoryCount[]>([]);
+/** Both filter axes with their counts. */
+export function useEventFacets(): EventFacets | null {
+  const [facets, setFacets] = useState<EventFacets | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     eventsApi
-      .categories()
+      .facets()
       .then((data) => {
-        if (!cancelled) setCategories(data);
+        if (!cancelled) setFacets(data);
       })
       .catch(() => {
-        // Filter bar degrades to "All" only; the event list surfaces the error.
+        // The filter bar degrades to "Any format"; the event list surfaces the
+        // error, so failing here twice would only be noise.
       });
 
     return () => {
@@ -73,5 +80,5 @@ export function useCategories(): CategoryCount[] {
     };
   }, []);
 
-  return categories;
+  return facets;
 }

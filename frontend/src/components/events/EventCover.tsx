@@ -7,9 +7,9 @@ import { cn } from '../../lib/cn';
  * Covers come from an external CDN, so they can be missing, slow, or dead. Three
  * things follow from that:
  *
- * - Every event has a **generated cover** keyed on its category, painted
+ * - Every event has a **generated cover** keyed on its format, painted
  *   underneath the photo. A card with no image still looks intentional, and two
- *   events in the same category look related rather than identical.
+ *   events in the same format look related rather than identical.
  * - A failed load falls back to that cover instead of the browser's broken-image
  *   glyph, which is the whole reason this is a component and not an `<img>`.
  * - The photo fades in when it decodes. Without that, a slow image pops in and
@@ -17,39 +17,36 @@ import { cn } from '../../lib/cn';
  */
 
 /**
- * Two stops per category, dark enough that white text sits on them safely.
+ * Two stops per format, dark enough that white text sits on them safely.
  *
  * Hand-picked rather than hashed from the name: a hash gives you mud about a
- * third of the time, and there are only nine categories to choose for.
+ * third of the time, and there are only six formats to choose for.
  */
-const CATEGORY_GRADIENT: Record<string, [string, string]> = {
-  Hackathons: ['#4C1D95', '#7C3AED'],
-  AI: ['#0F766E', '#14B8A6'],
-  Programming: ['#1E3A8A', '#3B82F6'],
-  Design: ['#9D174D', '#EC4899'],
-  Gaming: ['#7C2D12', '#F97316'],
-  Web3: ['#312E81', '#6366F1'],
-  Cybersecurity: ['#7F1D1D', '#EF4444'],
-  Startup: ['#78350F', '#F59E0B'],
-  'Data Science': ['#134E4A', '#0EA5E9'],
+const FORMAT_GRADIENT: Record<string, [string, string]> = {
+  Hackathon: ['#4C1D95', '#7C3AED'],
+  Jam: ['#7C2D12', '#F97316'],
+  'Capture the Flag': ['#7F1D1D', '#EF4444'],
+  'Competitive contest': ['#1E3A8A', '#3B82F6'],
+  Sprint: ['#9D174D', '#EC4899'],
+  'Startup weekend': ['#78350F', '#F59E0B'],
 };
 
 const FALLBACK_GRADIENT: [string, string] = ['#1F2937', '#4B5563'];
 
-function gradientFor(category: string): [string, string] {
-  return CATEGORY_GRADIENT[category] ?? FALLBACK_GRADIENT;
+function gradientFor(format: string): [string, string] {
+  return FORMAT_GRADIENT[format] ?? FALLBACK_GRADIENT;
 }
 
 export function EventCover({
   name,
-  category,
+  format,
   src,
   className,
   /** Cards render many at once; the detail hero is the one worth prioritising. */
   priority = false,
 }: {
   name: string;
-  category: string;
+  format: string;
   src: string | null;
   className?: string;
   priority?: boolean;
@@ -57,7 +54,7 @@ export function EventCover({
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  const [from, to] = gradientFor(category);
+  const [from, to] = gradientFor(format);
   const showPhoto = Boolean(src) && !failed;
 
   return (
@@ -103,11 +100,11 @@ export function EventCover({
         className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
       />
 
-      {/* Only shown when there is no photo — otherwise the category is already
+      {/* Only shown when there is no photo — otherwise the format is already
           on a badge over the image. */}
       {!showPhoto && (
         <span className="absolute bottom-3 left-4 font-mono text-xs font-semibold uppercase tracking-widest text-white/80">
-          {category}
+          {format}
         </span>
       )}
 

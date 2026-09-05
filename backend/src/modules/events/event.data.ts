@@ -31,7 +31,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'TapTim Global Hack 2026',
     description:
       'A 48-hour flagship hackathon where cross-functional teams ship a working product from scratch.',
-    category: 'Hackathons',
+    format: 'Hackathon',
+    domains: ['Web', 'Product & business', 'Design'],
     tags: ['48h', 'Open Track', 'Beginner Friendly'],
     startDate: '2026-09-12T09:00:00.000Z',
     endDate: '2026-09-14T18:00:00.000Z',
@@ -50,7 +51,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Applied LLM Agents Sprint',
     description:
       'Build autonomous agents that solve a real operational workflow end to end, judged on reliability.',
-    category: 'AI',
+    format: 'Hackathon',
+    domains: ['AI & ML'],
     tags: ['LLM', 'Agents', 'Advanced'],
     startDate: '2026-09-20T10:00:00.000Z',
     endDate: '2026-09-21T20:00:00.000Z',
@@ -69,7 +71,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Product Design Jam',
     description:
       'Designers and researchers reimagine a public service interface in one intense weekend.',
-    category: 'Design',
+    format: 'Sprint',
+    domains: ['Design', 'Product & business'],
     tags: ['UX Research', 'Figma', 'Prototyping'],
     startDate: '2026-10-03T09:30:00.000Z',
     endDate: '2026-10-04T17:00:00.000Z',
@@ -88,7 +91,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Competitive Programming Cup',
     description:
       'Team-based algorithmic contest across five rounds of increasing difficulty.',
-    category: 'Programming',
+    format: 'Competitive contest',
+    domains: ['Web'],
     tags: ['Algorithms', 'ICPC Style', 'Team of 3'],
     startDate: '2026-09-28T08:00:00.000Z',
     endDate: '2026-09-28T14:00:00.000Z',
@@ -107,7 +111,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'ZeroDay Defense CTF',
     description:
       'Attack-and-defend capture the flag with live scoreboard and infrastructure hardening rounds.',
-    category: 'Cybersecurity',
+    format: 'Capture the Flag',
+    domains: ['Security'],
     tags: ['CTF', 'Blue Team', 'Red Team'],
     startDate: '2026-10-10T12:00:00.000Z',
     endDate: '2026-10-11T12:00:00.000Z',
@@ -126,7 +131,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Open Data Insight Challenge',
     description:
       'Turn municipal open data into a decision-ready dashboard and a defensible recommendation.',
-    category: 'Data Science',
+    format: 'Competitive contest',
+    domains: ['Data'],
     tags: ['Open Data', 'Visualization', 'Statistics'],
     startDate: '2026-10-17T09:00:00.000Z',
     endDate: '2026-10-18T18:00:00.000Z',
@@ -145,7 +151,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Founders Weekend',
     description:
       'From idea to pitch deck in 54 hours, mentored by operators and closed with an investor panel.',
-    category: 'Startup',
+    format: 'Startup weekend',
+    domains: ['Product & business', 'Design'],
     tags: ['Pitch', 'MVP', 'Mentorship'],
     startDate: '2026-11-06T17:00:00.000Z',
     endDate: '2026-11-08T21:00:00.000Z',
@@ -164,7 +171,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'On-Chain Builders Hack',
     description:
       'Ship a smart-contract product with a real user flow; audited demos score highest.',
-    category: 'Web3',
+    format: 'Hackathon',
+    domains: ['Web3', 'Security'],
     tags: ['Solidity', 'DeFi', 'Audits'],
     startDate: '2026-11-14T10:00:00.000Z',
     endDate: '2026-11-16T16:00:00.000Z',
@@ -183,7 +191,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Computer Vision Grand Prix',
     description:
       'Train and deploy a vision model under a strict latency budget on edge hardware.',
-    category: 'AI',
+    format: 'Competitive contest',
+    domains: ['AI & ML', 'Data'],
     tags: ['Vision', 'Edge', 'MLOps'],
     startDate: '2026-11-21T09:00:00.000Z',
     endDate: '2026-11-22T19:00:00.000Z',
@@ -202,7 +211,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Accessibility First Sprint',
     description:
       'Rebuild a widely used interface to meet WCAG 2.2 AA, judged with assistive tech in the room.',
-    category: 'Design',
+    format: 'Sprint',
+    domains: ['Design', 'Web'],
     tags: ['a11y', 'WCAG', 'Inclusive Design'],
     startDate: '2026-12-05T09:00:00.000Z',
     endDate: '2026-12-06T17:00:00.000Z',
@@ -221,7 +231,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Systems Programming Marathon',
     description:
       'Low-level challenge set spanning schedulers, allocators, and lock-free data structures.',
-    category: 'Programming',
+    format: 'Competitive contest',
+    domains: ['Web'],
     tags: ['Rust', 'C++', 'Performance'],
     startDate: '2026-12-12T08:00:00.000Z',
     endDate: '2026-12-13T20:00:00.000Z',
@@ -240,7 +251,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Winter Campus Hackathon',
     description:
       'Student-only hackathon with a mentorship track for first-time participants.',
-    category: 'Hackathons',
+    format: 'Hackathon',
+    domains: ['Web', 'Design'],
     tags: ['Students', 'Beginner Friendly', 'Mentored'],
     startDate: '2026-12-19T10:00:00.000Z',
     endDate: '2026-12-20T18:00:00.000Z',
@@ -259,7 +271,8 @@ export const MOCK_EVENTS: EventSeed[] = [
     name: 'Caspian Game Jam',
     description:
       'A 72-hour game jam on a theme announced at kickoff. Engine skill and art carry it — ship something playable.',
-    category: 'Gaming',
+    format: 'Jam',
+    domains: ['Game development', 'Design'],
     tags: ['72h', 'Unity', 'Godot', 'Theme reveal'],
     startDate: '2026-10-16T18:00:00.000Z',
     endDate: '2026-10-19T18:00:00.000Z',

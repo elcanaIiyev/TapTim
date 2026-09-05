@@ -20,7 +20,7 @@ import type {
   TeamEventReport,
   TeamRequest,
   AuthResult,
-  CategoryCount,
+  EventFacets,
   EventItem,
   Experience,
   ExperiencePayload,
@@ -235,7 +235,10 @@ export const profileApi = {
 };
 
 export interface EventQuery {
-  category?: string;
+  /** One format, or 'All'. */
+  format?: string;
+  /** Matches events touching *any* of these. */
+  domains?: string[];
   search?: string;
   featured?: boolean;
   limit?: number;
@@ -244,7 +247,8 @@ export interface EventQuery {
 export const eventsApi = {
   list(query: EventQuery = {}) {
     const params = new URLSearchParams();
-    if (query.category && query.category !== 'All') params.set('category', query.category);
+    if (query.format && query.format !== 'All') params.set('format', query.format);
+    if (query.domains?.length) params.set('domains', query.domains.join(','));
     if (query.search) params.set('search', query.search);
     if (query.featured !== undefined) params.set('featured', String(query.featured));
     if (query.limit) params.set('limit', String(query.limit));
@@ -255,8 +259,7 @@ export const eventsApi = {
     );
   },
 
-  categories: () =>
-    request<{ data: CategoryCount[] }>('/api/events/categories').then((r) => r.data),
+  facets: () => request<{ data: EventFacets }>('/api/events/facets').then((r) => r.data),
 
   byId: (id: string) => request<{ data: EventItem }>(`/api/events/${id}`).then((r) => r.data),
 

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CategoryFilter } from '../components/events/CategoryFilter';
+import { EventFilters } from '../components/events/EventFilters';
 import { EventGrid } from '../components/events/EventGrid';
 import { Container } from '../components/ui/Container';
-import { useCategories, useEvents } from '../hooks/useEvents';
+import { useEventFacets, useEvents } from '../hooks/useEvents';
 
 export function EventsPage() {
-  const [category, setCategory] = useState('All');
+  const [format, setFormat] = useState('All');
+  const [domains, setDomains] = useState<string[]>([]);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
 
@@ -15,14 +16,15 @@ export function EventsPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const categories = useCategories();
+  const facets = useEventFacets();
   const { events, total, loading, error } = useEvents({
-    category,
+    format,
+    domains,
     search: search || undefined,
     limit: 50,
   });
 
-  const totalAcrossCategories = categories.reduce((sum, item) => sum + item.count, 0);
+  const allEvents = (facets?.formats ?? []).reduce((sum, item) => sum + item.count, 0);
 
   return (
     <Container className="py-14 sm:py-20">
@@ -60,11 +62,13 @@ export function EventsPage() {
       </div>
 
       <div className="mt-6">
-        <CategoryFilter
-          categories={categories}
-          active={category}
-          onChange={setCategory}
-          total={totalAcrossCategories}
+        <EventFilters
+          facets={facets}
+          format={format}
+          domains={domains}
+          onFormatChange={setFormat}
+          onDomainsChange={setDomains}
+          total={allEvents}
         />
       </div>
 

@@ -16,8 +16,8 @@ export async function listEventsHandler(req: Request, res: Response) {
   res.status(200).json({ data: items, meta: { total, limit, offset } });
 }
 
-export async function listCategoriesHandler(_req: Request, res: Response) {
-  res.status(200).json({ data: await eventService.listCategories() });
+export async function listFacetsHandler(_req: Request, res: Response) {
+  res.status(200).json({ data: await eventService.listFacets() });
 }
 
 export async function getEventHandler(req: Request, res: Response) {

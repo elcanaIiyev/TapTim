@@ -1,6 +1,11 @@
 import { DEFAULT_SKILL_LEVEL, SKILL_CATEGORIES } from '../users/skill-catalogue.js';
 import type { TeamRole } from '../users/user.model.js';
-import { EVENT_CATEGORIES, type EventCategory } from './event.model.js';
+import {
+  EVENT_DOMAINS,
+  EVENT_FORMATS,
+  type EventDomain,
+  type EventFormat,
+} from './event.model.js';
 
 /**
  * What a given event actually cares about.
@@ -53,68 +58,150 @@ export const DEFAULT_WEIGHTS: ComponentWeights = {
  * numbers with nothing behind them. Only where a category genuinely changes
  * what matters does its profile diverge.
  */
-const ARCHETYPES: Record<EventCategory, EventStatProfile> = {
-  Hackathons: {
-    summary:
-      'A short, broad build. Overlapping hours and a team that covers every layer matter more than any single deep specialism.',
-    weights: { skills: 22, roles: 28, availability: 28, workingStyle: 17, credibility: 5 },
-    focusAreas: ['Frontend', 'Backend', 'Design', 'Product & craft'],
-    keyRoles: ['Full-Stack Developer', 'Frontend Developer', 'Backend Developer', 'UI/UX Designer'],
-  },
-  AI: {
-    summary:
-      'Depth beats breadth. Someone who has actually trained and evaluated a model is worth more here than a fourth generalist.',
-    weights: { skills: 38, roles: 22, availability: 15, workingStyle: 15, credibility: 10 },
-    focusAreas: ['AI', 'Data & ML', 'Languages', 'Backend'],
-    keyRoles: ['AI / ML Engineer', 'Data Scientist', 'Backend Developer'],
-  },
-  Programming: {
-    summary: 'Raw implementation. Language and framework depth carry the most weight.',
-    weights: { skills: 36, roles: 20, availability: 20, workingStyle: 18, credibility: 6 },
-    focusAreas: ['Languages', 'Backend', 'Frontend', 'Databases'],
-    keyRoles: ['Backend Developer', 'Frontend Developer', 'Full-Stack Developer'],
-  },
-  Design: {
-    summary:
-      'Craft and taste lead. A designer who can hand off cleanly to one engineer beats three engineers with no designer.',
-    weights: { skills: 30, roles: 30, availability: 18, workingStyle: 18, credibility: 4 },
-    focusAreas: ['Design', 'Frontend', 'Product & craft'],
-    keyRoles: ['UI/UX Designer', 'Frontend Developer', 'Product Manager'],
-  },
-  Gaming: {
-    summary:
-      'Engine skill and art carry it. Security and data depth are close to irrelevant here — do not weight them.',
-    weights: { skills: 34, roles: 26, availability: 22, workingStyle: 15, credibility: 3 },
-    focusAreas: ['Game development', 'Design', 'Languages', 'Hardware & IoT'],
-    keyRoles: ['Mobile Developer', 'Frontend Developer', 'UI/UX Designer', 'Full-Stack Developer'],
-  },
-  Web3: {
-    summary: 'Contract work plus the interface on top of it. Security awareness counts.',
-    weights: { skills: 34, roles: 24, availability: 18, workingStyle: 14, credibility: 10 },
-    focusAreas: ['Web3', 'Backend', 'Security', 'Frontend'],
-    keyRoles: ['Backend Developer', 'Full-Stack Developer', 'Cybersecurity'],
-  },
-  Cybersecurity: {
-    summary:
-      'Proven depth matters most, and verified credentials genuinely mean something in this field.',
-    weights: { skills: 36, roles: 20, availability: 14, workingStyle: 12, credibility: 18 },
-    focusAreas: ['Security', 'Languages', 'DevOps & Cloud', 'Backend'],
-    keyRoles: ['Cybersecurity', 'DevOps Engineer', 'Backend Developer'],
-  },
-  Startup: {
-    summary:
-      'Half the work is not code. Someone who can shape the idea and pitch it is a real position on the team.',
-    weights: { skills: 20, roles: 30, availability: 20, workingStyle: 24, credibility: 6 },
-    focusAreas: ['Product & craft', 'Design', 'Frontend', 'Backend'],
-    keyRoles: ['Product Manager', 'Full-Stack Developer', 'UI/UX Designer'],
-  },
-  'Data Science': {
-    summary: 'Analysis and the ability to make the result legible to a judge.',
-    weights: { skills: 36, roles: 22, availability: 16, workingStyle: 16, credibility: 10 },
-    focusAreas: ['Data & ML', 'Databases', 'Languages', 'AI'],
-    keyRoles: ['Data Scientist', 'AI / ML Engineer', 'Backend Developer'],
-  },
+/**
+ * What each *format* rewards.
+ *
+ * Weights only. A format says how an event is won — a weekend build is decided
+ * by overlapping hours and a roster that covers every layer, a capture-the-flag
+ * by proven depth — and that is true whether the subject is security or design.
+ *
+ * They are deliberately not all different: most events want a broadly balanced
+ * team, and inventing distinctions would produce confident-looking numbers with
+ * nothing behind them. Each column sums to 100.
+ */
+const FORMAT_WEIGHTS: Record<EventFormat, ComponentWeights> = {
+  Hackathon: { skills: 22, roles: 28, availability: 28, workingStyle: 17, credibility: 5 },
+  // Same shape as a hackathon, but craft counts for more and the clock for less:
+  // a jam is judged on the thing made, not on shipping every layer of it.
+  Jam: { skills: 32, roles: 26, availability: 22, workingStyle: 17, credibility: 3 },
+  // Adversarial and specialised. Depth decides it, and a verified credential
+  // genuinely means something in this world.
+  'Capture the Flag': { skills: 38, roles: 18, availability: 14, workingStyle: 12, credibility: 18 },
+  // Closest to individual work. Raw implementation, least dependent on how well
+  // the team gets along.
+  'Competitive contest': { skills: 42, roles: 18, availability: 18, workingStyle: 16, credibility: 6 },
+  // Focused improvement on something that already exists, usually over a longer
+  // window — so hours matter less and the right specialists matter more.
+  Sprint: { skills: 34, roles: 28, availability: 16, workingStyle: 18, credibility: 4 },
+  // Half the work is not code. Someone who can shape the idea and pitch it is a
+  // real position, and how people work together decides more than what they know.
+  'Startup weekend': { skills: 20, roles: 30, availability: 20, workingStyle: 24, credibility: 6 },
 };
+
+/** A one-line description of what each format is, for the UI. */
+export const FORMAT_SUMMARY: Record<EventFormat, string> = {
+  Hackathon:
+    'A short, broad build. Overlapping hours and a team that covers every layer matter more than any single deep specialism.',
+  Jam: 'Made, not shipped. Craft and a clear idea carry it further than completeness does.',
+  'Capture the Flag':
+    'Adversarial and specialised. Proven depth decides it, and verified credentials genuinely mean something here.',
+  'Competitive contest':
+    'Raw implementation under time pressure. The most individual of the formats — depth beats balance.',
+  Sprint:
+    'Focused improvement on something that already exists. The right specialists matter more than sheer hours.',
+  'Startup weekend':
+    'Half the work is not code. Shaping the idea and being able to pitch it is a real position on the team.',
+};
+
+/**
+ * Which skill areas each *domain* draws on, most important first.
+ *
+ * Names match the skill catalogue exactly — `coverageFor` looks them up by
+ * name, so a typo here silently produces an area nobody can ever cover.
+ */
+const DOMAIN_FOCUS: Record<EventDomain, string[]> = {
+  'AI & ML': ['AI', 'Data & ML', 'Languages', 'Backend'],
+  Data: ['Data & ML', 'Databases', 'Languages', 'AI'],
+  Web: ['Frontend', 'Backend', 'Languages', 'Databases'],
+  Mobile: ['Mobile', 'Design', 'Backend', 'Languages'],
+  'Game development': ['Game development', 'Design', 'Languages'],
+  Design: ['Design', 'Frontend', 'Product & craft'],
+  Security: ['Security', 'DevOps & Cloud', 'Languages', 'Backend'],
+  Web3: ['Web3', 'Backend', 'Security', 'Frontend'],
+  'Hardware & IoT': ['Hardware & IoT', 'Languages', 'Backend'],
+  'Product & business': ['Product & craft', 'Design', 'Frontend'],
+};
+
+/** Roles each domain usually needs covered. */
+const DOMAIN_ROLES: Record<EventDomain, TeamRole[]> = {
+  'AI & ML': ['AI / ML Engineer', 'Data Scientist', 'Backend Developer'],
+  Data: ['Data Scientist', 'AI / ML Engineer', 'Business Analyst'],
+  Web: ['Frontend Developer', 'Backend Developer', 'Full-Stack Developer'],
+  Mobile: ['Mobile Developer', 'UI/UX Designer', 'Backend Developer'],
+  'Game development': ['Game Developer', 'Graphic Artist', 'UI/UX Designer'],
+  Design: ['UI/UX Designer', 'Graphic Artist', 'Frontend Developer'],
+  Security: ['Cybersecurity', 'DevOps Engineer', 'Backend Developer'],
+  Web3: ['Backend Developer', 'Cybersecurity', 'Full-Stack Developer'],
+  'Hardware & IoT': ['Hardware / IoT', 'Backend Developer', 'Mobile Developer'],
+  'Product & business': ['Product Manager', 'Business Analyst', 'Presenter'],
+};
+
+/**
+ * Roles a format needs regardless of subject.
+ *
+ * Kept separate from the domain roles because they are needed for a different
+ * reason: a startup weekend needs somebody who can present whether it is a
+ * fintech or a game, and a hackathon needs a generalist who can join the parts
+ * together no matter what the parts are.
+ */
+const FORMAT_ROLES: Record<EventFormat, TeamRole[]> = {
+  Hackathon: ['Full-Stack Developer', 'Presenter'],
+  Jam: ['Demo Builder'],
+  'Capture the Flag': [],
+  'Competitive contest': [],
+  Sprint: ['QA / Tester'],
+  'Startup weekend': ['Presenter', 'Pitch Writer'],
+};
+
+/**
+ * Interleaves each domain's focus areas so the first concern of every domain
+ * outranks the second concern of any of them.
+ *
+ * Concatenating instead would bury a two-domain event's second subject beneath
+ * the first's minor areas — a "Game development + Design" jam would rank
+ * Languages above Design, which is precisely backwards. Focus areas are
+ * consumed in priority order by `fitForEvent`, so this ordering is load-bearing
+ * rather than cosmetic.
+ */
+function interleaveFocus(domains: readonly EventDomain[]): string[] {
+  const lists = domains.map((domain) => DOMAIN_FOCUS[domain] ?? []);
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+
+  const deepest = Math.max(0, ...lists.map((list) => list.length));
+  for (let rank = 0; rank < deepest; rank += 1) {
+    for (const list of lists) {
+      const area = list[rank];
+      if (area && !seen.has(area)) {
+        seen.add(area);
+        ordered.push(area);
+      }
+    }
+  }
+
+  // More than five and the tail carries almost no weight anyway — the linear
+  // taper in `fitForEvent` has already flattened by then.
+  return ordered.slice(0, 5);
+}
+
+/** The profile an event gets from its format and domains, before any override. */
+export function composeProfile(
+  format: EventFormat,
+  domains: readonly EventDomain[],
+): EventStatProfile {
+  const usable = domains.length > 0 ? domains : (['Web'] as const);
+
+  const keyRoles = [
+    ...new Set([...usable.flatMap((domain) => DOMAIN_ROLES[domain] ?? []), ...FORMAT_ROLES[format]]),
+  ];
+
+  return {
+    summary: `${FORMAT_SUMMARY[format]} Focused on ${usable.join(', ')}.`,
+    weights: FORMAT_WEIGHTS[format],
+    focusAreas: interleaveFocus(usable),
+    keyRoles,
+  };
+}
 
 /** A per-event override. Every field optional; anything absent falls back. */
 export interface EventStatProfileOverride {
@@ -129,15 +216,19 @@ export interface EventStatProfileOverride {
  * per-event override merged on top.
  */
 export function resolveStatProfile(
-  category: string,
+  format: string,
+  domains: readonly string[],
   override: EventStatProfileOverride | null,
 ): EventStatProfile {
-  const base = ARCHETYPES[category as EventCategory] ?? {
-    summary: 'A general event. Scored on the platform defaults.',
-    weights: DEFAULT_WEIGHTS,
-    focusAreas: ['Frontend', 'Backend', 'Design'],
-    keyRoles: ['Full-Stack Developer'],
-  };
+  const knownFormat = (EVENT_FORMATS as readonly string[]).includes(format)
+    ? (format as EventFormat)
+    : 'Hackathon';
+
+  const knownDomains = domains.filter((domain): domain is EventDomain =>
+    (EVENT_DOMAINS as readonly string[]).includes(domain),
+  );
+
+  const base = composeProfile(knownFormat, knownDomains);
 
   if (!override) return base;
 
@@ -668,4 +759,4 @@ export function recruitBriefFor(
   return { roles, skills, emphasis, confidence, caveat, headline, reasons };
 }
 
-export { EVENT_CATEGORIES };
+export { EVENT_DOMAINS, EVENT_FORMATS };

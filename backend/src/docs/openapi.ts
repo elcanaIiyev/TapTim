@@ -1,6 +1,11 @@
 import { env } from '../config/env.js';
 import { CERTIFICATE_STATUSES } from '../modules/certificates/certificate.model.js';
-import { EVENT_CATEGORIES, EVENT_MODES } from '../modules/events/event.model.js';
+import {
+  EVENT_DOMAINS,
+  EVENT_FORMATS,
+  EVENT_MODES,
+  MAX_EVENT_DOMAINS,
+} from '../modules/events/event.model.js';
 import { TEAM_STATUSES } from '../modules/teams/team.model.js';
 import { NOTIFICATION_KINDS } from '../data/notification.store.js';
 import { ACCOUNT_ROLES } from '../modules/users/account-role.js';
@@ -190,7 +195,19 @@ const schemas = {
   TeamRole: { type: 'string', enum: [...TEAM_ROLES], example: TEAM_ROLES[2] },
   ExperienceLevel: { type: 'string', enum: [...EXPERIENCE_LEVELS], example: 'intermediate' },
   AvailabilitySlot: { type: 'string', enum: [...AVAILABILITY_SLOTS], example: 'weekday-evenings' },
-  EventCategory: { type: 'string', enum: [...EVENT_CATEGORIES], example: 'Hackathons' },
+  EventFormat: {
+    type: 'string',
+    enum: [...EVENT_FORMATS],
+    description: 'How the event runs. Drives the scoring weights.',
+    example: 'Hackathon',
+  },
+
+  EventDomain: {
+    type: 'string',
+    enum: [...EVENT_DOMAINS],
+    description: 'What the event is about. Drives the focus areas.',
+    example: 'Web',
+  },
   EventMode: { type: 'string', enum: [...EVENT_MODES], example: 'hybrid' },
   TeamStatus: { type: 'string', enum: [...TEAM_STATUSES], example: 'recruiting' },
   CertificateStatus: { type: 'string', enum: [...CERTIFICATE_STATUSES], example: 'verified' },
@@ -310,7 +327,16 @@ const schemas = {
       id: { type: 'string', example: 'evt-001' },
       name: { type: 'string', example: 'TapTim Global Hack 2026' },
       description: { type: 'string' },
-      category: ref('EventCategory'),
+      format: ref('EventFormat'),
+      domains: {
+        type: 'array',
+        items: ref('EventDomain'),
+        minItems: 1,
+        maxItems: MAX_EVENT_DOMAINS,
+        description:
+          'What it is about. Several, because most events are — a hackathon judged on a ' +
+          'working product is Web *and* Product & business.',
+      },
       tags: { type: 'array', items: { type: 'string' }, example: ['48h', 'Open Track'] },
       coverImageUrl: {
         type: 'string',
@@ -360,7 +386,13 @@ const schemas = {
     properties: {
       name: { type: 'string', minLength: 3, maxLength: 120 },
       description: { type: 'string', minLength: 20, maxLength: 2000 },
-      category: ref('EventCategory'),
+      format: ref('EventFormat'),
+      domains: {
+        type: 'array',
+        items: ref('EventDomain'),
+        minItems: 1,
+        maxItems: MAX_EVENT_DOMAINS,
+      },
       tags: { type: 'array', items: { type: 'string' }, maxItems: 10 },
       startDate: { type: 'string', format: 'date-time' },
       endDate: { type: 'string', format: 'date-time' },
@@ -381,11 +413,27 @@ const schemas = {
     },
   },
 
-  EventCategoryCount: {
+  EventFacets: {
     type: 'object',
+    description:
+      'Both filter axes with live counts. Domain counts are not a partition — an event ' +
+      'tagged Web *and* Design is counted under both, so they sum to more than the number ' +
+      'of events.',
     properties: {
-      name: ref('EventCategory'),
-      count: { type: 'integer', example: 2 },
+      formats: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: ref('EventFormat'), count: { type: 'integer' } },
+        },
+      },
+      domains: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: ref('EventDomain'), count: { type: 'integer' } },
+        },
+      },
     },
   },
 
@@ -1567,9 +1615,14 @@ const paths = {
       summary: 'List events',
       parameters: [
         queryParam(
-          'category',
-          { type: 'string', enum: ['All', ...EVENT_CATEGORIES], default: 'All' },
-          'Exact category match.',
+          'format',
+          { type: 'string', enum: ['All', ...EVENT_FORMATS], default: 'All' },
+          'Exact format match — how the event runs.',
+        ),
+        queryParam(
+          'domains',
+          { type: 'array', items: { type: 'string', enum: [...EVENT_DOMAINS] } },
+          'Anything touching any of these. Repeatable, or comma-joined.',
         ),
         queryParam(
           'search',
@@ -1599,14 +1652,17 @@ const paths = {
     },
   },
 
-  '/api/events/categories': {
+  '/api/events/facets': {
     get: {
       tags: ['Events'],
-      summary: 'Categories with counts',
-      description: 'All eight categories are always returned, including any sitting at zero.',
-      responses: {
-        200: listResponse('Category counts.', ref('EventCategoryCount'), false),
-      },
+      summary: 'Both filter axes with counts',
+      description:
+        'Format and domain are orthogonal — "Hackathon" is how an event runs, "Design" is ' +
+        'what it is about, and a design hackathon is both. Filing them in one list meant ' +
+        'such an event was hidden from whichever axis it was not filed under. Every entry ' +
+        'is returned including empty ones, so the filter bar does not change shape as data ' +
+        'comes and goes.',
+      responses: { 200: dataResponse('Counts on both axes.', ref('EventFacets')) },
     },
   },
 
