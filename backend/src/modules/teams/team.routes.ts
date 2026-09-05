@@ -19,6 +19,8 @@ import {
   listTeamsHandler,
   removeMemberHandler,
   removeTeamLogoHandler,
+  sendTeamMessageHandler,
+  teamChannelHandler,
   respondToRequestHandler,
   suggestMembersHandler,
   teamGapsHandler,
@@ -33,6 +35,7 @@ import {
   listRequestsQuerySchema,
   listTeamsQuerySchema,
   respondToRequestSchema,
+  sendTeamMessageSchema,
   suggestionsQuerySchema,
   transferOwnershipSchema,
   updateTeamSchema,
@@ -100,6 +103,23 @@ const logoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024, files: 1 },
 });
+
+// The team channel. Membership-gated in the service, so a non-member gets a
+// 403 rather than a 404 — they can see the team exists, just not its room.
+teamRouter.get(
+  '/:id/messages',
+  requireAuth,
+  validateParams(idParam),
+  asyncHandler(teamChannelHandler),
+);
+
+teamRouter.post(
+  '/:id/messages',
+  requireAuth,
+  validateParams(idParam),
+  validateBody(sendTeamMessageSchema),
+  asyncHandler(sendTeamMessageHandler),
+);
 
 teamRouter.post(
   '/:id/logo',

@@ -15,6 +15,7 @@ import type {
 } from './team.schema.js';
 import * as teamService from './team.service.js';
 import * as eventStats from '../events/event-stats.service.js';
+import * as teamChat from './team-chat.service.js';
 
 function requireUser(req: Request) {
   if (!req.user) throw HttpError.unauthorized();
@@ -121,6 +122,17 @@ export async function suggestMembersHandler(req: Request, res: Response) {
  * is not awaited: a failed cleanup should leave an orphan in the bucket, not
  * fail a request whose actual work already succeeded.
  */
+export async function teamChannelHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  res.status(200).json({ data: await teamChat.channel(req.params.id, user.id) });
+}
+
+export async function sendTeamMessageHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { body } = req.body as { body: string };
+  res.status(201).json({ data: await teamChat.send(req.params.id, user.id, body) });
+}
+
 export async function uploadTeamLogoHandler(req: Request, res: Response) {
   const user = requireUser(req);
 

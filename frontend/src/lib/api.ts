@@ -11,6 +11,8 @@ import type {
   MyEventFit,
   Team,
   TeamDetail,
+  TeamChannel,
+  TeamChatMessage,
   TeamEventReport,
   TeamRequest,
   AuthResult,
@@ -306,6 +308,16 @@ export const teamsApi = {
     request<{ data: TeamRequest }>(`/api/teams/${id}/invitations`, {
       method: 'POST',
       body: JSON.stringify({ userId, message }),
+    }).then((r) => r.data),
+
+  /** The team channel. Members only; reading it also marks it read. */
+  channel: (id: string) =>
+    request<{ data: TeamChannel }>(`/api/teams/${id}/messages`).then((r) => r.data),
+
+  post: (id: string, body: string) =>
+    request<{ data: TeamChatMessage }>(`/api/teams/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
     }).then((r) => r.data),
 
   /** Upload or replace the team logo. Owner only. */

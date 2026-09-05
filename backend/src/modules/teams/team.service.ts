@@ -1,5 +1,6 @@
 import { certificateStore } from '../../data/certificate.store.js';
 import { eventStore } from '../../data/event.store.js';
+import { teamChatStore } from '../../data/team-chat.store.js';
 import {
   AlreadyOnEventTeamError,
   TeamFullError,
@@ -49,8 +50,11 @@ function rethrowAsHttp(error: unknown): never {
   throw error;
 }
 
+/** A team as listed, with the viewer's unread count when it is their own. */
+export type ListedTeam = TeamRecord & { unread?: number };
+
 export interface ListTeamsResult {
-  items: TeamRecord[];
+  items: ListedTeam[];
   total: number;
   limit: number;
   offset: number;
@@ -74,6 +78,19 @@ export async function listTeams(
     limit: query.limit,
     offset: query.offset,
   });
+
+  // Unread counts only make sense for someone's own teams, and only there is
+  // the extra query worth issuing — browsing a public event's teams should not
+  // pay for a badge nobody is shown.
+  if (query.mine && viewerId) {
+    const unread = await teamChatStore.unreadCounts(viewerId);
+    return {
+      items: items.map((team) => ({ ...team, unread: unread.get(team.id) ?? 0 })),
+      total,
+      limit: query.limit,
+      offset: query.offset,
+    };
+  }
 
   return { items, total, limit: query.limit, offset: query.offset };
 }

@@ -526,6 +526,8 @@ export interface Team {
   status: 'recruiting' | 'full' | 'locked' | 'disbanded';
   /** Null falls back to a generated monogram. */
   logoUrl: string | null;
+  /** Unread channel messages. Only present on `?mine=true`. */
+  unread?: number;
   memberCount: number;
   openSeats: number;
   createdAt: string;
@@ -573,6 +575,23 @@ export interface ConnectionsOverview {
   incoming: ConnectionView[];
   outgoing: ConnectionView[];
   totalUnread: number;
+}
+
+export interface TeamChatMessage {
+  id: string;
+  teamId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  /** Denormalised, so a channel renders without a lookup per message. */
+  sender: { id: string; fullName: string; firstName: string; avatarUrl: string | null };
+}
+
+export interface TeamChannel {
+  teamId: string;
+  teamName: string;
+  members: DirectoryUser[];
+  messages: TeamChatMessage[];
 }
 
 export interface ChatMessage {

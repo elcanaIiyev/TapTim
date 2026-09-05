@@ -176,6 +176,11 @@ export function TeamsPage() {
                         {team.name}
                       </Link>
                       {team.ownerId === user.id && <Badge tone="brand">You own this</Badge>}
+                      {(team.unread ?? 0) > 0 && (
+                        <Badge tone="accent">
+                          {team.unread} new {team.unread === 1 ? 'message' : 'messages'}
+                        </Badge>
+                      )}
                     </div>
 
                     {event && (

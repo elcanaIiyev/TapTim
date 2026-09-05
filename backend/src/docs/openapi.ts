@@ -420,6 +420,12 @@ const schemas = {
         nullable: true,
         description: 'Null falls back to a generated monogram in the UI.',
       },
+      unread: {
+        type: 'integer',
+        description:
+          "Unread channel messages for the caller. Present only on `?mine=true`, where " +
+          'the badge is actually shown.',
+      },
       memberCount: { type: 'integer', example: 3 },
       openSeats: { type: 'integer', example: 2 },
       createdAt: { type: 'string', format: 'date-time' },
@@ -944,6 +950,37 @@ const schemas = {
         description: 'Requests you sent that nobody has answered.',
       },
       totalUnread: { type: 'integer', example: 2 },
+    },
+  },
+
+  TeamChatMessage: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      teamId: { type: 'string', format: 'uuid' },
+      senderId: { type: 'string', format: 'uuid' },
+      body: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
+      sender: {
+        type: 'object',
+        description: 'Denormalised, so rendering a channel needs no extra lookups.',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          fullName: { type: 'string' },
+          firstName: { type: 'string' },
+          avatarUrl: { type: 'string', nullable: true },
+        },
+      },
+    },
+  },
+
+  TeamChannel: {
+    type: 'object',
+    properties: {
+      teamId: { type: 'string', format: 'uuid' },
+      teamName: { type: 'string' },
+      members: { type: 'array', items: ref('User') },
+      messages: { type: 'array', items: ref('TeamChatMessage') },
     },
   },
 
@@ -1683,6 +1720,40 @@ const paths = {
         403: RESP_403,
         404: errorFor('No such team or participant.'),
         409: errorFor('Already a member, on another team for this event, or already invited.'),
+      },
+    },
+  },
+
+  '/api/teams/{id}/messages': {
+    get: {
+      tags: ['Teams'],
+      summary: 'Read the team channel',
+      description:
+        'Members only, and only while still on the roster — leaving a team ends access ' +
+        'to its channel. Opening it also marks it read. Returns the last 200 messages, ' +
+        'oldest first, each with its sender denormalised so the UI does not fetch a ' +
+        'profile per message.',
+      security: AUTH,
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      responses: {
+        200: dataResponse('The channel.', ref('TeamChannel')),
+        401: RESP_401,
+        403: errorFor('Only members of this team can use its channel.'),
+        404: RESP_404,
+      },
+    },
+    post: {
+      tags: ['Teams'],
+      summary: 'Post to the team channel',
+      security: AUTH,
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      requestBody: jsonBody(ref('SendMessageRequest')),
+      responses: {
+        201: dataResponse('Sent.', ref('TeamChatMessage')),
+        400: RESP_400,
+        401: RESP_401,
+        403: errorFor('Only members of this team can use its channel.'),
+        404: RESP_404,
       },
     },
   },

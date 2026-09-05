@@ -104,3 +104,19 @@ export type RespondToRequestInput = z.infer<typeof respondToRequestSchema>;
 export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
 export type ListRequestsQuery = z.infer<typeof listRequestsQuerySchema>;
 export type SuggestionsQuery = z.infer<typeof suggestionsQuerySchema>;
+
+/**
+ * A team channel message.
+ *
+ * Same bounds as a direct message — the two are the same act from the writer's
+ * side, and letting one be longer than the other would only be a surprise.
+ */
+export const sendTeamMessageSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, 'Write something first.')
+    .max(2000, 'Messages are limited to 2000 characters.'),
+});
+
+export type SendTeamMessageInput = z.infer<typeof sendTeamMessageSchema>;

@@ -8,6 +8,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, eventsApi, teamsApi } from '../lib/api';
 import { Card } from '../components/ui/Card';
+import { TeamChannel } from '../components/teams/TeamChannel';
 import { TeamLogo } from '../components/teams/TeamLogo';
 import { TeamLogoPicker } from '../components/teams/TeamLogoPicker';
 import { rolesSummary } from '../lib/types';
@@ -201,6 +202,14 @@ export function TeamDetailPage() {
               </div>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Members only, and above the gap report: once a team exists, talking to
+          it is what people came back for. */}
+      {isMember && user && (
+        <section className="mt-6">
+          <TeamChannel teamId={team.id} viewerId={user.id} />
         </section>
       )}
 
