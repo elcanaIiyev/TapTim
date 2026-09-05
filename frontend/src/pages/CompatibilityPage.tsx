@@ -278,6 +278,20 @@ export function CompatibilityPage() {
                     </div>
                   )}
 
+                  {/* Shown above the reasoning, not buried under it: if the
+                      brief is provisional, that changes how everything below it
+                      should be read. */}
+                  {brief.caveat && (
+                    <div className="mt-5 rounded-[var(--radius-soft-sm)] border border-signal-warn/40 bg-signal-warn/10 px-4 py-3">
+                      <p className="type-label text-[0.7rem] text-signal-warn">
+                        Confidence {brief.confidence}/100
+                      </p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-ink-700 dark:text-ink-200">
+                        {brief.caveat}
+                      </p>
+                    </div>
+                  )}
+
                   {brief.reasons.length > 0 && (
                     <ul className="mt-5 space-y-1.5 text-sm text-ink-600 dark:text-ink-300">
                       {brief.reasons.map((reason) => (
@@ -321,7 +335,21 @@ export function CompatibilityPage() {
                 </p>
                 <div className="mt-4 space-y-3">
                   {covered.map((entry) => (
-                    <CoverageBar key={entry.area} entry={entry} />
+                    <div key={entry.area}>
+                      <CoverageBar entry={entry} />
+                      {entry.unrated.length > 0 && entry.score > 0 && (
+                        <p className="mt-1 text-xs italic text-signal-warn">
+                          Rests on {entry.unrated.join(', ')}, never rated — this number is a
+                          guess.
+                        </p>
+                      )}
+                      {entry.endorsements > 0 && (
+                        <p className="mt-1 text-xs text-success-text">
+                          {entry.endorsements} endorsement{entry.endorsements === 1 ? '' : 's'}{' '}
+                          behind this.
+                        </p>
+                      )}
+                    </div>
                   ))}
                 </div>
 

@@ -12,6 +12,8 @@ import type {
   Team,
   TeamDetail,
   NotificationFeed,
+  ProfileEndorsements,
+  SkillEndorsement,
   NotificationItem,
   TeamChannel,
   TeamChatMessage,
@@ -197,11 +199,17 @@ export const profileApi = {
   removeAvatar: () =>
     request<{ data: User }>('/api/users/me/avatar', { method: 'DELETE' }).then((r) => r.data),
 
+  /** One participant, as everyone but they themselves see them. */
+  get: (id: string) =>
+    request<{ data: DirectoryUser }>(`/api/users/${id}`).then((r) => r.data),
+
   /** Everyone open to joining a team. The caller is excluded server-side. */
-  directory: (query: { search?: string; primaryRole?: string } = {}) => {
+  directory: (query: { search?: string; roles?: string[] } = {}) => {
     const params = new URLSearchParams();
     if (query.search) params.set('search', query.search);
-    if (query.primaryRole) params.set('primaryRole', query.primaryRole);
+    // `roles`, not `primaryRole`: the API stopped accepting the singular form
+    // when roles became a set, so this filter had been silently doing nothing.
+    if (query.roles?.length) params.set('roles', query.roles.join(','));
     params.set('lookingForTeam', 'true');
     params.set('limit', '50');
     return request<{ data: DirectoryUser[] }>(`/api/users?${params.toString()}`).then((r) => r.data);
@@ -465,5 +473,25 @@ export const notificationsApi = {
   markAllRead: () =>
     request<{ data: { marked: number } }>('/api/notifications/read-all', {
       method: 'POST',
+    }).then((r) => r.data),
+};
+
+/** Endorsements: teammates vouching for a skill somebody claims. */
+export const endorsementsApi = {
+  forProfile: (userId: string) =>
+    request<{ data: ProfileEndorsements }>(`/api/users/${userId}/endorsements`).then(
+      (r) => r.data,
+    ),
+
+  endorse: (userId: string, skill: string) =>
+    request<{ data: SkillEndorsement }>(`/api/users/${userId}/endorsements`, {
+      method: 'POST',
+      body: JSON.stringify({ skill }),
+    }).then((r) => r.data),
+
+  withdraw: (userId: string, skill: string) =>
+    request<{ data: SkillEndorsement }>(`/api/users/${userId}/endorsements`, {
+      method: 'DELETE',
+      body: JSON.stringify({ skill }),
     }).then((r) => r.data),
 };

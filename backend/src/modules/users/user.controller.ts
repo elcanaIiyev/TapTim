@@ -28,6 +28,7 @@ import {
   toPublicUser,
 } from './user.model.js';
 import type { ListUsersQuery, UpdateProfileInput } from './user.schema.js';
+import * as endorsements from './endorsement.service.js';
 import * as userService from './user.service.js';
 
 function requireUser(req: Request) {
@@ -70,6 +71,25 @@ export async function getUserHandler(req: Request, res: Response) {
  * one the validator does not use — so the person gets a rejection for picking
  * something the UI showed them.
  */
+export async function endorsementsHandler(req: Request, res: Response) {
+  // `optionalAuth`, so a signed-out visitor sees the counts but no buttons.
+  res.status(200).json({
+    data: await endorsements.forProfile(req.params.id, req.user?.id ?? null),
+  });
+}
+
+export async function endorseHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { skill } = req.body as { skill: string };
+  res.status(201).json({ data: await endorsements.endorse(req.params.id, user.id, skill) });
+}
+
+export async function withdrawEndorsementHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { skill } = req.body as { skill: string };
+  res.status(200).json({ data: await endorsements.withdraw(req.params.id, user.id, skill) });
+}
+
 export function profileOptionsHandler(_req: Request, res: Response) {
   res.status(200).json({
     data: {

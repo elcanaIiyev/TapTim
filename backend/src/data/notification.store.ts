@@ -9,6 +9,7 @@ export const NOTIFICATION_KINDS = [
   'removed-from-team',
   'connection-request',
   'connection-accepted',
+  'skill-endorsed',
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

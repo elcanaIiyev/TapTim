@@ -167,6 +167,20 @@ export interface FocusCoverage {
   deepest: string | null;
   /** 0–100: how well this area is covered. */
   score: number;
+  /**
+   * 0–100: how much the score above is worth believing.
+   *
+   * Every number here comes from somebody describing themselves. With eight
+   * demo users who filled everything in, that is invisible; with five hundred
+   * real ones whose sliders are all sitting at the default, a confident 70 is
+   * a guess wearing a number's clothes. This says which it is, so the UI can
+   * hedge instead of asserting.
+   */
+  confidence: number;
+  /** Skills here the person never actually rated. */
+  unrated: string[];
+  /** How many endorsements back the skills in this area. */
+  endorsements: number;
 }
 
 /**
@@ -196,6 +210,12 @@ export interface FocusCoverage {
 export function coverageFor(
   user: { skills: string[]; skillLevels?: Record<string, number> },
   focusAreas: string[],
+  /**
+   * Endorsements per skill. Optional, so every existing caller keeps working —
+   * an absent map simply means nothing is corroborated, which is the honest
+   * reading of "we do not know".
+   */
+  endorsements: ReadonlyMap<string, number> = new Map(),
 ): FocusCoverage[] {
   const owned = user.skills.map((skill) => ({ name: skill, key: skill.toLowerCase() }));
 
@@ -204,12 +224,30 @@ export function coverageFor(
     const matched = owned.filter((skill) => inArea.has(skill.key));
 
     if (matched.length === 0) {
-      return { area, matched: [], depth: 0, deepest: null, score: 0 };
+      return {
+        area,
+        matched: [],
+        depth: 0,
+        deepest: null,
+        score: 0,
+        // Nothing claimed is not the same as something claimed and unverified.
+        // "They have no backend skills" is a fact about the profile, so it is
+        // known with certainty even though the score is zero.
+        confidence: 100,
+        unrated: [],
+        endorsements: 0,
+      };
     }
 
     const rated = matched.map((skill) => ({
       name: skill.name,
+      // An absent entry means the slider was never touched. That is why the
+      // default lives here rather than being written into the profile on save:
+      // once it is stored, "I am average at this" and "I never said" become
+      // the same row and this distinction is gone for good.
       level: user.skillLevels?.[skill.name] ?? DEFAULT_SKILL_LEVEL,
+      selfRated: user.skillLevels?.[skill.name] !== undefined,
+      endorsed: endorsements.get(skill.name) ?? 0,
     }));
 
     const best = rated.reduce((top, entry) => (entry.level > top.level ? entry : top));
@@ -219,14 +257,57 @@ export function coverageFor(
     const breadth = Math.min(1, (matched.length - 1) / 2);
     const score = Math.round(best.level * (DEPTH_SHARE + (1 - DEPTH_SHARE) * breadth));
 
+    const unrated = rated.filter((entry) => !entry.selfRated);
+    const endorsementTotal = rated.reduce((sum, entry) => sum + entry.endorsed, 0);
+
     return {
       area,
       matched: rated.map((entry) => entry.name),
       depth: best.level,
       deepest: best.name,
       score: Math.min(100, score),
+      confidence: confidenceFor(rated),
+      unrated: unrated.map((entry) => entry.name),
+      endorsements: endorsementTotal,
     };
   });
+}
+
+/**
+ * How much to believe a coverage score.
+ *
+ * Two things move it, and they are different in kind:
+ *
+ * - **Rating.** A skill somebody explicitly put a number on is a claim. One
+ *   they added and never rated is scored at the default, which is the engine
+ *   guessing on their behalf — so it starts low and the claim only lifts it to
+ *   the ceiling for unverified self-assessment.
+ * - **Endorsement.** Somebody who has worked with them saying the claim holds.
+ *   This is the only thing that takes confidence past that ceiling, and it
+ *   saturates fast: the second person to confirm a skill adds far less than the
+ *   first, because the thing being established — "somebody other than them
+ *   says so" — is established by one.
+ *
+ * Weighted by the skill carrying the area, not averaged flat: if the deep skill
+ * is corroborated it barely matters that a minor one is not.
+ */
+const SELF_REPORTED_CEILING = 60;
+
+function confidenceFor(
+  rated: ReadonlyArray<{ level: number; selfRated: boolean; endorsed: number }>,
+): number {
+  if (rated.length === 0) return 100;
+
+  const totalWeight = rated.reduce((sum, entry) => sum + Math.max(1, entry.level), 0);
+
+  const weighted = rated.reduce((sum, entry) => {
+    const base = entry.selfRated ? SELF_REPORTED_CEILING : 25;
+    // Saturating: one endorsement is most of the value, three is all of it.
+    const lift = (100 - base) * (1 - Math.exp(-entry.endorsed));
+    return sum + (base + lift) * Math.max(1, entry.level);
+  }, 0);
+
+  return Math.round(weighted / totalWeight);
 }
 
 /**
@@ -241,6 +322,8 @@ const DEPTH_SHARE = 0.78;
 export interface EventFit {
   /** 0–100 across the event's focus areas. */
   score: number;
+  /** 0–100: how much evidence the score rests on. See `FocusCoverage`. */
+  confidence: number;
   band: 'excellent' | 'strong' | 'moderate' | 'weak';
   coverage: FocusCoverage[];
   /** Focus areas the person barely covers — what they would rely on others for. */
@@ -267,8 +350,9 @@ function bandFor(score: number): EventFit['band'] {
 export function fitForEvent(
   user: { skills: string[]; skillLevels?: Record<string, number>; roles: readonly TeamRole[] },
   profile: EventStatProfile,
+  endorsements: ReadonlyMap<string, number> = new Map(),
 ): EventFit {
-  const coverage = coverageFor(user, profile.focusAreas);
+  const coverage = coverageFor(user, profile.focusAreas, endorsements);
 
   const weights = coverage.map((_, index) => profile.focusAreas.length - index);
   const totalWeight = weights.reduce((a, b) => a + b, 0);
@@ -294,7 +378,17 @@ export function fitForEvent(
         }.`
       : 'None of this event’s focus areas are covered by the listed skills yet.';
 
-  return { score, band: bandFor(score), coverage, gaps, fillsKeyRole, summary };
+  // Weighted the same way the score is: being unsure about the area that
+  // matters most should move this more than being unsure about the last one.
+  const confidence =
+    totalWeight === 0
+      ? 100
+      : Math.round(
+          coverage.reduce((sum, entry, index) => sum + entry.confidence * weights[index], 0) /
+            totalWeight,
+        );
+
+  return { score, confidence, band: bandFor(score), coverage, gaps, fillsKeyRole, summary };
 }
 
 export interface TeamEventGaps {
@@ -318,13 +412,22 @@ export interface TeamEventGaps {
  */
 export function teamGapsForEvent(
   members: ReadonlyArray<{
+    id?: string;
     skills: string[];
     skillLevels?: Record<string, number>;
     roles: readonly TeamRole[];
   }>,
   profile: EventStatProfile,
+  /** Endorsements per member id, so a team's coverage is as trusted as its members'. */
+  endorsements: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map(),
 ): TeamEventGaps {
-  const perMember = members.map((member) => coverageFor(member, profile.focusAreas));
+  const perMember = members.map((member) =>
+    coverageFor(
+      member,
+      profile.focusAreas,
+      (member.id ? endorsements.get(member.id) : undefined) ?? new Map(),
+    ),
+  );
 
   const coverage: FocusCoverage[] = profile.focusAreas.map((area, index) => {
     const contributions = perMember.map((entry) => entry[index]);
@@ -334,7 +437,16 @@ export function teamGapsForEvent(
     // at backend, which is not how a team works.
     const best = contributions.reduce<FocusCoverage>(
       (top, entry) => (entry.score > top.score ? entry : top),
-      { area, matched: [], depth: 0, deepest: null, score: 0 },
+      {
+        area,
+        matched: [],
+        depth: 0,
+        deepest: null,
+        score: 0,
+        confidence: 100,
+        unrated: [],
+        endorsements: 0,
+      },
     );
 
     return {
@@ -344,6 +456,12 @@ export function teamGapsForEvent(
       depth: best.depth,
       deepest: best.deepest,
       score: best.score,
+      // The confidence of whoever is actually carrying the area, not the team's
+      // average: the number being qualified is *their* score, so it is their
+      // evidence that matters.
+      confidence: best.confidence,
+      unrated: best.unrated,
+      endorsements: contributions.reduce((sum, entry) => sum + entry.endorsements, 0),
     };
   });
 
@@ -402,6 +520,18 @@ export interface SkillNeed {
 export interface RecruitBrief {
   /** Positions nobody on the team plays, most important first. */
   roles: TeamRole[];
+  /**
+   * 0–100: how much evidence this brief rests on.
+   *
+   * A brief is only as good as the profiles under it. When the roster is mostly
+   * unrated skills, the gaps it names may be real or may be an artefact of
+   * nobody having filled anything in — and saying so is more useful than
+   * confidently recommending a Presenter because three people left their
+   * sliders alone.
+   */
+  confidence: number;
+  /** Set when confidence is low enough that the brief should be read as provisional. */
+  caveat: string | null;
   /** Areas worth recruiting for, worst-covered and most-weighted first. */
   skills: SkillNeed[];
   /** Whether the team's real problem is a missing position or thin skills. */
@@ -463,6 +593,41 @@ export function recruitBriefFor(
         : ('nice to have' as const),
     }));
 
+  /*
+   * Confidence is judged over what the team is believed to *have*, not over
+   * what the brief is recruiting for.
+   *
+   * The first version had this backwards: it averaged confidence across the
+   * areas being recruited for, which are precisely the empty ones — and an
+   * empty area is known with certainty, so a team of entirely unrated profiles
+   * came out looking well-evidenced. The risk runs the other way. An area that
+   * *looks* covered because somebody's untouched slider was scored at the
+   * default never becomes a gap, so nobody is ever sent to fill it. Those are
+   * the beliefs worth qualifying.
+   *
+   * Weighted by score for the same reason: an area held at 80 on no evidence is
+   * a bigger problem than one held at 10 on no evidence.
+   */
+  const believed = gaps.coverage.filter((entry) => entry.score > 0);
+  const beliefWeight = believed.reduce((sum, entry) => sum + entry.score, 0);
+  const confidence =
+    beliefWeight === 0
+      ? 100
+      : Math.round(
+          believed.reduce((sum, entry) => sum + entry.confidence * entry.score, 0) / beliefWeight,
+        );
+
+  const unratedCount = new Set(gaps.coverage.flatMap((entry) => entry.unrated)).size;
+
+  const caveat =
+    confidence >= 65
+      ? null
+      : unratedCount > 0
+        ? `Provisional — ${unratedCount} skill${unratedCount === 1 ? '' : 's'} on this team ` +
+          'have never been rated, so some of these gaps may just be blanks. Ask the team to ' +
+          'finish their profiles before recruiting against this.'
+        : 'Provisional — these scores are self-reported and nobody has endorsed them yet.';
+
   const emphasis: RecruitBrief['emphasis'] =
     roles.length > 0 && skills.length > 0 ? 'both'
     : roles.length > 0 ? 'roles'
@@ -500,7 +665,7 @@ export function recruitBriefFor(
       : null,
   ].filter((reason): reason is string => reason !== null);
 
-  return { roles, skills, emphasis, headline, reasons };
+  return { roles, skills, emphasis, confidence, caveat, headline, reasons };
 }
 
 export { EVENT_CATEGORIES };

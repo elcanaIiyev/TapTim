@@ -19,6 +19,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { TeamDetailPage } from './pages/TeamDetailPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { ParticipantPage } from './pages/ParticipantPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TransitionVeil } from './components/ui/TransitionVeil';
 
@@ -140,6 +141,8 @@ export default function App() {
           <Route path="/onboarding" element={<ProfilePage tour />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          {/* Linked from candidate lists, and where endorsing happens. */}
+          <Route path="/participants/:id" element={<ParticipantPage />} />
 
           {/* Admin console. Reachable only from the Site/Admin switch in the
               nav bar, which renders for staff alone — it is in no footer and

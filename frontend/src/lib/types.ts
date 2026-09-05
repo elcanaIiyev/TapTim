@@ -399,6 +399,11 @@ export interface FocusCoverage {
   /** Which skill that is, so the UI can say what carries the area. */
   deepest: string | null;
   score: number;
+  /** 0–100: how much the score is worth believing. */
+  confidence: number;
+  /** Skills here the person never actually rated. */
+  unrated: string[];
+  endorsements: number;
 }
 
 export type FitBand = 'excellent' | 'strong' | 'moderate' | 'weak';
@@ -440,6 +445,10 @@ export interface SkillNeed {
 /** Who a team should go and look for — a description, not a search result. */
 export interface RecruitBrief {
   roles: string[];
+  /** 0–100: how much evidence this brief rests on. */
+  confidence: number;
+  /** Set when the brief should be read as provisional. */
+  caveat: string | null;
   skills: SkillNeed[];
   emphasis: 'roles' | 'skills' | 'both' | 'none';
   headline: string;
@@ -586,6 +595,19 @@ export type NotificationKind =
   | 'removed-from-team'
   | 'connection-request'
   | 'connection-accepted';
+
+export interface SkillEndorsement {
+  skill: string;
+  count: number;
+  /** Whether the person viewing has endorsed this one. */
+  byViewer: boolean;
+}
+
+export interface ProfileEndorsements {
+  skills: SkillEndorsement[];
+  /** True when the viewer has shared a team with this person. */
+  canEndorse: boolean;
+}
 
 export interface NotificationItem {
   id: string;

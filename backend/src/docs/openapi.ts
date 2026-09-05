@@ -700,6 +700,32 @@ const schemas = {
     },
   },
 
+  SkillEndorsement: {
+    type: 'object',
+    properties: {
+      skill: { type: 'string', example: 'Node.js' },
+      count: { type: 'integer', example: 2 },
+      byViewer: { type: 'boolean', description: 'Whether the caller endorsed this one.' },
+    },
+  },
+
+  ProfileEndorsements: {
+    type: 'object',
+    properties: {
+      skills: { type: 'array', items: ref('SkillEndorsement') },
+      canEndorse: {
+        type: 'boolean',
+        description: 'True when the caller has shared a team with this person.',
+      },
+    },
+  },
+
+  EndorseSkillRequest: {
+    type: 'object',
+    required: ['skill'],
+    properties: { skill: { type: 'string', maxLength: 60, example: 'Node.js' } },
+  },
+
   Experience: {
     type: 'object',
     properties: {
@@ -776,6 +802,22 @@ const schemas = {
         description: 'Which skill that is, so a reader can see what carries the area.',
       },
       score: { type: 'integer', minimum: 0, maximum: 100 },
+      confidence: {
+        type: 'integer',
+        minimum: 0,
+        maximum: 100,
+        description:
+          'How much the score is worth believing. Every number here comes from someone ' +
+          'describing themselves; this says whether anything corroborates it. A skill that ' +
+          'was never rated is scored at the default and reported at low confidence, so a ' +
+          'thin profile reads as thin instead of as a confident guess.',
+      },
+      unrated: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Skills here the person never actually put a number on.',
+      },
+      endorsements: { type: 'integer', description: 'Endorsements backing this area.' },
     },
   },
 
@@ -810,6 +852,17 @@ const schemas = {
         items: ref('TeamRole'),
         description: 'Positions nobody on the roster plays, most important first.',
       },
+      confidence: {
+        type: 'integer',
+        description: 'How much evidence this brief rests on, 0–100.',
+      },
+      caveat: {
+        type: 'string',
+        nullable: true,
+        description:
+          'Set when confidence is low enough that the brief should be read as provisional — ' +
+          'the gaps it names may be real, or may be an artefact of nobody filling in a profile.',
+      },
       skills: { type: 'array', items: ref('SkillNeed') },
       emphasis: {
         type: 'string',
@@ -839,6 +892,7 @@ const schemas = {
       eventId: { type: 'string', format: 'uuid' },
       profile: ref('EventStatProfile'),
       score: { type: 'integer', minimum: 0, maximum: 100 },
+      confidence: { type: 'integer', minimum: 0, maximum: 100 },
       band: ref('FitBand'),
       coverage: { type: 'array', items: ref('FocusCoverage') },
       gaps: { type: 'array', items: { type: 'string' } },
@@ -1307,6 +1361,52 @@ const paths = {
         'Public, because the SPA renders its chips and sliders from this before anyone ' +
         'signs in. One call rather than nine so the builder has no waterfall.',
       responses: { 200: dataResponse('The option lists.', ref('ProfileOptions')) },
+    },
+  },
+
+  '/api/users/{id}/endorsements': {
+    get: {
+      tags: ['Participants'],
+      summary: "Endorsements on a participant's skills",
+      description:
+        'Counts per skill, plus whether the caller has endorsed each one and whether they ' +
+        'are allowed to. Driven off the profile’s own skill list, so a skill since removed ' +
+        'stops showing even if rows for it remain.',
+      parameters: [pathParam('id', 'Participant UUID.', 'uuid')],
+      responses: {
+        200: dataResponse('Endorsement state.', ref('ProfileEndorsements')),
+        404: RESP_404,
+      },
+    },
+    post: {
+      tags: ['Participants'],
+      summary: 'Endorse a skill',
+      description:
+        'Only for someone you have shared a team with — that rule is what makes an ' +
+        'endorsement evidence rather than a "like". Idempotent: endorsing twice leaves the ' +
+        'count alone and sends no second notification.',
+      security: AUTH,
+      parameters: [pathParam('id', 'Participant UUID.', 'uuid')],
+      requestBody: jsonBody(ref('EndorseSkillRequest')),
+      responses: {
+        201: dataResponse('The new count.', ref('SkillEndorsement')),
+        400: errorFor('Not in the skill list, not on their profile, or your own account.'),
+        401: RESP_401,
+        403: errorFor('You can only endorse someone you have been on a team with.'),
+        404: RESP_404,
+      },
+    },
+    delete: {
+      tags: ['Participants'],
+      summary: 'Withdraw your endorsement',
+      security: AUTH,
+      parameters: [pathParam('id', 'Participant UUID.', 'uuid')],
+      requestBody: jsonBody(ref('EndorseSkillRequest')),
+      responses: {
+        200: dataResponse('The new count.', ref('SkillEndorsement')),
+        401: RESP_401,
+        404: errorFor('You have not endorsed that skill.'),
+      },
     },
   },
 

@@ -244,3 +244,10 @@ export const listUsersQuerySchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
+
+/** Endorsing one skill. Canonicalised in the service against the catalogue. */
+export const endorseSkillSchema = z.object({
+  skill: z.string().trim().min(1, 'Name the skill.').max(60),
+});
+
+export type EndorseSkillInput = z.infer<typeof endorseSkillSchema>;

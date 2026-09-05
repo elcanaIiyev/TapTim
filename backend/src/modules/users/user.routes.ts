@@ -16,13 +16,20 @@ import {
   getUserHandler,
   listExperiencesHandler,
   listUsersHandler,
+  endorseHandler,
+  endorsementsHandler,
   profileOptionsHandler,
   removeAvatarHandler,
   updateExperienceHandler,
   updateMeHandler,
   uploadAvatarHandler,
+  withdrawEndorsementHandler,
 } from './user.controller.js';
-import { listUsersQuerySchema, updateProfileSchema } from './user.schema.js';
+import {
+  endorseSkillSchema,
+  listUsersQuerySchema,
+  updateProfileSchema,
+} from './user.schema.js';
 
 const idParamSchema = z.object({ id: z.string().uuid('Participant id must be a UUID.') });
 
@@ -74,6 +81,29 @@ userRouter.delete(
   requireAuth,
   validateParams(idParamSchema),
   asyncHandler(deleteExperienceHandler),
+);
+
+// Endorsements hang off a participant, so they sit under `/:id` — declared
+// before the bare `/:id` read so the sub-path is not swallowed by it.
+userRouter.get(
+  '/:id/endorsements',
+  optionalAuth,
+  validateParams(idParamSchema),
+  asyncHandler(endorsementsHandler),
+);
+userRouter.post(
+  '/:id/endorsements',
+  requireAuth,
+  validateParams(idParamSchema),
+  validateBody(endorseSkillSchema),
+  asyncHandler(endorseHandler),
+);
+userRouter.delete(
+  '/:id/endorsements',
+  requireAuth,
+  validateParams(idParamSchema),
+  validateBody(endorseSkillSchema),
+  asyncHandler(withdrawEndorsementHandler),
 );
 
 userRouter.get('/', optionalAuth, validateQuery(listUsersQuerySchema), asyncHandler(listUsersHandler));

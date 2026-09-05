@@ -1,4 +1,5 @@
 import { certificateStore } from '../../data/certificate.store.js';
+import { endorsementStore } from '../../data/endorsement.store.js';
 import { eventStore } from '../../data/event.store.js';
 import { teamStore } from '../../data/team.store.js';
 import { userStore } from '../../data/user.store.js';
@@ -79,7 +80,7 @@ export async function fitForUser(eventId: string, user: UserRecord): Promise<MyE
   const profile = profileFor(event);
 
   return {
-    ...fitForEvent(user, profile),
+    ...fitForEvent(user, profile, await endorsementStore.countsFor(user.id)),
     eventId,
     profile,
     myTeamId: await teamStore.findEventMembership(user.id, eventId),
@@ -113,7 +114,11 @@ export async function teamReport(teamId: string): Promise<TeamEventReport> {
   const profile = profileFor(event);
   const members = await userStore.findManyByIds(team.members.map((member) => member.userId));
 
-  const gaps = teamGapsForEvent(members, profile);
+  const gaps = teamGapsForEvent(
+    members,
+    profile,
+    await endorsementStore.countsForMany(members.map((member) => member.id)),
+  );
 
   return {
     ...gaps,
