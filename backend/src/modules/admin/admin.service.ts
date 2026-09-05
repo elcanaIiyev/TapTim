@@ -1,7 +1,7 @@
 import { certificateStore } from '../../data/certificate.store.js';
 import { teamStore } from '../../data/team.store.js';
 import { LastAdminError, userStore } from '../../data/user.store.js';
-import { deleteAvatar } from '../../services/storage.js';
+import { deleteImage } from '../../services/storage.js';
 import { HttpError } from '../../utils/http-error.js';
 import { atLeast, rankOf, type AccountRole } from '../users/account-role.js';
 import { isBanned, isPermanentBan, type UserRecord } from '../users/user.model.js';
@@ -263,7 +263,7 @@ export async function deleteAccount(
 
   // The one piece of their data that is not in Postgres, so not covered by the
   // cascade. Failure here leaves an orphaned file, not a half-deleted account.
-  if (removed.avatarPath) void deleteAvatar(removed.avatarPath);
+  if (removed.avatarPath) void deleteImage(removed.avatarPath);
 
   return { email: removed.email };
 }

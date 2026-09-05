@@ -152,8 +152,8 @@ async function seedEvents(): Promise<number> {
       `insert into events (
          id, name, description, category, tags, start_date, end_date, location,
          mode, team_size_min, team_size_max, prize_pool, registration_deadline,
-         participants, featured
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         participants, featured, cover_image_url
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        on conflict (id) do update set
          name = excluded.name,
          description = excluded.description,
@@ -168,7 +168,8 @@ async function seedEvents(): Promise<number> {
          prize_pool = excluded.prize_pool,
          registration_deadline = excluded.registration_deadline,
          participants = excluded.participants,
-         featured = excluded.featured`,
+         featured = excluded.featured,
+         cover_image_url = excluded.cover_image_url`,
       [
         event.id,
         event.name,
@@ -185,6 +186,7 @@ async function seedEvents(): Promise<number> {
         event.registrationDeadline,
         event.participants,
         event.featured,
+        event.coverImageUrl,
       ],
     );
   }

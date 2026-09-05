@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { z } from 'zod';
 import { optionalAuth, requireAuth } from '../../middleware/auth.middleware.js';
 import {
@@ -17,11 +18,13 @@ import {
   listRequestsHandler,
   listTeamsHandler,
   removeMemberHandler,
+  removeTeamLogoHandler,
   respondToRequestHandler,
   suggestMembersHandler,
   teamGapsHandler,
   transferOwnershipHandler,
   updateTeamHandler,
+  uploadTeamLogoHandler,
 } from './team.controller.js';
 import {
   applyToTeamSchema,
@@ -85,6 +88,32 @@ teamRouter.post(
   validateParams(idParam),
   validateBody(inviteToTeamSchema),
   asyncHandler(inviteToTeamHandler),
+);
+
+/**
+ * Held in memory rather than written to a temp file: the buffer goes straight
+ * back out to storage, so touching the disk would only add a cleanup problem.
+ * The cap is enforced here too, so an oversized body is rejected before it is
+ * fully buffered.
+ */
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+});
+
+teamRouter.post(
+  '/:id/logo',
+  requireAuth,
+  validateParams(idParam),
+  logoUpload.single('logo'),
+  asyncHandler(uploadTeamLogoHandler),
+);
+
+teamRouter.delete(
+  '/:id/logo',
+  requireAuth,
+  validateParams(idParam),
+  asyncHandler(removeTeamLogoHandler),
 );
 
 teamRouter.get(

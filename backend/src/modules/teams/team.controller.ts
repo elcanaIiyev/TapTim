@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { getValidatedQuery } from '../../middleware/validate.middleware.js';
+import { deleteImage, isStorageConfigured } from '../../services/storage.js';
 import { HttpError } from '../../utils/http-error.js';
 import type {
   ApplyToTeamInput,
@@ -113,6 +114,41 @@ export async function suggestMembersHandler(req: Request, res: Response) {
 }
 
 /** What this team is missing for its event. Owner or member. */
+/**
+ * Upload or replace a team's logo.
+ *
+ * The old object is deleted only after the row has been written, and the delete
+ * is not awaited: a failed cleanup should leave an orphan in the bucket, not
+ * fail a request whose actual work already succeeded.
+ */
+export async function uploadTeamLogoHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+
+  if (!isStorageConfigured()) {
+    throw HttpError.badRequest('Image uploads are not configured on this server.');
+  }
+  const file = req.file;
+  if (!file) {
+    throw HttpError.badRequest('Attach an image under the field name "logo".');
+  }
+
+  const result = await teamService.setTeamLogo(req.params.id, user.id, {
+    buffer: file.buffer,
+    mimetype: file.mimetype,
+    size: file.size,
+  });
+  if (result.previousPath) void deleteImage(result.previousPath);
+
+  res.status(200).json({ data: result.team });
+}
+
+export async function removeTeamLogoHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  const result = await teamService.removeTeamLogo(req.params.id, user.id);
+  if (result.previousPath) void deleteImage(result.previousPath);
+  res.status(200).json({ data: result.team });
+}
+
 export async function teamGapsHandler(req: Request, res: Response) {
   requireUser(req);
   res.status(200).json({ data: await eventStats.teamReport(req.params.id) });

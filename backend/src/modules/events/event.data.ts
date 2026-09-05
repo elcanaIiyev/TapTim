@@ -15,9 +15,19 @@ export type EventSeed = Omit<
   'createdBy' | 'createdAt' | 'updatedAt' | 'statProfile'
 >;
 
+/**
+ * Cover photos are Unsplash URLs, one per event, each confirmed to return 200
+ * before being written in. They are sized and cropped by query string so a card
+ * cover never pulls a multi-megapixel original.
+ *
+ * If one ever dies, nothing breaks: `EventCover` falls back to a generated
+ * cover keyed on the category.
+ */
 export const MOCK_EVENTS: EventSeed[] = [
   {
     id: 'evt-001',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'TapTim Global Hack 2026',
     description:
       'A 48-hour flagship hackathon where cross-functional teams ship a working product from scratch.',
@@ -35,6 +45,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-002',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Applied LLM Agents Sprint',
     description:
       'Build autonomous agents that solve a real operational workflow end to end, judged on reliability.',
@@ -52,6 +64,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-003',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Product Design Jam',
     description:
       'Designers and researchers reimagine a public service interface in one intense weekend.',
@@ -69,6 +83,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-004',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Competitive Programming Cup',
     description:
       'Team-based algorithmic contest across five rounds of increasing difficulty.',
@@ -86,6 +102,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-005',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'ZeroDay Defense CTF',
     description:
       'Attack-and-defend capture the flag with live scoreboard and infrastructure hardening rounds.',
@@ -103,6 +121,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-006',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Open Data Insight Challenge',
     description:
       'Turn municipal open data into a decision-ready dashboard and a defensible recommendation.',
@@ -120,6 +140,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-007',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Founders Weekend',
     description:
       'From idea to pitch deck in 54 hours, mentored by operators and closed with an investor panel.',
@@ -137,6 +159,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-008',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'On-Chain Builders Hack',
     description:
       'Ship a smart-contract product with a real user flow; audited demos score highest.',
@@ -154,6 +178,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-009',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Computer Vision Grand Prix',
     description:
       'Train and deploy a vision model under a strict latency budget on edge hardware.',
@@ -171,6 +197,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-010',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Accessibility First Sprint',
     description:
       'Rebuild a widely used interface to meet WCAG 2.2 AA, judged with assistive tech in the room.',
@@ -188,6 +216,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-011',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Systems Programming Marathon',
     description:
       'Low-level challenge set spanning schedulers, allocators, and lock-free data structures.',
@@ -205,6 +235,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-012',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Winter Campus Hackathon',
     description:
       'Student-only hackathon with a mentorship track for first-time participants.',
@@ -222,6 +254,8 @@ export const MOCK_EVENTS: EventSeed[] = [
   },
   {
     id: 'evt-013',
+    coverImageUrl:
+      'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&h=600&q=75&auto=format&fit=crop',
     name: 'Caspian Game Jam',
     description:
       'A 72-hour game jam on a theme announced at kickoff. Engine skill and art carry it — ship something playable.',

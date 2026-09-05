@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { getValidatedQuery } from '../../middleware/validate.middleware.js';
-import { deleteAvatar, isStorageConfigured, uploadAvatar } from '../../services/storage.js';
+import { deleteImage, isStorageConfigured, uploadAvatar } from '../../services/storage.js';
 import { userStore } from '../../data/user.store.js';
 import { HttpError } from '../../utils/http-error.js';
 import * as experienceService from './experience.service.js';
@@ -119,7 +119,7 @@ export async function uploadAvatarHandler(req: Request, res: Response) {
 
   // The replaced object is removed after the new one is safely recorded, so a
   // failure here never leaves the profile pointing at a deleted image.
-  if (result.previousPath) void deleteAvatar(result.previousPath);
+  if (result.previousPath) void deleteImage(result.previousPath);
 
   res.status(200).json({ data: toPublicUser(result.user) });
 }
@@ -129,7 +129,7 @@ export async function removeAvatarHandler(req: Request, res: Response) {
   const result = await userStore.setAvatar(user.id, null, null);
   if (!result) throw HttpError.notFound('The account for this token no longer exists.');
 
-  if (result.previousPath) void deleteAvatar(result.previousPath);
+  if (result.previousPath) void deleteImage(result.previousPath);
   res.status(200).json({ data: toPublicUser(result.user) });
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { TeamLogo } from '../components/teams/TeamLogo';
 import { CoverageBar, FitScore, WeightBreakdown } from '../components/events/FitMeter';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -157,7 +158,9 @@ function TeamRow({
   return (
     <li className="panel panel-soft-sm p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
+        <div className="flex min-w-0 gap-3">
+          <TeamLogo name={team.name} src={team.logoUrl} className="mt-0.5 h-10 w-10" />
+          <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to={`/teams/${team.id}`}
@@ -174,6 +177,7 @@ function TeamRow({
           <p className="readout mt-2 text-xs text-ink-500 dark:text-ink-400">
             {team.memberCount}/{team.maxSize} members · {team.openSeats} open
           </p>
+          </div>
         </div>
 
         {!isMine && team.openSeats > 0 && (

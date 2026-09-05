@@ -19,6 +19,8 @@ import { ProfilePage } from './pages/ProfilePage';
 import { TeamDetailPage } from './pages/TeamDetailPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { TransitionVeil } from './components/ui/TransitionVeil';
 
 /** Restores the top of the page on every route change. */
 function ScrollToTop() {
@@ -62,7 +64,7 @@ function PostAuthRedirect() {
 export default function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [authOpen, setAuthOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, loggingOut } = useAuth();
   const navigate = useNavigate();
 
   const openAuth = useCallback((mode: AuthMode) => {
@@ -105,6 +107,11 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
       <PostAuthRedirect />
+      {/* Rendered above everything, so a sign-out never shows a half-cleared
+          dashboard on its way to the landing page. */}
+      {loggingOut && (
+        <TransitionVeil message="Signing you out" sub="See you at the next one." />
+      )}
       <Navbar onOpenAuth={openAuth} />
 
       <main className="flex-1">
@@ -132,6 +139,7 @@ export default function App() {
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
           <Route path="/onboarding" element={<ProfilePage tour />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           {/* Admin console. Reachable only from the Site/Admin switch in the
               nav bar, which renders for staff alone — it is in no footer and

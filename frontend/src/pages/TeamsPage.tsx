@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { TeamLogo } from '../components/teams/TeamLogo';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Container } from '../components/ui/Container';
@@ -167,6 +168,7 @@ export function TeamsPage() {
                     )}
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <TeamLogo name={team.name} src={team.logoUrl} className="h-9 w-9" />
                       <Link
                         to={`/teams/${team.id}`}
                         className="text-lg font-bold text-ink-900 underline decoration-2 underline-offset-4 hover:text-accent-text dark:text-white"

@@ -311,6 +311,13 @@ const schemas = {
       description: { type: 'string' },
       category: ref('EventCategory'),
       tags: { type: 'array', items: { type: 'string' }, example: ['48h', 'Open Track'] },
+      coverImageUrl: {
+        type: 'string',
+        nullable: true,
+        description:
+          'Cover image. Null falls back to a cover generated from the category, so a ' +
+          'missing or dead URL degrades to something deliberate rather than a broken image.',
+      },
       startDate: { type: 'string', format: 'date-time' },
       endDate: { type: 'string', format: 'date-time' },
       location: { type: 'string', example: 'Baku, Azerbaijan' },
@@ -408,6 +415,11 @@ const schemas = {
       requiredSkills: { type: 'array', items: { type: 'string' } },
       maxSize: { type: 'integer', example: 5 },
       status: ref('TeamStatus'),
+      logoUrl: {
+        type: 'string',
+        nullable: true,
+        description: 'Null falls back to a generated monogram in the UI.',
+      },
       memberCount: { type: 'integer', example: 3 },
       openSeats: { type: 'integer', example: 2 },
       createdAt: { type: 'string', format: 'date-time' },
@@ -1671,6 +1683,51 @@ const paths = {
         403: RESP_403,
         404: errorFor('No such team or participant.'),
         409: errorFor('Already a member, on another team for this event, or already invited.'),
+      },
+    },
+  },
+
+  '/api/teams/{id}/logo': {
+    post: {
+      tags: ['Teams'],
+      summary: 'Upload or replace the team logo',
+      description:
+        'Owner only. PNG, JPEG, or WebP up to 2 MB. Each upload takes a fresh random ' +
+        'path so a CDN never serves the previous logo from cache, and the object it ' +
+        'replaces is deleted only after the row is written.',
+      security: AUTH,
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              required: ['logo'],
+              properties: { logo: { type: 'string', format: 'binary' } },
+            },
+          },
+        },
+      },
+      responses: {
+        200: dataResponse('The updated team.', ref('Team')),
+        400: errorFor('Not an image, larger than 2 MB, or uploads are not configured.'),
+        401: RESP_401,
+        403: errorFor('Only the team owner can do this.'),
+        404: RESP_404,
+      },
+    },
+    delete: {
+      tags: ['Teams'],
+      summary: 'Remove the team logo',
+      description: 'Owner only. The UI falls back to a generated monogram.',
+      security: AUTH,
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      responses: {
+        200: dataResponse('The updated team.', ref('Team')),
+        401: RESP_401,
+        403: RESP_403,
+        404: RESP_404,
       },
     },
   },

@@ -116,6 +116,14 @@ export interface User {
   discordHandle: string | null;
   /** Skill -> 0..100. Keys are always a subset of `skills`. */
   skillLevels: Record<string, number>;
+  /**
+   * Whether this person appears in team suggestions and the directory.
+   *
+   * The API has always returned this on `/api/auth/me`; the type simply never
+   * declared it, so anything reading it was a compile error for a field that
+   * was right there on the wire.
+   */
+  lookingForTeam: boolean;
 
   // -- lifecycle -------------------------------------------------------------
   emailVerified: boolean;
@@ -335,6 +343,8 @@ export interface EventItem {
   registrationDeadline: string;
   participants: number;
   featured: boolean;
+  /** Cover image. Null falls back to a generated cover keyed on the category. */
+  coverImageUrl: string | null;
 }
 
 export interface CategoryCount {
@@ -514,6 +524,8 @@ export interface Team {
   requiredSkills: string[];
   maxSize: number;
   status: 'recruiting' | 'full' | 'locked' | 'disbanded';
+  /** Null falls back to a generated monogram. */
+  logoUrl: string | null;
   memberCount: number;
   openSeats: number;
   createdAt: string;

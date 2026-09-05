@@ -887,6 +887,7 @@ multi-step flow, the site grew a moderation tier, and **matching became per-even
 | `008_connections` | `connections` and `messages` |
 | `009_skill_scale` | Proficiency rescaled 1–5 → 0–100, with a range constraint |
 | `010_team_roles` | `primary_role` → `roles text[]`, 1–5 entries, GIN-indexed |
+| `011_images` | `events.cover_image_url`; `teams.logo_url` + `logo_path` |
 
 Two schema decisions worth keeping:
 
@@ -1073,7 +1074,58 @@ the moving parts.
 **LinkedIn sync is a labelled placeholder**, as asked — the space is reserved and marked
 *coming soon*; nothing is integrated.
 
-### 7.7 Verification
+### 7.7 Presentation: covers, logos, settings, transitions
+
+Four changes that are about how the product reads rather than what it computes.
+
+**Event covers.** `events.cover_image_url`, seeded with one Unsplash photo per
+event (each URL checked for a 200 before being written in). The card was
+rebuilt around it — thirteen text-only cards were a wall of near-identical
+rectangles with nothing to tell two hackathons apart. The whole card is now one
+link rather than a title link plus a "View details" button, which halved the tab
+stops and made the obvious click work.
+
+`EventCover` never shows a broken image: every event has a **generated cover**
+keyed on its category painted underneath, so a missing, slow, or dead URL
+degrades to something deliberate. Covers below the fold load lazily.
+
+**Team logos.** `teams.logo_url` + `logo_path`, uploaded through the same
+storage service as avatars — which was generalised to `uploadImage(prefix, …)`
+with `uploadAvatar` and `uploadTeamLogo` as thin wrappers rather than a second
+copy of the upload path. Owner only. Without a logo, `TeamLogo` renders a
+monogram on a colour derived from the team name, so five teams look like five
+teams before anyone uploads anything.
+
+The path is kept alongside the URL for the same reason avatars keep theirs: it
+is what lets the old object be deleted when a new one replaces it. It is
+deliberately **not** on `TeamRecord` — every team response would then carry an
+internal bucket key no client uses — so the two calls that need it ask the store
+directly.
+
+**Settings** (`/settings`, gear icon in the navbar). Appearance, discoverability,
+linked accounts, and account facts. Every control writes something real; the one
+thing not built yet (notification email) is labelled *Coming soon* rather than
+rendered as a switch. A switch that silently does nothing is worse than an empty
+section, because somebody will set it and believe it.
+
+**Sign-out transition.** Clearing a token is instantaneous, so the screen used to
+swap from a signed-in dashboard to the landing page between two frames — which
+reads like a crash rather than a confirmation. `TransitionVeil` covers it for
+650ms. The comment on it is explicit that there is nothing to wait for and this
+is a deliberate transition, not disguised work.
+
+Two defects found while building this:
+
+- `User.lookingForTeam` was returned by `/api/auth/me` but never declared in the
+  frontend type, so reading a field that was right there on the wire was a
+  compile error.
+- Tailwind v4 compiles `translate-x-*` to the CSS `translate` property, which
+  offsets from an absolutely positioned element's *static* position rather than
+  its container's edge. The settings toggle knob sat 19px outside its track.
+  Fixed by anchoring with `left` and leaving `translate` to animate only —
+  measured in a browser rather than eyeballed.
+
+### 7.8 Verification
 
 Every suite below ran against the live Supabase database, not mocks or fixtures.
 
@@ -1086,8 +1138,9 @@ Every suite below ran against the live Supabase database, not mocks or fixtures.
 | `event-stats-e2e` | archetypes, per-event fit, gaps, suggestions | 29 |
 | `connections-e2e` | requests, chat, unread counts, gating | 30 |
 | `roles-e2e2` | multi-roles, the 0–100 scale, depth scoring, the brief | 39 |
+| `noverify-e2e` | signup with email confirmation switched off | 16 |
 
-All passing; 244 checks in total. Browser flows were driven through Chrome with Playwright.
+All passing; 258 checks in total. Browser flows were driven through Chrome with Playwright.
 
 **These suites are not in the repository** — they were written in a session scratchpad. §6.5
 item 1 is about moving them in.

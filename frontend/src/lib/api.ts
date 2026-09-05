@@ -308,6 +308,21 @@ export const teamsApi = {
       body: JSON.stringify({ userId, message }),
     }).then((r) => r.data),
 
+  /** Upload or replace the team logo. Owner only. */
+  uploadLogo: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('logo', file);
+    return request<{ data: TeamDetail }>(`/api/teams/${id}/logo`, {
+      method: 'POST',
+      body: form,
+    }).then((r) => r.data);
+  },
+
+  removeLogo: (id: string) =>
+    request<{ data: TeamDetail }>(`/api/teams/${id}/logo`, { method: 'DELETE' }).then(
+      (r) => r.data,
+    ),
+
   /** What this team is missing for its event. */
   gaps: (id: string) =>
     request<{ data: TeamEventReport }>(`/api/teams/${id}/gaps`).then((r) => r.data),

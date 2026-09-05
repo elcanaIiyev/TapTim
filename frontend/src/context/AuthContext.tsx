@@ -23,7 +23,17 @@ interface AuthContextValue {
   /** Merges a fresh profile in without a round trip. */
   applyUser: (user: User) => void;
   logout: () => void;
+  /** True while the sign-out curtain is up, so the shell can render it. */
+  loggingOut: boolean;
 }
+
+/**
+ * How long the sign-out curtain stays up.
+ *
+ * Long enough to register as a transition, short enough that nobody waits on
+ * it. Anything past ~1s stops feeling considered and starts feeling broken.
+ */
+const LOGOUT_VEIL_MS = 650;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -31,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [initialising, setInitialising] = useState(true);
   const [pendingStep, setPendingStep] = useState<NextStep | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Restore the session from a stored token on first mount.
   useEffect(() => {
@@ -118,10 +129,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const consumePendingStep = useCallback(() => setPendingStep(null), []);
 
+  /**
+   * Sign out, with a short curtain over it.
+   *
+   * Clearing a token is instantaneous, so without this the screen swapped from
+   * a signed-in dashboard to the landing page between two frames — which reads
+   * like a crash rather than a confirmation. The pause is deliberate and is
+   * declared as such in `TransitionVeil`; it is not disguising work.
+   *
+   * The session is cleared *after* the veil is up, so nothing renders in a
+   * half-signed-out state behind it.
+   */
   const logout = useCallback(() => {
-    tokenStorage.clear();
-    setUser(null);
-    setPendingStep(null);
+    setLoggingOut(true);
+
+    window.setTimeout(() => {
+      tokenStorage.clear();
+      setUser(null);
+      setPendingStep(null);
+      setLoggingOut(false);
+    }, LOGOUT_VEIL_MS);
   }, []);
 
   const value = useMemo(
@@ -129,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       initialising,
       pendingStep,
+      loggingOut,
       consumePendingStep,
       login,
       signup,
@@ -141,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       initialising,
       pendingStep,
+      loggingOut,
       consumePendingStep,
       login,
       signup,

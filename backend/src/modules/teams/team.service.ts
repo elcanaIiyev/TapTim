@@ -9,6 +9,7 @@ import {
 import { userStore } from '../../data/user.store.js';
 import { isUniqueViolation } from '../../db/pool.js';
 import { canModerate } from '../../middleware/admin.middleware.js';
+import { uploadTeamLogo } from '../../services/storage.js';
 import { HttpError } from '../../utils/http-error.js';
 import { scoreAgainstTeam, type TeamFitResult } from '../compatibility/compatibility.engine.js';
 import {
@@ -130,6 +131,42 @@ export async function createTeam(input: CreateTeamInput, owner: UserRecord): Pro
   } catch (error) {
     rethrowAsHttp(error);
   }
+}
+
+/**
+ * Replaces a team's logo.
+ *
+ * Returns the path of the image it displaced so the caller can delete it after
+ * the row is committed. Deleting inside this function would mean a failed write
+ * had already destroyed the old file, leaving the team with no logo at all.
+ */
+export async function setTeamLogo(
+  id: string,
+  actorId: string,
+  file: { buffer: Buffer; mimetype: string; size: number },
+): Promise<{ team: TeamDetail; previousPath: string | null }> {
+  await requireOwnedTeam(id, actorId);
+  const previousPath = await teamStore.logoPathOf(id);
+  const stored = await uploadTeamLogo(id, file);
+
+  const updated = await teamStore.update(id, { logoUrl: stored.url, logoPath: stored.path });
+  if (!updated) throw HttpError.notFound('That team no longer exists.');
+
+  return { team: await getTeam(id), previousPath };
+}
+
+/** Removes the logo, falling the UI back to the generated monogram. */
+export async function removeTeamLogo(
+  id: string,
+  actorId: string,
+): Promise<{ team: TeamDetail; previousPath: string | null }> {
+  await requireOwnedTeam(id, actorId);
+  const previousPath = await teamStore.logoPathOf(id);
+
+  const updated = await teamStore.update(id, { logoUrl: null, logoPath: null });
+  if (!updated) throw HttpError.notFound('That team no longer exists.');
+
+  return { team: await getTeam(id), previousPath };
 }
 
 export async function updateTeam(

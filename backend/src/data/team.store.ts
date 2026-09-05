@@ -19,7 +19,7 @@ import {
 
 const TEAM_COLUMNS = `
   t.id, t.event_id, t.owner_id, t.name, t.description, t.looking_for,
-  t.required_skills, t.max_size, t.status, t.created_at, t.updated_at,
+  t.required_skills, t.max_size, t.status, t.logo_url, t.created_at, t.updated_at,
   (select count(*) from team_members m where m.team_id = t.id) as member_count
 `;
 
@@ -79,6 +79,8 @@ const UPDATABLE_COLUMNS = {
   maxSize: 'max_size',
   status: 'status',
   ownerId: 'owner_id',
+  logoUrl: 'logo_url',
+  logoPath: 'logo_path',
 } as const;
 
 export type TeamUpdate = Partial<Record<keyof typeof UPDATABLE_COLUMNS, unknown>>;
@@ -278,6 +280,21 @@ class TeamStore {
       );
       return { ...mapTeamRow(refreshed.rows[0]), members: [] as TeamMember[] };
     }).then(async (team) => ({ ...team, members: await this.findMembers(team.id) }));
+  }
+
+  /**
+   * The storage key of a team's current logo.
+   *
+   * Kept off `TeamRecord` on purpose: every team response would then carry an
+   * internal bucket path that no client has any use for. Only the two calls
+   * that replace or clear a logo need it, and they ask for it directly.
+   */
+  async logoPathOf(id: string): Promise<string | null> {
+    const row = await queryOne<{ logo_path: string | null }>(
+      'select logo_path from teams where id = $1',
+      [id],
+    );
+    return row?.logo_path ?? null;
   }
 
   async update(id: string, patch: TeamUpdate): Promise<TeamRecord | null> {

@@ -5,7 +5,7 @@ import { mapEventRow, type EventItem, type EventRow } from '../modules/events/ev
 const COLUMNS = `
   id, name, description, category, tags, start_date, end_date, location, mode,
   team_size_min, team_size_max, prize_pool, registration_deadline, participants,
-  featured, stat_profile, created_by, created_at, updated_at
+  featured, cover_image_url, stat_profile, created_by, created_at, updated_at
 `;
 
 export interface ListEventsFilter {
@@ -32,6 +32,7 @@ export interface EventWriteInput {
   registrationDeadline: string;
   participants: number;
   featured: boolean;
+  coverImageUrl?: string | null;
 }
 
 /** Columns an update may touch, keyed by their API name. */
@@ -50,6 +51,7 @@ const UPDATABLE_COLUMNS = {
   featured: 'featured',
   teamSizeMin: 'team_size_min',
   teamSizeMax: 'team_size_max',
+  coverImageUrl: 'cover_image_url',
 } as const;
 
 export type EventUpdate = Partial<Record<keyof typeof UPDATABLE_COLUMNS, unknown>>;
@@ -121,8 +123,8 @@ class EventStore {
       `insert into events (
          id, name, description, category, tags, start_date, end_date, location,
          mode, team_size_min, team_size_max, prize_pool, registration_deadline,
-         participants, featured, created_by
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         participants, featured, cover_image_url, created_by
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        returning ${COLUMNS}`,
       [
         newEventId(),
@@ -140,6 +142,7 @@ class EventStore {
         input.registrationDeadline,
         input.participants,
         input.featured,
+        input.coverImageUrl ?? null,
         createdBy,
       ],
     );

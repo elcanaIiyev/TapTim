@@ -20,6 +20,8 @@ export interface TeamRecord {
   requiredSkills: string[];
   maxSize: number;
   status: TeamStatus;
+  /** Public URL of the team logo, or null. */
+  logoUrl: string | null;
   memberCount: number;
   openSeats: number;
   createdAt: string;
@@ -60,6 +62,7 @@ export interface TeamRow {
   required_skills: string[];
   max_size: number;
   status: string;
+  logo_url: string | null;
   member_count: string | number;
   created_at: Date;
   updated_at: Date;
@@ -77,6 +80,7 @@ export function mapTeamRow(row: TeamRow): TeamRecord {
     requiredSkills: row.required_skills ?? [],
     maxSize: row.max_size,
     status: row.status as TeamStatus,
+    logoUrl: row.logo_url ?? null,
     memberCount,
     openSeats: Math.max(0, row.max_size - memberCount),
     createdAt: toIso(row.created_at),

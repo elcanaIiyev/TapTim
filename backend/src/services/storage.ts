@@ -105,15 +105,17 @@ export async function ensureAvatarBucket(): Promise<void> {
   }
 }
 
-export interface UploadedAvatar {
+export interface UploadedImage {
   url: string;
   path: string;
 }
 
-export async function uploadAvatar(
-  userId: string,
+export async function uploadImage(
+  /** Folder the object lands in — keeps avatars and team logos apart. */
+  prefix: string,
   file: { buffer: Buffer; mimetype: string; size: number },
-): Promise<UploadedAvatar> {
+  label = 'Images',
+): Promise<UploadedImage> {
   assertConfigured();
 
   const extension = ALLOWED_TYPES[file.mimetype];
@@ -123,13 +125,13 @@ export async function uploadAvatar(
     );
   }
   if (file.size > MAX_BYTES) {
-    throw HttpError.badRequest('Profile pictures must be 2 MB or smaller.');
+    throw HttpError.badRequest(`${label} must be 2 MB or smaller.`);
   }
 
-  // A random segment per upload rather than a fixed `${userId}.png`: the public
+  // A random segment per upload rather than a fixed `${prefix}.png`: the public
   // URL changes every time, so a replaced picture is never served from a CDN or
   // browser cache still holding the old one.
-  const path = `${userId}/${randomBytes(8).toString('hex')}.${extension}`;
+  const path = `${prefix}/${randomBytes(8).toString('hex')}.${extension}`;
 
   const response = await fetch(
     `${env.storage.url}/storage/v1/object/${env.storage.bucket}/${path}`,
@@ -157,7 +159,36 @@ export async function uploadAvatar(
  * object, which costs a few kilobytes — not a reason to fail the request that
  * successfully uploaded its replacement.
  */
-export async function deleteAvatar(path: string): Promise<void> {
+/**
+ * A profile picture. Namespaced by user id so one person's uploads stay
+ * together in the bucket and are trivially findable.
+ */
+export function uploadAvatar(
+  userId: string,
+  file: { buffer: Buffer; mimetype: string; size: number },
+): Promise<UploadedImage> {
+  return uploadImage(`avatars/${userId}`, file, 'Profile pictures');
+}
+
+/** A team logo. Same bucket, separate folder. */
+export function uploadTeamLogo(
+  teamId: string,
+  file: { buffer: Buffer; mimetype: string; size: number },
+): Promise<UploadedImage> {
+  return uploadImage(`team-logos/${teamId}`, file, 'Team logos');
+}
+
+/**
+ * Removes one stored object by its key.
+ *
+ * Takes the path the upload returned rather than reconstructing one, so objects
+ * written before the folder prefixes existed still delete correctly.
+ *
+ * Never throws: this is called after the row has already been updated, and a
+ * failed cleanup should leave an orphaned file, not fail the request that
+ * succeeded.
+ */
+export async function deleteImage(path: string): Promise<void> {
   if (!env.storage.configured) return;
 
   try {

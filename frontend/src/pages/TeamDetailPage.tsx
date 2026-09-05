@@ -7,6 +7,9 @@ import { Container } from '../components/ui/Container';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, eventsApi, teamsApi } from '../lib/api';
+import { Card } from '../components/ui/Card';
+import { TeamLogo } from '../components/teams/TeamLogo';
+import { TeamLogoPicker } from '../components/teams/TeamLogoPicker';
 import { rolesSummary } from '../lib/types';
 import type { EventCandidate, EventItem, TeamDetail, TeamEventReport } from '../lib/types';
 import { NotFoundPage } from './NotFoundPage';
@@ -90,6 +93,12 @@ export function TeamDetailPage() {
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            <TeamLogo
+              name={team.name}
+              src={team.logoUrl}
+              className="h-12 w-12"
+              textClassName="text-base"
+            />
             <h1 className="type-display text-ink-900 dark:text-white">{team.name}</h1>
             {team.openSeats === 0 ? (
               <Badge tone="neutral">Full</Badge>
@@ -193,6 +202,12 @@ export function TeamDetailPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {isOwner && (
+        <Card className="mt-6">
+          <TeamLogoPicker team={team} onChange={setTeam} />
+        </Card>
       )}
 
       {isOwner && (

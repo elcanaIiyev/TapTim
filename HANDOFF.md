@@ -28,6 +28,8 @@ with chat and the LinkedIn placeholder.
 | `skills-mod-ui.mjs` | skill picker + moderation UI (Chrome) | 34 |
 | `chat-ui.mjs` | connections + chat in the browser | 17 |
 | `roles-ui.mjs` | role picker, sliders, compatibility page (Chrome) | 33 |
+| `noverify-e2e.mjs` | signup with email confirmation off | 16 |
+| `features-ui.mjs` | event covers, team logo, settings, sign-out veil (Chrome) | 25 |
 
 All passing. **The scratchpad is session-scoped and will be gone after a reset**,
 which makes porting these into `backend/` the highest-value next task — see §3.
@@ -88,7 +90,7 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 
 `001_init` · `002_admin` · `003_account_roles` · `004_onboarding` ·
 `005_skill_levels` · `006_moderation` · `007_event_stats` · `008_connections` ·
-`009_skill_scale` · `010_team_roles`
+`009_skill_scale` · `010_team_roles` · `011_images`
 
 ### Conventions worth not relearning
 
@@ -127,6 +129,10 @@ All six items from the last scope list are **done**.
 | 8 | Compatibility = pick a team, get who you need | `recruitBriefFor` in `event-stats.ts`, rewritten `CompatibilityPage.tsx` |
 | 9 | Depth counts, not just how many skills | `coverageFor` in `event-stats.ts` — see doc.md §7.3 |
 | 10 | Skill slider 0–100 with the adjectives as bands | `SKILL_LEVELS` bands, migration `009`, `SkillPicker.tsx` |
+| 11 | Images on mock events, better events tab | `event.data.ts` covers, `EventCover.tsx`, rebuilt `EventCard.tsx` |
+| 12 | Team logo | migration `011`, `POST/DELETE /api/teams/:id/logo`, `TeamLogo(Picker).tsx` |
+| 13 | Loading animations (e.g. logout) | `TransitionVeil.tsx`, wired through `AuthContext.logout` |
+| 14 | Settings button and options | `SettingsPage.tsx` at `/settings`, gear in `Navbar` |
 
 The design decision worth remembering from item 2: the compatibility engine was
 **not** forked. `scorePair` and `scoreAgainstTeam` take an optional weight
@@ -139,7 +145,7 @@ untouched. Gaming weights credibility 3; Cybersecurity weights it 18.
 
 Nothing outstanding was asked for. In value order:
 
-1. **Port the end-to-end suites into `backend/`.** 359 checks currently live in
+1. **Port the end-to-end suites into `backend/`.** 432 checks currently live in
    a session scratchpad and vanish on reset. They are plain Node scripts using
    `fetch`, so they need no framework to keep working — moving them into
    `backend/tests/` behind an `npm test` is mostly a file move. The pure,

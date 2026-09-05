@@ -282,6 +282,21 @@
     }
   }
 
+  /* A segment sweeping across a track, used by <TransitionVeil>. Travels the
+     full width and back rather than looping in one direction, so it reads as
+     "working" without implying a percentage it does not know. */
+  @keyframes taptim-sweep {
+    0% {
+      transform: translateX(-100%);
+    }
+    50% {
+      transform: translateX(200%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
   /* Entrance: a soft rise-and-fade, no clip edge. */
   .reveal {
     animation: reveal-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
