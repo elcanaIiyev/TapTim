@@ -49,6 +49,22 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
   };
 }
 
+/** Message text of an unknown throwable, without assuming it is an Error. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Strips `user:password@` out of any URL in a string.
+ *
+ * Deliberately not a SUPABASE_URL-specific fix: anything that ends up in one of
+ * these warnings could carry a DSN, and the safe default is that no message
+ * leaving this module contains a credential.
+ */
+function redactUrls(text: string): string {
+  return text.replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/@]+@/gi, '$1<redacted>@');
+}
+
 /**
  * Creates the avatar bucket if it is missing.
  *
@@ -79,12 +95,13 @@ export async function ensureAvatarBucket(): Promise<void> {
     const detail = await response.text();
     if (detail.includes('already exists') || detail.includes('Duplicate')) return;
 
-    console.warn(`  [storage] could not ensure bucket (${response.status}): ${detail}`);
+    console.warn(`  [storage] could not ensure bucket (${response.status}): ${redactUrls(detail)}`);
   } catch (error) {
-    console.warn(
-      '  [storage] could not reach Supabase Storage:',
-      error instanceof Error ? error.message : error,
-    );
+    // Scrubbed before printing. `fetch` puts the offending URL in its message,
+    // and a misconfigured SUPABASE_URL is most often a copy-paste of
+    // DATABASE_URL — which carries the database password. A startup warning is
+    // not worth writing credentials into the console and any log that tails it.
+    console.warn('  [storage] could not reach Supabase Storage:', redactUrls(errorMessage(error)));
   }
 }
 
@@ -125,7 +142,7 @@ export async function uploadAvatar(
 
   if (!response.ok) {
     const detail = await response.text();
-    console.error(`[storage] upload failed (${response.status}): ${detail}`);
+    console.error(`[storage] upload failed (${response.status}): ${redactUrls(detail)}`);
     throw HttpError.badRequest('Could not store that image. Try again.');
   }
 
@@ -152,6 +169,6 @@ export async function deleteAvatar(path: string): Promise<void> {
       console.warn(`[storage] could not delete ${path} (${response.status}).`);
     }
   } catch (error) {
-    console.warn('[storage] delete failed:', error instanceof Error ? error.message : error);
+    console.warn('[storage] delete failed:', redactUrls(errorMessage(error)));
   }
 }
