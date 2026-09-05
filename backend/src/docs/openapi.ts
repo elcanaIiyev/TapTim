@@ -2,6 +2,7 @@ import { env } from '../config/env.js';
 import { CERTIFICATE_STATUSES } from '../modules/certificates/certificate.model.js';
 import { EVENT_CATEGORIES, EVENT_MODES } from '../modules/events/event.model.js';
 import { TEAM_STATUSES } from '../modules/teams/team.model.js';
+import { NOTIFICATION_KINDS } from '../data/notification.store.js';
 import { ACCOUNT_ROLES } from '../modules/users/account-role.js';
 import { EXPERIENCE_KINDS, PRONOUN_OPTIONS } from '../modules/users/profile-options.js';
 import {
@@ -1024,6 +1025,44 @@ const schemas = {
     type: 'object',
     required: ['body'],
     properties: { body: { type: 'string', minLength: 1, maxLength: 2000 } },
+  },
+
+  // -- notifications ----------------------------------------------------------
+
+  Notification: {
+    type: 'object',
+    description:
+      'Denormalised at emit time: the title and link are written when it happens, so a ' +
+      'notification keeps saying what it said after the team is renamed or the request ' +
+      'withdrawn.',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      kind: { type: 'string', enum: [...NOTIFICATION_KINDS] },
+      title: { type: 'string', example: 'Kenan Mammadov invited you to Kernel Panic' },
+      body: { type: 'string', nullable: true },
+      link: { type: 'string', nullable: true, example: '/teams/…' },
+      actorId: { type: 'string', format: 'uuid', nullable: true },
+      actor: {
+        type: 'object',
+        nullable: true,
+        description: 'Resolved for the avatar; null once that account is gone.',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          fullName: { type: 'string' },
+          avatarUrl: { type: 'string', nullable: true },
+        },
+      },
+      readAt: { type: 'string', format: 'date-time', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
+
+  NotificationFeed: {
+    type: 'object',
+    properties: {
+      items: { type: 'array', items: ref('Notification') },
+      unread: { type: 'integer', example: 3 },
+    },
   },
 
   // -- staff console ----------------------------------------------------------
@@ -2131,6 +2170,55 @@ const paths = {
     },
   },
 
+  // -- notifications ----------------------------------------------------------
+
+  '/api/notifications': {
+    get: {
+      tags: ['Notifications'],
+      summary: 'My feed',
+      description:
+        'The 50 most recent, newest first, with the unread count. Rows are stored rather ' +
+        'than derived: "someone accepted your application" is a transition, not a state, ' +
+        'so a feed computed from current rows would silently drop exactly the events ' +
+        'people most want to be told about.',
+      security: AUTH,
+      responses: { 200: dataResponse('The feed.', ref('NotificationFeed')), 401: RESP_401 },
+    },
+  },
+
+  '/api/notifications/read-all': {
+    post: {
+      tags: ['Notifications'],
+      summary: 'Mark everything read',
+      security: AUTH,
+      responses: {
+        200: dataResponse('How many were marked.', {
+          type: 'object',
+          properties: { marked: { type: 'integer', example: 4 } },
+        }),
+        401: RESP_401,
+      },
+    },
+  },
+
+  '/api/notifications/{id}/read': {
+    post: {
+      tags: ['Notifications'],
+      summary: 'Mark one read',
+      description:
+        'Scoped by owner, so an id alone is not enough. "Not yours", "does not exist" and ' +
+        '"already read" all answer 404 — distinguishing them would confirm whether ' +
+        "someone else's id is real, and none is worth acting on differently.",
+      security: AUTH,
+      parameters: [pathParam('id', 'Notification UUID.', 'uuid')],
+      responses: {
+        200: dataResponse('Marked.', ref('Notification')),
+        401: RESP_401,
+        404: errorFor('No unread notification with that id.'),
+      },
+    },
+  },
+
   // -- staff console ----------------------------------------------------------
   // Mounted at /api/ops rather than /api/admin, and every failure here is a 404
   // rather than a 403, so probing does not confirm the console exists.
@@ -2287,6 +2375,10 @@ export const openApiDocument = {
     { name: 'Teams', description: 'Team formation: rosters, invitations, and applications.' },
     { name: 'Compatibility', description: 'Pair scoring, ranked matches, and team suggestions.' },
     { name: 'Certificates', description: 'Credential claims and the verification pipeline.' },
+    {
+      name: 'Notifications',
+      description: 'What happened while you were away.',
+    },
     {
       name: 'Connections',
       description: 'The people you know, and the conversations with them.',

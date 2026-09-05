@@ -11,6 +11,8 @@ import type {
   MyEventFit,
   Team,
   TeamDetail,
+  NotificationFeed,
+  NotificationItem,
   TeamChannel,
   TeamChatMessage,
   TeamEventReport,
@@ -450,3 +452,18 @@ export const connectionsApi = {
 };
 
 export { API_URL };
+
+/** What happened while you were away. */
+export const notificationsApi = {
+  list: () => request<{ data: NotificationFeed }>('/api/notifications').then((r) => r.data),
+
+  markRead: (id: string) =>
+    request<{ data: NotificationItem }>(`/api/notifications/${id}/read`, { method: 'POST' }).then(
+      (r) => r.data,
+    ),
+
+  markAllRead: () =>
+    request<{ data: { marked: number } }>('/api/notifications/read-all', {
+      method: 'POST',
+    }).then((r) => r.data),
+};

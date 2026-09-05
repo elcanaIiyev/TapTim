@@ -5,6 +5,7 @@ import {
 } from '../../data/connection.store.js';
 import { userStore } from '../../data/user.store.js';
 import { HttpError } from '../../utils/http-error.js';
+import { notify } from '../notifications/notification.service.js';
 import { toDirectoryUser, type DirectoryUser } from '../users/user.model.js';
 
 /**
@@ -109,6 +110,16 @@ export async function requestConnection(
   // both want it — accept rather than opening a second, redundant request.
   if (existing?.status === 'pending' && existing.requestedBy !== viewerId) {
     const accepted = await connectionStore.setStatus(existing.id, 'accepted');
+
+    const viewer = await userStore.findById(viewerId);
+    await notify({
+      userId: targetId,
+      actorId: viewerId,
+      kind: 'connection-accepted',
+      title: `You and ${viewer?.fullName ?? 'someone'} are now connected`,
+      link: '/connections',
+    });
+
     return {
       id: accepted!.id,
       state: 'connected',
@@ -120,6 +131,16 @@ export async function requestConnection(
   }
 
   const connection = await connectionStore.request(viewerId, targetId);
+
+  const viewer = await userStore.findById(viewerId);
+  await notify({
+    userId: targetId,
+    actorId: viewerId,
+    kind: 'connection-request',
+    title: `${viewer?.fullName ?? 'Someone'} wants to connect`,
+    link: '/connections',
+  });
+
   return {
     id: connection.id,
     state: stateFor(connection, viewerId),
@@ -161,6 +182,21 @@ export async function respond(
     connectionId,
     action === 'accept' ? 'accepted' : 'declined',
   );
+
+  // Only an acceptance is announced. A silent decline is deliberate: telling
+  // somebody they were turned down is a worse product than simply leaving the
+  // request unanswered, and it is the convention everywhere else.
+  if (action === 'accept') {
+    const viewer = await userStore.findById(viewerId);
+    await notify({
+      userId: connection.requestedBy,
+      actorId: viewerId,
+      kind: 'connection-accepted',
+      title: `${viewer?.fullName ?? 'Someone'} accepted your connection request`,
+      link: '/connections',
+    });
+  }
+
   return { state: stateFor(updated, viewerId) };
 }
 

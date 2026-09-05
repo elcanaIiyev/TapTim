@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
 import { AdminModeSwitch } from './AdminModeSwitch';
 import { Logo } from './Logo';
+import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
 
 /** Shown to everyone. */
@@ -139,6 +140,8 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
                     )}
                     <span className="truncate">{user.firstName}</span>
                   </NavLink>
+
+                  <NotificationBell />
 
                   {/* Icon-only, because the label would be the third word in a
                       row that is already name + action. The accessible name

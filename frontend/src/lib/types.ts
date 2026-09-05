@@ -577,6 +577,35 @@ export interface ConnectionsOverview {
   totalUnread: number;
 }
 
+export type NotificationKind =
+  | 'team-invitation'
+  | 'team-application'
+  | 'request-accepted'
+  | 'request-declined'
+  | 'team-member-joined'
+  | 'removed-from-team'
+  | 'connection-request'
+  | 'connection-accepted';
+
+export interface NotificationItem {
+  id: string;
+  kind: NotificationKind;
+  /** Written at emit time, so it keeps saying what it said. */
+  title: string;
+  body: string | null;
+  /** In-app path to open. Null for the purely informational. */
+  link: string | null;
+  actorId: string | null;
+  actor: { id: string; fullName: string; avatarUrl: string | null } | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationFeed {
+  items: NotificationItem[];
+  unread: number;
+}
+
 export interface TeamChatMessage {
   id: string;
   teamId: string;

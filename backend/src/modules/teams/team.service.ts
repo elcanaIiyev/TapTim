@@ -12,6 +12,7 @@ import { isUniqueViolation } from '../../db/pool.js';
 import { canModerate } from '../../middleware/admin.middleware.js';
 import { uploadTeamLogo } from '../../services/storage.js';
 import { HttpError } from '../../utils/http-error.js';
+import { notify, notifyMany } from '../notifications/notification.service.js';
 import { scoreAgainstTeam, type TeamFitResult } from '../compatibility/compatibility.engine.js';
 import {
   displayRole,
@@ -277,6 +278,16 @@ export async function removeMember(
   }
 
   await teamStore.removeMember(teamId, memberId);
+
+  // Being removed is otherwise entirely silent — the team simply stops
+  // appearing on your Teams tab with no explanation.
+  await notify({
+    userId: memberId,
+    actorId: actorId,
+    kind: 'removed-from-team',
+    title: `You were removed from ${team.name}`,
+    link: '/teams',
+  });
 }
 
 /** Hands the team to an existing member. The previous owner stays on the roster. */
@@ -345,13 +356,26 @@ export async function applyToTeam(
   }
 
   try {
-    return await teamStore.createRequest({
+    const created = await teamStore.createRequest({
       teamId,
       userId: user.id,
       kind: 'application',
       message: input.message,
       createdBy: user.id,
     });
+
+    // The owner is the one who has to act on this, and until now the only way
+    // to find out was to go and look at the team.
+    await notify({
+      userId: team.ownerId,
+      actorId: user.id,
+      kind: 'team-application',
+      title: `${user.fullName} asked to join ${team.name}`,
+      body: input.message,
+      link: `/teams/${teamId}`,
+    });
+
+    return created;
   } catch (error) {
     rethrowAsHttp(error);
   }
@@ -379,13 +403,24 @@ export async function inviteToTeam(
   }
 
   try {
-    return await teamStore.createRequest({
+    const created = await teamStore.createRequest({
       teamId,
       userId: invitee.id,
       kind: 'invite',
       message: input.message,
       createdBy: actor.id,
     });
+
+    await notify({
+      userId: invitee.id,
+      actorId: actor.id,
+      kind: 'team-invitation',
+      title: `${actor.fullName} invited you to ${team.name}`,
+      body: input.message,
+      link: '/teams',
+    });
+
+    return created;
   } catch (error) {
     rethrowAsHttp(error);
   }
@@ -426,6 +461,20 @@ export async function respondToRequest(
   if (action === 'decline') {
     const declined = await teamStore.setRequestStatus(requestId, 'declined');
     if (!declined) throw HttpError.conflict('This request is no longer pending.');
+
+    // Told to whoever raised it — a decline is otherwise completely silent, and
+    // someone waiting on an answer deserves to stop waiting.
+    await notify({
+      userId: request.createdBy,
+      actorId: actor.id,
+      kind: 'request-declined',
+      title:
+        request.kind === 'invite'
+          ? `${actor.fullName} declined your invitation to ${team.name}`
+          : `${team.name} declined your application`,
+      link: `/teams/${team.id}`,
+    });
+
     return declined;
   }
 
@@ -443,6 +492,33 @@ export async function respondToRequest(
       displayRole(joiner.roles) ?? 'Full-Stack Developer',
     );
     if (!accepted) throw HttpError.conflict('This request is no longer pending.');
+
+    // Two audiences, and they are not told the same thing. Whoever raised the
+    // request wants to know it was answered; the people already on the team
+    // want to know who just walked in.
+    await notify({
+      userId: request.createdBy,
+      actorId: actor.id,
+      kind: 'request-accepted',
+      title:
+        request.kind === 'invite'
+          ? `${joiner.fullName} joined ${team.name}`
+          : `You are in — ${team.name} accepted you`,
+      link: `/teams/${team.id}`,
+    });
+
+    await notifyMany(
+      team.members
+        .map((member) => member.userId)
+        .filter((id) => id !== joiner.id && id !== request.createdBy),
+      {
+        actorId: joiner.id,
+        kind: 'team-member-joined',
+        title: `${joiner.fullName} joined ${team.name}`,
+        link: `/teams/${team.id}`,
+      },
+    );
+
     return accepted;
   } catch (error) {
     rethrowAsHttp(error);

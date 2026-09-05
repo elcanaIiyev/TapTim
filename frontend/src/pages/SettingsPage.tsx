@@ -351,15 +351,26 @@ export function SettingsPage() {
       {/* -- not built yet ------------------------------------------------------ */}
       <Section
         title="Notifications"
-        hint="Nothing here is wired up yet, and none of it is shown as a switch until it is — a control that silently does nothing is worse than an empty section."
+        hint="In-app notifications are always on — the bell in the header carries invitations, applications, and replies. Email is not built yet, and is shown as a label rather than a switch until it is."
       >
+        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+          <div>
+            <p className="font-semibold text-ink-900 dark:text-white">In the app</p>
+            <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">
+              Invitations, applications, accepted and declined requests, someone joining your
+              team, and connection requests.
+            </p>
+          </div>
+          <Badge tone="success">On</Badge>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div>
             <p className="font-semibold text-ink-900 dark:text-white">
               Email me about invitations and messages
             </p>
             <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">
-              Team invitations, applications, and new messages.
+              Needs a verified sending domain first.
             </p>
           </div>
           <Badge tone="neutral">Coming soon</Badge>

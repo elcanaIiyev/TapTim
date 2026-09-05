@@ -37,6 +37,7 @@ const MOUNTS = {
   'certificate.routes.ts': '/api/certificates',
   'connection.routes.ts': '/api/connections',
   'admin.routes.ts': '/api/ops',
+  'notification.routes.ts': '/api/notifications',
 };
 
 const METHODS = ['get', 'post', 'patch', 'put', 'delete'];
