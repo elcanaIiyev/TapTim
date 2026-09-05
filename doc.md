@@ -888,6 +888,11 @@ multi-step flow, the site grew a moderation tier, and **matching became per-even
 | `009_skill_scale` | Proficiency rescaled 1–5 → 0–100, with a range constraint |
 | `010_team_roles` | `primary_role` → `roles text[]`, 1–5 entries, GIN-indexed |
 | `011_images` | `events.cover_image_url`; `teams.logo_url` + `logo_path` |
+| `012_team_chat` | `team_messages` + `team_message_reads` |
+| `013_notifications` | `notifications`, denormalised at emit time |
+| `014_endorsements` | `skill_endorsements`, keyed on (user, endorser, skill) |
+| `015_endorsement_notification` | `skill-endorsed` joins the notification kinds |
+| `016_event_taxonomy` | `category` → `format` + `domains text[]` |
 
 Two schema decisions worth keeping:
 
@@ -1125,7 +1130,58 @@ Two defects found while building this:
   Fixed by anchoring with `left` and leaving `translate` to animate only —
   measured in a browser rather than eyeballed.
 
-### 7.8 Verification
+### 7.8 Beyond matching: chat, notice, trust, risk
+
+Five changes that move the product past "it introduced you".
+
+**Team channels** (`012_team_chat`). A separate table rather than a `team_id`
+bolted onto `messages`, whose canonical-pair constraint is worth more than the
+single table. Read state is a high-water mark per member, floored at when they
+joined — otherwise joining an established team greets you with its backlog
+unread. Access is membership, checked live.
+
+**Notifications** (`013`, `015`). Stored, not derived: "Kenan accepted your
+application" is a transition, not a state, and a derived feed drops exactly the
+events people want. Titles and links are written at emit time so they survive
+renames and deletions. Emitting never fails the thing it describes, and nobody
+is notified of their own action.
+
+**Endorsements and confidence** (`014`). A teammate vouching for a skill. It does
+not change the number — it changes how much the number is trusted. An unrated
+skill is *absent* from `skill_levels` rather than stored at the default, so
+"I am average" and "I never said" stay distinguishable; `coverageFor` returns
+`confidence` alongside `score`, a self-rated claim tops out at 60, and only an
+endorsement passes that. The recruit brief carries a caveat when the roster is
+thin. This is the answer to the cold-start problem: with five hundred users
+sitting at the default, a confident 70 reports itself as a guess.
+
+**Team risk** (no migration — it reads what was already stored). Availability
+slots, ten working-style answers and the roster were all being collected and
+none of it read. The panel names what could go wrong: no shared hours, a single
+fragile slot, a large gap in planned commitment, timezone spread, all-leaders,
+a required skill held by one person. Every risk states its evidence, and
+nothing fires on absent data — a team that has not filled in working style is
+not a team with a working-style problem. The week grid falls out of the same
+data.
+
+**Two axes for events** (`016_event_taxonomy`). `category` mixed format with
+domain, so a design hackathon had nowhere to sit. Format drives the weights,
+domains drive the focus areas, and an event composes its profile from both.
+Design went from 2 events to 6, spanning four formats.
+
+**Organiser-defined scoring.** The override column had existed since `007` but
+only a developer could write it. `PATCH /api/events/:id` now takes
+`statProfile`, weights must sum to exactly 100 rather than being normalised
+silently, and focus areas are validated against the catalogue because
+`coverageFor` looks them up by name.
+
+**Public recruiting pages** (`GET /api/teams/:id/public`, `/r/:id`). No auth, so
+it can be shared with somebody who has no account. Not a copy of the team page —
+it carries no risk panel, readiness score or confidence caveat, because those
+are for the team. It answers 404 unless the team is actually recruiting, so a
+full team never publishes its gaps.
+
+### 7.9 Verification
 
 Every suite below ran against the live Supabase database, not mocks or fixtures.
 
@@ -1139,8 +1195,14 @@ Every suite below ran against the live Supabase database, not mocks or fixtures.
 | `connections-e2e` | requests, chat, unread counts, gating | 30 |
 | `roles-e2e2` | multi-roles, the 0–100 scale, depth scoring, the brief | 39 |
 | `noverify-e2e` | signup with email confirmation switched off | 16 |
+| `teamchat-e2e` | team channels, membership gating, unread marks | 25 |
+| `notifications-e2e` | every emit site, to the right person only | 28 |
+| `endorsements-e2e` | endorsing, and the confidence it feeds | 26 |
+| `risks-e2e` | each risk driven on and off | 19 |
+| `organiser-e2e` | organiser-defined scoring | 22 |
+| `public-team-e2e` | the public recruiting page | 14 |
 
-All passing; 258 checks in total. Browser flows were driven through Chrome with Playwright.
+All passing; 398 checks in total. Browser flows were driven through Chrome with Playwright.
 
 **These suites are not in the repository** — they were written in a session scratchpad. §6.5
 item 1 is about moving them in.

@@ -1002,6 +1002,79 @@ const schemas = {
     },
   },
 
+  PublicTeamPage: {
+    type: 'object',
+    description: 'Everything a stranger needs to decide whether to ask to join.',
+    properties: {
+      teamId: { type: 'string', format: 'uuid' },
+      name: { type: 'string' },
+      description: { type: 'string', nullable: true },
+      logoUrl: { type: 'string', nullable: true },
+      event: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          format: ref('EventFormat'),
+          domains: { type: 'array', items: ref('EventDomain') },
+          startDate: { type: 'string', format: 'date-time' },
+          location: { type: 'string' },
+          mode: ref('EventMode'),
+        },
+      },
+      members: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            fullName: { type: 'string' },
+            firstName: { type: 'string' },
+            avatarUrl: { type: 'string', nullable: true },
+            roles: { type: 'array', items: ref('TeamRole') },
+            topSkills: {
+              type: 'array',
+              description:
+                'Ordered by endorsements first, then self-rating — what somebody else ' +
+                'vouched for is the more useful thing to lead with in public.',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  endorsements: { type: 'integer' },
+                },
+              },
+            },
+            verified: { type: 'boolean' },
+          },
+        },
+      },
+      openSeats: { type: 'integer' },
+      maxSize: { type: 'integer' },
+      strengths: {
+        type: 'array',
+        description: 'What the team already covers, strongest first.',
+        items: {
+          type: 'object',
+          properties: {
+            area: { type: 'string' },
+            score: { type: 'integer' },
+            skills: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+      lookingFor: { type: 'array', items: ref('TeamRole') },
+      needs: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Focus areas nobody on the team covers — the honest half of the pitch.',
+      },
+      pitch: {
+        type: 'string',
+        example: '3 people building at Winter Campus Hackathon, strong on Backend, looking for a UI/UX Designer.',
+      },
+    },
+  },
+
   TeamRisk: {
     type: 'object',
     description:
@@ -1998,6 +2071,27 @@ const paths = {
         403: RESP_403,
         404: errorFor('No such team or participant.'),
         409: errorFor('Already a member, on another team for this event, or already invited.'),
+      },
+    },
+  },
+
+  '/api/teams/{id}/public': {
+    get: {
+      tags: ['Teams'],
+      summary: "A team's public recruiting page",
+      description:
+        'No authentication — the point is that it can be shared with somebody who does not ' +
+        'have an account yet. Not a copy of the team page: that answers "how are we doing", ' +
+        'this answers "why should you join us", and they want different things on screen. ' +
+        'Carries no internal assessment. The risk panel, the readiness score and the ' +
+        'confidence caveats are for the team, not for the person deciding whether to apply. ' +
+        'Answers **404** unless the team is actually recruiting, so a full or locked team ' +
+        'never publishes its gaps — and a 404 rather than a 403, so it does not confirm the ' +
+        'page ever existed.',
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      responses: {
+        200: dataResponse('The recruiting page.', ref('PublicTeamPage')),
+        404: errorFor('No such team, or it is not recruiting.'),
       },
     },
   },

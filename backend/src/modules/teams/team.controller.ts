@@ -16,6 +16,7 @@ import type {
 import * as teamService from './team.service.js';
 import * as eventStats from '../events/event-stats.service.js';
 import * as teamChat from './team-chat.service.js';
+import * as teamPublic from './team-public.service.js';
 
 function requireUser(req: Request) {
   if (!req.user) throw HttpError.unauthorized();
@@ -122,6 +123,10 @@ export async function suggestMembersHandler(req: Request, res: Response) {
  * is not awaited: a failed cleanup should leave an orphan in the bucket, not
  * fail a request whose actual work already succeeded.
  */
+export async function publicTeamPageHandler(req: Request, res: Response) {
+  res.status(200).json({ data: await teamPublic.publicPage(req.params.id) });
+}
+
 export async function teamChannelHandler(req: Request, res: Response) {
   const user = requireUser(req);
   res.status(200).json({ data: await teamChat.channel(req.params.id, user.id) });

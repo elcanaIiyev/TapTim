@@ -17,6 +17,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { TeamDetailPage } from './pages/TeamDetailPage';
+import { TeamRecruitPage } from './pages/TeamRecruitPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ParticipantPage } from './pages/ParticipantPage';
@@ -127,6 +128,8 @@ export default function App() {
           <Route path="/events/:id" element={<EventDetailPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:id" element={<TeamDetailPage />} />
+          {/* Public and shareable — no session needed. */}
+          <Route path="/r/:id" element={<TeamRecruitPage />} />
           <Route path="/connections" element={<ConnectionsPage />} />
           <Route path="/compatibility" element={<CompatibilityPage />} />
           <Route path="/login" element={<LoginPage />} />

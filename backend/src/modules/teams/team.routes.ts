@@ -18,6 +18,7 @@ import {
   listRequestsHandler,
   listTeamsHandler,
   removeMemberHandler,
+  publicTeamPageHandler,
   removeTeamLogoHandler,
   sendTeamMessageHandler,
   teamChannelHandler,
@@ -69,6 +70,11 @@ teamRouter.get('/', optionalAuth, validateQuery(listTeamsQuerySchema), asyncHand
 teamRouter.post('/', requireAuth, validateBody(createTeamSchema), asyncHandler(createTeamHandler));
 
 teamRouter.get('/:id', validateParams(idParam), asyncHandler(getTeamHandler));
+
+// The public recruiting page. No auth at all — the whole point is that it can be
+// shared with somebody who does not have an account yet. It answers 404 unless
+// the team is actually recruiting, so a full team never publishes its gaps.
+teamRouter.get('/:id/public', validateParams(idParam), asyncHandler(publicTeamPageHandler));
 teamRouter.patch(
   '/:id',
   requireAuth,

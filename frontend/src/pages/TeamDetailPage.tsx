@@ -226,6 +226,24 @@ export function TeamDetailPage() {
 
       {isOwner && (
         <Card className="mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="type-label text-ink-700 dark:text-ink-300">Recruiting page</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+                A public page anyone can open — no account needed. It shows what you cover and
+                what you are short of, which recruits better than "join our team". It is live
+                only while you have seats open.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" to={`/r/${team.id}`}>
+              View it
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {isOwner && (
+        <Card className="mt-6">
           <TeamLogoPicker team={team} onChange={setTeam} />
         </Card>
       )}

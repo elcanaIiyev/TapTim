@@ -30,6 +30,13 @@ with chat and the LinkedIn placeholder.
 | `roles-ui.mjs` | role picker, sliders, compatibility page (Chrome) | 33 |
 | `noverify-e2e.mjs` | signup with email confirmation off | 16 |
 | `features-ui.mjs` | event covers, team logo, settings, sign-out veil (Chrome) | 25 |
+| `teamchat-e2e.mjs` | team channels | 25 |
+| `notifications-e2e.mjs` | every notification emit site | 28 |
+| `endorsements-e2e.mjs` | endorsements and confidence | 26 |
+| `risks-e2e.mjs` | team risk, each finding on and off | 19 |
+| `organiser-e2e.mjs` | organiser-defined scoring | 22 |
+| `public-team-e2e.mjs` | the public recruiting page | 14 |
+| `teamchat-ui.mjs`, `notifications-ui.mjs`, `risks-ui.mjs`, `eventfilters-ui.mjs`, `public-team-ui.mjs` | the same in Chrome | 46 |
 
 All passing. **The scratchpad is session-scoped and will be gone after a reset**,
 which makes porting these into `backend/` the highest-value next task — see §3.
@@ -90,7 +97,9 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 
 `001_init` · `002_admin` · `003_account_roles` · `004_onboarding` ·
 `005_skill_levels` · `006_moderation` · `007_event_stats` · `008_connections` ·
-`009_skill_scale` · `010_team_roles` · `011_images`
+`009_skill_scale` · `010_team_roles` · `011_images` · `012_team_chat` ·
+`013_notifications` · `014_endorsements` · `015_endorsement_notification` ·
+`016_event_taxonomy`
 
 ### Conventions worth not relearning
 
@@ -133,6 +142,14 @@ All six items from the last scope list are **done**.
 | 12 | Team logo | migration `011`, `POST/DELETE /api/teams/:id/logo`, `TeamLogo(Picker).tsx` |
 | 13 | Loading animations (e.g. logout) | `TransitionVeil.tsx`, wired through `AuthContext.logout` |
 | 14 | Settings button and options | `SettingsPage.tsx` at `/settings`, gear in `Navbar` |
+| 15 | Team chat, not just 1:1 | `team-chat.service.ts`, `TeamChannel.tsx` |
+| 16 | Notifications | `notifications/` module, `NotificationBell.tsx` |
+| 17 | Endorsements on skill levels | `endorsement.service.ts`, `ParticipantPage.tsx` |
+| 18 | Honest degradation on thin data | `confidenceFor` in `event-stats.ts`, brief `caveat` |
+| 19 | Team risk panel + availability grid | `team-risk.ts`, `TeamRisks.tsx` |
+| 20 | Organiser-defined event weights | `statProfileSchema`, `ScoringEditor.tsx` |
+| 21 | Public team recruiting page | `team-public.service.ts`, `/r/:id` |
+| 22 | Event filtering split into two axes | migration `016`, `EventFilters.tsx` |
 
 The design decision worth remembering from item 2: the compatibility engine was
 **not** forked. `scorePair` and `scoreAgainstTeam` take an optional weight
@@ -145,7 +162,7 @@ untouched. Gaming weights credibility 3; Cybersecurity weights it 18.
 
 Nothing outstanding was asked for. In value order:
 
-1. **Port the end-to-end suites into `backend/`.** 432 checks currently live in
+1. **Port the end-to-end suites into `backend/`.** ~600 checks currently live in
    a session scratchpad and vanish on reset. They are plain Node scripts using
    `fetch`, so they need no framework to keep working — moving them into
    `backend/tests/` behind an `npm test` is mostly a file move. The pure,

@@ -484,6 +484,40 @@ export interface RecruitBrief {
   reasons: string[];
 }
 
+export interface PublicTeamMember {
+  fullName: string;
+  firstName: string;
+  avatarUrl: string | null;
+  roles: string[];
+  /** Ordered by endorsements first, then self-rating. */
+  topSkills: Array<{ name: string; endorsements: number }>;
+  verified: boolean;
+}
+
+/** A team's public recruiting page. Carries no internal assessment. */
+export interface PublicTeamPage {
+  teamId: string;
+  name: string;
+  description: string | null;
+  logoUrl: string | null;
+  event: {
+    id: string;
+    name: string;
+    format: string;
+    domains: string[];
+    startDate: string;
+    location: string;
+    mode: string;
+  };
+  members: PublicTeamMember[];
+  openSeats: number;
+  maxSize: number;
+  strengths: Array<{ area: string; score: number; skills: string[] }>;
+  lookingFor: string[];
+  needs: string[];
+  pitch: string;
+}
+
 export interface TeamRisk {
   id: string;
   severity: 'high' | 'medium' | 'low';

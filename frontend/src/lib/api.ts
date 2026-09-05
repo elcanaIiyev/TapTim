@@ -12,6 +12,7 @@ import type {
   Team,
   TeamDetail,
   NotificationFeed,
+  PublicTeamPage,
   ProfileEndorsements,
   SkillEndorsement,
   NotificationItem,
@@ -330,6 +331,10 @@ export const teamsApi = {
       method: 'POST',
       body: JSON.stringify({ userId, message }),
     }).then((r) => r.data),
+
+  /** The public recruiting page. No auth; 404 unless the team is recruiting. */
+  publicPage: (id: string) =>
+    request<{ data: PublicTeamPage }>(`/api/teams/${id}/public`).then((r) => r.data),
 
   /** The team channel. Members only; reading it also marks it read. */
   channel: (id: string) =>
