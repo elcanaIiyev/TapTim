@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { SKILL_CATEGORIES } from '../users/skill-catalogue.js';
+import { TEAM_ROLES } from '../users/user.model.js';
 import {
   EVENT_DOMAINS,
   EVENT_FORMATS,
@@ -32,6 +34,16 @@ export const listEventsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
+
+/**
+ * Focus areas are looked up by name in `coverageFor`, so anything outside this
+ * list silently produces an area nobody can ever cover. Validating against the
+ * catalogue is what stops an organiser inventing one.
+ */
+const SKILL_CATEGORY_NAMES = SKILL_CATEGORIES.map((category) => category.name) as [
+  string,
+  ...string[],
+];
 
 const isoDate = z
   .string()
@@ -117,11 +129,69 @@ function applyDateRules<T extends z.ZodTypeAny>(schema: T) {
 
 export const createEventSchema = applyDateRules(eventFields);
 
+/**
+ * An organiser's override of how their event is scored.
+ *
+ * The column has existed since `007_event_stats`, but only a developer could
+ * write it — which meant every event of a given format was judged identically,
+ * and an organiser saying "this year we care about the demo, not the code" had
+ * nowhere to say it.
+ *
+ * Every field is optional and falls back to the composed archetype, so an
+ * organiser can adjust one thing without restating the rest.
+ */
+export const statProfileSchema = z
+  .object({
+    summary: z.string().trim().min(10).max(400).optional(),
+    weights: z
+      .object({
+        skills: z.number().int().min(0).max(100),
+        roles: z.number().int().min(0).max(100),
+        availability: z.number().int().min(0).max(100),
+        workingStyle: z.number().int().min(0).max(100),
+        credibility: z.number().int().min(0).max(100),
+      })
+      // Required to sum to 100 rather than normalised silently. A weighting is
+      // a statement about relative importance, and an organiser who typed
+      // numbers adding to 140 has said something they did not mean — quietly
+      // rescaling it would hide that rather than fix it.
+      .refine(
+        (w) =>
+          w.skills + w.roles + w.availability + w.workingStyle + w.credibility === 100,
+        { message: 'The five weights must add up to 100.' },
+      )
+      .optional(),
+    focusAreas: z
+      .array(
+        z.enum(SKILL_CATEGORY_NAMES, {
+          errorMap: () => ({
+            message: `Focus areas must be from: ${SKILL_CATEGORY_NAMES.join(', ')}`,
+          }),
+        }),
+      )
+      .min(1, 'Keep at least one focus area.')
+      .max(6, 'More than six and the last ones carry almost no weight.')
+      .transform((entries) => [...new Set(entries)])
+      .optional(),
+    keyRoles: z
+      .array(z.enum(TEAM_ROLES))
+      .max(8)
+      .transform((entries) => [...new Set(entries)])
+      .optional(),
+  })
+  // `null` clears the override and returns the event to its archetype, which is
+  // a different intent from "change nothing" and needs to be expressible.
+  .nullable();
+
 export const updateEventSchema = applyDateRules(
-  eventFields.partial().refine((value) => Object.keys(value).length > 0, {
-    message: 'Provide at least one field to update.',
-  }),
+  eventFields
+    .partial()
+    .extend({ statProfile: statProfileSchema.optional() })
+    .refine((value) => Object.keys(value).length > 0, {
+      message: 'Provide at least one field to update.',
+    }),
 );
+
 
 export type ListEventsQuery = z.infer<typeof listEventsQuerySchema>;
 export type CreateEventInput = z.infer<typeof createEventSchema>;

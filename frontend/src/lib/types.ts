@@ -348,6 +348,13 @@ export interface EventItem {
   featured: boolean;
   /** Cover image. Null falls back to a generated cover keyed on the format. */
   coverImageUrl: string | null;
+  /**
+   * The organiser, or null for the seeded catalogue.
+   *
+   * Returned by the API all along; the type simply never declared it, so
+   * nothing could tell whether the person looking is the organiser.
+   */
+  createdBy: string | null;
 }
 
 export interface FacetCount {
@@ -361,6 +368,14 @@ export interface FacetCount {
  * Domain counts are not a partition: an event tagged Web *and* Design is
  * counted under both, so they sum to more than the number of events.
  */
+/** An organiser's override of how their event is scored. */
+export interface StatProfileOverride {
+  summary?: string;
+  weights?: ComponentWeights;
+  focusAreas?: string[];
+  keyRoles?: string[];
+}
+
 export interface EventFacets {
   formats: FacetCount[];
   domains: FacetCount[];

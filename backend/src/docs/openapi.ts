@@ -368,6 +368,16 @@ const schemas = {
     },
   },
 
+  EventUpdateRequest: {
+    allOf: [
+      ref('EventWriteRequest'),
+      {
+        type: 'object',
+        properties: { statProfile: ref('StatProfileOverride') },
+      },
+    ],
+  },
+
   EventWriteRequest: {
     type: 'object',
     required: [
@@ -410,6 +420,43 @@ const schemas = {
       registrationDeadline: { type: 'string', format: 'date-time' },
       participants: { type: 'integer', minimum: 0, default: 0 },
       featured: { type: 'boolean', default: false },
+    },
+  },
+
+  StatProfileOverride: {
+    type: 'object',
+    nullable: true,
+    description:
+      "An organiser's override of how their event is scored. Every field is optional and " +
+      'falls back to the archetype composed from format and domains, so one thing can be ' +
+      'adjusted without restating the rest. `null` clears the override entirely — a ' +
+      'different intent from "change nothing", which is `undefined`.',
+    properties: {
+      summary: { type: 'string', minLength: 10, maxLength: 400 },
+      weights: {
+        type: 'object',
+        description:
+          'Must add up to exactly 100. Not normalised silently: a weighting is a statement ' +
+          'about relative importance, and numbers adding to 140 mean something the organiser ' +
+          'did not say.',
+        properties: {
+          skills: { type: 'integer', minimum: 0, maximum: 100 },
+          roles: { type: 'integer', minimum: 0, maximum: 100 },
+          availability: { type: 'integer', minimum: 0, maximum: 100 },
+          workingStyle: { type: 'integer', minimum: 0, maximum: 100 },
+          credibility: { type: 'integer', minimum: 0, maximum: 100 },
+        },
+      },
+      focusAreas: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: 6,
+        description:
+          'Skill-catalogue category names, most important first. Validated against the ' +
+          'catalogue — anything outside it would name an area nobody can ever cover.',
+      },
+      keyRoles: { type: 'array', items: ref('TeamRole'), maxItems: 8 },
     },
   },
 
@@ -1708,10 +1755,14 @@ const paths = {
     patch: {
       tags: ['Events'],
       summary: 'Update an event',
-      description: 'Organiser only. Seeded catalogue events have no organiser and cannot be edited.',
+      description:
+        'Organiser only. Seeded catalogue events have no organiser and cannot be edited. ' +
+        'Accepts `statProfile` to override how the event is scored — the column has existed ' +
+        'since `007_event_stats` but until now only a developer could write it, so every ' +
+        'event of a given format was judged identically.',
       security: AUTH,
       parameters: [pathParam('id', 'Event id.')],
-      requestBody: jsonBody(ref('EventWriteRequest')),
+      requestBody: jsonBody(ref('EventUpdateRequest')),
       responses: {
         200: dataResponse('Updated event.', ref('Event')),
         400: RESP_400,

@@ -56,6 +56,7 @@ const UPDATABLE_COLUMNS = {
   teamSizeMin: 'team_size_min',
   teamSizeMax: 'team_size_max',
   coverImageUrl: 'cover_image_url',
+  statProfile: 'stat_profile',
 } as const;
 
 export type EventUpdate = Partial<Record<keyof typeof UPDATABLE_COLUMNS, unknown>>;
@@ -162,16 +163,27 @@ class EventStore {
   }
 
   async update(id: string, patch: EventUpdate): Promise<EventItem | null> {
-    const entries = Object.entries(patch).filter(([key]) => key in UPDATABLE_COLUMNS);
+    // `undefined` is dropped, `null` is kept. `Object.entries` returns keys
+    // whose value is undefined, so without this an unchanged optional field
+    // would be written as NULL — which for `stat_profile` means silently
+    // discarding an organiser's whole override on any other edit.
+    const entries = Object.entries(patch).filter(
+      ([key, value]) => key in UPDATABLE_COLUMNS && value !== undefined,
+    );
     if (entries.length === 0) return this.findById(id);
 
     const assignments: string[] = [];
     const values: unknown[] = [];
 
     for (const [key, value] of entries) {
-      values.push(value);
+      // jsonb needs the cast; without it the driver sends the stringified
+      // object as plain text and Postgres rejects the assignment.
+      const isJsonb = key === 'statProfile';
+      values.push(isJsonb && value !== null ? JSON.stringify(value) : value);
       assignments.push(
-        `${UPDATABLE_COLUMNS[key as keyof typeof UPDATABLE_COLUMNS]} = $${values.length}`,
+        `${UPDATABLE_COLUMNS[key as keyof typeof UPDATABLE_COLUMNS]} = $${values.length}${
+          isJsonb ? '::jsonb' : ''
+        }`,
       );
     }
 

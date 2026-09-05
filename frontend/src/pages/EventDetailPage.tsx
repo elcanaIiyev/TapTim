@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { TeamLogo } from '../components/teams/TeamLogo';
 import { CoverageBar, FitScore, WeightBreakdown } from '../components/events/FitMeter';
+import { ScoringEditor } from '../components/events/ScoringEditor';
+import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Container } from '../components/ui/Container';
@@ -343,6 +345,23 @@ export function EventDetailPage() {
             <WeightBreakdown weights={stats.profile.weights} />
           </div>
         </Panel>
+
+        {/* Only the organiser, and only for events that have one — the seeded
+            catalogue has no owner and cannot be edited. */}
+        {user && event.createdBy === user.id && (
+          <Card className="mt-6">
+            <ScoringEditor
+              event={event}
+              profile={stats.profile}
+              onSaved={(updated) => {
+                setEvent(updated);
+                // The weights just changed, so every score on this page is
+                // stale — refetch rather than leaving old numbers on screen.
+                void eventsApi.stats(updated.id).then(setStats);
+              }}
+            />
+          </Card>
+        )}
 
         {/* -- my stat sheet for this event ---------------------------------- */}
         <Panel

@@ -138,6 +138,10 @@ export async function updateEvent(
     description: input.description,
     format: input.format,
     domains: input.domains,
+    // `undefined` leaves it alone; `null` clears the override back to the
+    // archetype. The store drops undefined and keeps null, so the two stay
+    // distinguishable all the way to the column.
+    statProfile: input.statProfile,
     tags: input.tags,
     startDate: input.startDate,
     endDate: input.endDate,

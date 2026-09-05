@@ -21,6 +21,7 @@ import type {
   TeamRequest,
   AuthResult,
   EventFacets,
+  StatProfileOverride,
   EventItem,
   Experience,
   ExperiencePayload,
@@ -262,6 +263,13 @@ export const eventsApi = {
   facets: () => request<{ data: EventFacets }>('/api/events/facets').then((r) => r.data),
 
   byId: (id: string) => request<{ data: EventItem }>(`/api/events/${id}`).then((r) => r.data),
+
+  /** Organiser only. `statProfile: null` clears an override back to the default. */
+  update: (id: string, body: { statProfile?: StatProfileOverride | null }) =>
+    request<{ data: EventItem }>(`/api/events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }).then((r) => r.data),
 
   /** What this event rewards. Public — the event page renders it signed out. */
   stats: (id: string) => request<{ data: EventStats }>(`/api/events/${id}/stats`).then((r) => r.data),
