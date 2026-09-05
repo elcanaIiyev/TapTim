@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CoverageBar, WeightBreakdown } from '../components/events/FitMeter';
+import { TeamRisks } from '../components/teams/TeamRisks';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { Container } from '../components/ui/Container';
@@ -323,6 +324,16 @@ export function CompatibilityPage() {
                   </ul>
                 </Card>
               )}
+
+              {/* Before the coverage bars: a team that cannot find an hour
+                  together has a bigger problem than a thin focus area. */}
+              <Card>
+                <TeamRisks
+                  risks={report.risks}
+                  availability={report.availability}
+                  size={report.size.current}
+                />
+              </Card>
 
               {/* -- the evidence -------------------------------------------- */}
               <Card>

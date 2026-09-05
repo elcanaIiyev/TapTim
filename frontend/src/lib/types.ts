@@ -469,6 +469,22 @@ export interface RecruitBrief {
   reasons: string[];
 }
 
+export interface TeamRisk {
+  id: string;
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  /** The evidence behind the claim. */
+  detail: string;
+  suggestion: string | null;
+}
+
+export interface SlotCoverage {
+  slot: string;
+  label: string;
+  count: number;
+  who: string[];
+}
+
 export interface TeamEventReport {
   teamId: string;
   teamName: string;
@@ -482,6 +498,9 @@ export interface TeamEventReport {
   summary: string;
   size: { current: number; max: number };
   brief: RecruitBrief;
+  /** Ways this team could fail that have nothing to do with missing skills. */
+  risks: TeamRisk[];
+  availability: SlotCoverage[];
 }
 
 export interface EventCandidate {

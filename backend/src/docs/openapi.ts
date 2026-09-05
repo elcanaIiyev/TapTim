@@ -955,6 +955,36 @@ const schemas = {
     },
   },
 
+  TeamRisk: {
+    type: 'object',
+    description:
+      'A way this team could fail that has nothing to do with missing skills. Computed ' +
+      'from data already stored — availability slots, working-style answers, the roster. ' +
+      'Nothing fires on absent data: a team that has not filled in working style is not a ' +
+      'team with a working-style problem.',
+    properties: {
+      id: { type: 'string', example: 'no-shared-time' },
+      severity: { type: 'string', enum: ['high', 'medium', 'low'] },
+      title: { type: 'string', example: 'There is no time when everyone is free' },
+      detail: {
+        type: 'string',
+        description: 'The evidence behind the claim. A warning you cannot check gets ignored.',
+      },
+      suggestion: { type: 'string', nullable: true },
+    },
+  },
+
+  SlotCoverage: {
+    type: 'object',
+    description: 'One cell of the week grid: how many of the team can make this slot.',
+    properties: {
+      slot: { type: 'string', example: 'weekend-afternoons' },
+      label: { type: 'string', example: 'weekend afternoons' },
+      count: { type: 'integer' },
+      who: { type: 'array', items: { type: 'string' } },
+    },
+  },
+
   TeamEventReport: {
     type: 'object',
     description: 'What a team is missing for the event it belongs to, and who to look for.',
@@ -971,6 +1001,8 @@ const schemas = {
         },
       },
       brief: ref('RecruitBrief'),
+      risks: { type: 'array', items: ref('TeamRisk') },
+      availability: { type: 'array', items: ref('SlotCoverage') },
       profile: ref('EventStatProfile'),
       coverage: { type: 'array', items: ref('FocusCoverage') },
       missingAreas: { type: 'array', items: { type: 'string' } },

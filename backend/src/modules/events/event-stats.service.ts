@@ -4,6 +4,12 @@ import { eventStore } from '../../data/event.store.js';
 import { teamStore } from '../../data/team.store.js';
 import { userStore } from '../../data/user.store.js';
 import { HttpError } from '../../utils/http-error.js';
+import {
+  assessTeamRisks,
+  slotCoverage,
+  type SlotCoverage,
+  type TeamRisk,
+} from '../teams/team-risk.js';
 import { scoreAgainstTeam } from '../compatibility/compatibility.engine.js';
 import {
   toDirectoryUser,
@@ -97,6 +103,16 @@ export interface TeamEventReport extends TeamEventGaps {
   size: { current: number; max: number };
   /** Who the team should go and find. */
   brief: RecruitBrief;
+  /**
+   * What could go wrong here, beyond missing skills.
+   *
+   * Ships with the gap report because it is read at the same moment and needs
+   * the same roster — asking for it separately would fetch every member twice
+   * to answer two halves of one question.
+   */
+  risks: TeamRisk[];
+  /** When the team can actually work together, per slot. */
+  availability: SlotCoverage[];
 }
 
 /**
@@ -129,6 +145,8 @@ export async function teamReport(teamId: string): Promise<TeamEventReport> {
     profile,
     size: { current: team.members.length, max: team.maxSize },
     brief: recruitBriefFor(gaps, profile, team.lookingFor as TeamRole[]),
+    risks: assessTeamRisks(members, { maxSize: team.maxSize, requiredSkills: team.requiredSkills }),
+    availability: slotCoverage(members),
   };
 }
 

@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { ApiError, eventsApi, teamsApi } from '../lib/api';
 import { Card } from '../components/ui/Card';
 import { TeamChannel } from '../components/teams/TeamChannel';
+import { TeamRisks } from '../components/teams/TeamRisks';
 import { TeamLogo } from '../components/teams/TeamLogo';
 import { TeamLogoPicker } from '../components/teams/TeamLogoPicker';
 import { rolesSummary } from '../lib/types';
@@ -207,6 +208,16 @@ export function TeamDetailPage() {
 
       {/* Members only, and above the gap report: once a team exists, talking to
           it is what people came back for. */}
+      {report && (
+        <Card className="mt-6">
+          <TeamRisks
+            risks={report.risks}
+            availability={report.availability}
+            size={report.size.current}
+          />
+        </Card>
+      )}
+
       {isMember && user && (
         <section className="mt-6">
           <TeamChannel teamId={team.id} viewerId={user.id} />
