@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthModal } from './components/auth/AuthModal';
 import type { AuthMode } from './components/auth/AuthModal';
+import { BackBar } from './components/layout/BackBar';
+import { ChatDock } from './components/chat/ChatDock';
 import { Footer } from './components/layout/Footer';
+import { NavigationMode } from './components/layout/NavigationMode';
 import { Navbar } from './components/layout/Navbar';
 import { useAuth } from './context/AuthContext';
 import { ADMIN_CONSOLE_PATH } from './lib/routes';
@@ -16,6 +19,7 @@ import { LoginPage, SignupPage } from './pages/AuthPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { RecruitingPage } from './pages/RecruitingPage';
 import { TeamDetailPage } from './pages/TeamDetailPage';
 import { TeamRecruitPage } from './pages/TeamRecruitPage';
 import { TeamsPage } from './pages/TeamsPage';
@@ -117,6 +121,11 @@ export default function App() {
       <Navbar onOpenAuth={openAuth} />
 
       <main className="flex-1">
+        {/* Above the routes rather than inside each page: the way back out is
+            a property of the shell, and putting it in one place is what stops
+            fifteen pages from each growing their own. */}
+        <BackBar />
+
         <Routes>
           <Route path="/" element={<HomePage onGetStarted={handleGetStarted} />} />
           <Route path="/events" element={<EventsPage />} />
@@ -130,6 +139,10 @@ export default function App() {
           <Route path="/teams/:id" element={<TeamDetailPage />} />
           {/* Public and shareable — no session needed. */}
           <Route path="/r/:id" element={<TeamRecruitPage />} />
+          {/* The board those pages are listed on. Also public: "who needs
+              someone like me" is the question a visitor without an account is
+              asking, and answering it is the argument for making one. */}
+          <Route path="/recruiting" element={<RecruitingPage />} />
           <Route path="/connections" element={<ConnectionsPage />} />
           <Route path="/compatibility" element={<CompatibilityPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -159,6 +172,10 @@ export default function App() {
       </main>
 
       <Footer />
+
+      {/* Window-level, so both survive every route change. */}
+      <ChatDock />
+      <NavigationMode />
 
       <AuthModal
         open={authOpen}

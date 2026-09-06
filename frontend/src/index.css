@@ -81,6 +81,21 @@
   --color-signal-bad: #be123c;
   --color-signal-bad-bright: #fb7185;
 
+  /*
+    The seam between the sticky header and the page under it.
+
+    A rule in a *contrasting* neutral is what makes a bar read as a template
+    header bolted on top of a document — in dark mode ink-700 (#443c56) against
+    an ink-950 (#0f0a1a) bar was a visible light line. This is deliberately a
+    near-neighbour of the surface it sits on and a shade *darker* than it, in
+    both themes, so the join reads as a fold in one continuous surface rather
+    than as a border between two things.
+
+    One token rather than a light/dark pair at every call site: the two values
+    are the same idea, and splitting them is how they drift apart.
+  */
+  --color-seam: #e6e0f1;
+
   /* Softness lives here: real radii instead of hard corners. */
   --radius-soft-sm: 0.5rem;
   --radius-soft: 0.875rem;
@@ -115,6 +130,9 @@
   .dark {
     --color-accent-text: #a78bfa;
     --color-success-text: #10b981;
+    /* Darker than the ink-950 surface it separates, so the seam reads as a
+       shadow line rather than the light rule it used to be. */
+    --color-seam: #06030f;
   }
 
   /*
@@ -552,5 +570,55 @@
   /* Mono readout for numbers that should look instrument-like. */
   .readout {
     @apply font-mono tabular-nums tracking-tight;
+  }
+
+  /*
+    The navigation-mode cursor.
+
+    Structurally the tour spotlight's sibling — one fixed box that animates to
+    the target's real bounding rect — but it marks instead of masking. Nothing
+    is dimmed, because in navigation mode the page is still the thing being
+    read; only "where am I" needs answering.
+  */
+  .nav-cursor {
+    @apply pointer-events-none fixed z-[65] rounded-[var(--radius-soft-sm)];
+    box-shadow:
+      0 0 0 2px var(--color-iris-500),
+      0 0 0 6px rgb(139 92 246 / 0.20),
+      0 0 22px 2px rgb(139 92 246 / 0.45);
+    transition:
+      top 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      left 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      width 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-cursor {
+      transition: none;
+    }
+  }
+
+  /* The chat dock opening: a short rise from the launcher it grew out of. */
+  @keyframes taptim-dock-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dock-in {
+    animation: taptim-dock-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: bottom right;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-in {
+      animation: none;
+    }
   }
 }

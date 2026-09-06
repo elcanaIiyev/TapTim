@@ -1,6 +1,6 @@
 # TapTim — working state & next scope
 
-Updated 2 September 2026. Read this first after a context reset: it records what
+Updated 6 September 2026. Read this first after a context reset: it records what
 exists, what is configured, how to verify it, and what is worth doing next.
 `doc.md` is the reference documentation; this is the working log.
 
@@ -37,6 +37,7 @@ with chat and the LinkedIn placeholder.
 | `organiser-e2e.mjs` | organiser-defined scoring | 22 |
 | `public-team-e2e.mjs` | the public recruiting page | 14 |
 | `teamchat-ui.mjs`, `notifications-ui.mjs`, `risks-ui.mjs`, `eventfilters-ui.mjs`, `public-team-ui.mjs` | the same in Chrome | 46 |
+| `shell-ui.mjs` | the seam, return control, navigation mode, chat dock, recruiting board (Chrome) | 37 |
 
 All passing. **The scratchpad is session-scoped and will be gone after a reset**,
 which makes porting these into `backend/` the highest-value next task — see §3.
@@ -124,7 +125,7 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 
 ## 2. What was asked for, and where it landed
 
-All six items from the last scope list are **done**.
+Every item from every scope list so far is **done**.
 
 | # | Asked for | Where it lives |
 | --- | --- | --- |
@@ -150,6 +151,11 @@ All six items from the last scope list are **done**.
 | 20 | Organiser-defined event weights | `statProfileSchema`, `ScoringEditor.tsx` |
 | 21 | Public team recruiting page | `team-public.service.ts`, `/r/:id` |
 | 22 | Event filtering split into two axes | migration `016`, `EventFilters.tsx` |
+| 23 | Navbar looked template-ish; the seam should be seamless | `--color-seam` in `index.css`, reworked `Navbar.tsx` |
+| 24 | Two landing CTAs led to the same page | hero secondary → `/recruiting`, new `RecruitingPage.tsx` |
+| 25 | A return button, top left | `BackBar.tsx`, mounted once in `App.tsx` |
+| 26 | WASD / arrow navigation behind a hotkey | `NavigationMode.tsx` — `` ` `` or F7 |
+| 27 | Chat needs its own button and a dock | `ChatDockContext.tsx`, `ChatDock.tsx`, navbar chat button |
 
 The design decision worth remembering from item 2: the compatibility engine was
 **not** forked. `scorePair` and `scoreAgainstTeam` take an optional weight
@@ -173,8 +179,15 @@ Nothing outstanding was asked for. In value order:
    `login` are both worth protecting.
 4. **Refresh tokens.** Still a single 7-day access token.
 5. **Team invitations from a conversation.** The Connections tab can invite to a
-   team by event, but the chat panel cannot yet — a natural place for it.
+   team by event, but the chat panel cannot yet — a natural place for it, and
+   now that the dock follows you around the site, the obvious one.
 6. **LinkedIn** — the OAuth flow is written and waiting on credentials.
+
+Still open from earlier scope lists, neither of which was asked for again:
+**"events that suit you"** (run `fitForEvent` across the catalogue and rank it —
+a loop and a sort over code that already exists) and **post-event outcomes**
+(did the team ship, did it place), which would give credibility scoring
+something real to read.
 
 Chat is polled every 5 seconds and paused while the tab is hidden. That is a
 deliberate choice, not a shortcut: both people are usually on the page, so a

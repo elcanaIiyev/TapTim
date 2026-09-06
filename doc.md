@@ -1181,6 +1181,76 @@ it carries no risk panel, readiness score or confidence caveat, because those
 are for the team. It answers 404 unless the team is actually recruiting, so a
 full team never publishes its gaps.
 
+### 7.10 The navigation shell
+
+Five changes to how the site is moved around, rather than to what it computes.
+
+**The seam.** The header used to draw a contrasting rule under itself —
+`ink-200` in light, `ink-700` in dark, the latter a visibly *lighter* line
+against a near-black bar. That is what made it read as a template header bolted
+on top of a document. There is now one token, `--color-seam`, defined as a near
+neighbour of the surface it sits on and a shade darker than it in both themes
+(`#e6e0f1` light, `#06030f` dark). At rest the bar is the *same* colour as the
+page, so the join reads as a fold in one surface; scrolled, it changes tone and
+takes a soft shadow, because a bar with content passing under it should lift
+rather than draw a heavier line. The nav links moved into a single rounded rail,
+which also brings them in line with a design system built on real radii — five
+hard-cornered bordered blocks were the one place the old geometry survived.
+
+**Two calls to action, one destination.** The landing hero offered "Find my
+team" and "Browse events", both of which ended at `/events`. The second is now
+`/recruiting` — a public board of every team with a seat open, ordered by how
+soon its event starts, filterable by the role each is short of. It inverts the
+events list rather than repeating it: `/events` answers "what is on",
+`/recruiting` answers "who needs someone like me", which is the question a
+person without a team is actually asking. It also gives §7.8's public recruiting
+pages somewhere to be found; until now the only route to one was a link somebody
+sent you.
+
+**The return control** (`BackBar`). `history.back()` alone is not enough,
+because half the ways into this site are deep links — a shared recruiting page,
+an email confirmation, a notification — and on those there is nothing behind the
+current entry. So it does both: back through history when there is history,
+and *up* to the parent page when there is not. React Router marks the first
+entry of a session with `key === 'default'`, which is exactly the signal needed
+to choose. The parent is the first path segment, with overrides where the URL's
+shape is not the parent anyone means (`/participants/:id` → `/connections`,
+`/r/:id` → `/recruiting`, `/staff/…` and `/auth/…` → `/`).
+
+**Navigation mode** (`` ` `` or F7). Tab order is a single list that walks the
+DOM; getting from the top-left of a grid to the bottom-right means pressing Tab
+through everything between. This is the other model — the page as a plane,
+crossed with WASD or the arrow keys, Enter to act, Escape to leave. Targets are
+scored by distance along the axis of travel plus a penalty for drift, where the
+penalty is small when the two boxes overlap on the cross axis and large when
+they do not; that is what makes a grid behave like a grid instead of the cursor
+sliding diagonally to whatever is nearest in a straight line. Boxes are measured
+in *document* coordinates so "down" means down the page, not down the window,
+and a modal scopes the search to itself.
+
+There is no cross-web standard for the hotkey, so both near-standards are
+accepted: F7 is the browser's own caret-browsing toggle, and backtick is the
+console key every game uses — which is where WASD comes from.
+
+The invariant that took a rewrite to get right: *nothing typed in this mode ever
+reaches a text field, and nothing typed in a text field ever reaches the mode.*
+The first attempt exited the mode on landing on an input, which meant the search
+box near the top of `/events` was a wall — pressing S once from the bar killed
+navigation and walled off the whole page below. Fields are now ordinary targets
+that are passed over without being focused; Enter is what commits, focusing the
+field and ending the mode.
+
+**The chat dock.** Messaging lived in one place, the right-hand column of
+`/connections`, so replying cost a navigation away from whatever you were doing
+and there was no way to notice a message had arrived without going to look. The
+dock is anchored to the window rather than to a page, so it survives every route
+change, and its launcher carries the unread count everywhere. Two levels deep
+and no further: a list of connections, and one thread. State lives in
+`ChatDockContext` so the navbar button and the floating launcher are the same
+control with one unread count rather than two pollers that disagree. It hides on
+`/connections`, where its only job would be to cover the full-size version of
+itself.
+
 ### 7.9 Verification
 
 Every suite below ran against the live Supabase database, not mocks or fixtures.
@@ -1201,8 +1271,9 @@ Every suite below ran against the live Supabase database, not mocks or fixtures.
 | `risks-e2e` | each risk driven on and off | 19 |
 | `organiser-e2e` | organiser-defined scoring | 22 |
 | `public-team-e2e` | the public recruiting page | 14 |
+| `shell-ui` | the seam, the return control, navigation mode, the dock, the board | 37 |
 
-All passing; 398 checks in total. Browser flows were driven through Chrome with Playwright.
+All passing; 435 checks in total. Browser flows were driven through Chrome with Playwright.
 
 **These suites are not in the repository** — they were written in a session scratchpad. §6.5
 item 1 is about moving them in.

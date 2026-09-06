@@ -28,12 +28,24 @@ export function ChatPanel({
   viewerId,
   onClose,
   onRead,
+  onBack,
+  fill = false,
 }: {
   partnerId: string;
   viewerId: string;
   onClose: () => void;
   /** Fires once the thread is opened, so the unread badge can clear. */
   onRead: () => void;
+  /** Present in the dock, where closing and going back to the list differ. */
+  onBack?: () => void;
+  /**
+   * Fill the parent instead of standing at its own fixed height.
+   *
+   * A boolean rather than a className override: `cn` is a plain join with no
+   * conflict resolution, so passing `h-full` alongside the built-in `h-[32rem]`
+   * would leave both in the class list and let source order decide.
+   */
+  fill?: boolean;
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [draft, setDraft] = useState('');
@@ -105,11 +117,28 @@ export function ChatPanel({
   }
 
   return (
-    <div className="hud hud-ticks relative flex h-[32rem] flex-col overflow-hidden">
+    <div
+      className={cn(
+        'hud hud-ticks relative flex flex-col overflow-hidden',
+        fill ? 'h-full' : 'h-[32rem]',
+      )}
+    >
       <div className="grid-floor pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
 
       <header className="relative flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-700">
         <div className="flex min-w-0 items-center gap-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to conversations"
+              className="icon-btn -ml-1 grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full text-ink-600 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+          )}
           {conversation?.partner.avatarUrl ? (
             <img src={conversation.partner.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
           ) : (

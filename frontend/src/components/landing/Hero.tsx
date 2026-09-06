@@ -82,8 +82,15 @@ export function Hero({ onGetStarted }: HeroProps) {
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </Button>
-              <Button size="lg" variant="outline" to="/events" className="w-full sm:w-auto">
-                Browse events
+              {/*
+                This used to read "Browse events" and go to /events — the same
+                destination the primary button reaches, so the hero offered one
+                choice twice. The genuinely different question a visitor has is
+                not "what is on" but "who needs someone like me", and the
+                recruiting board answers it without an account.
+              */}
+              <Button size="lg" variant="outline" to="/recruiting" className="w-full sm:w-auto">
+                Teams looking for people
               </Button>
             </div>
 
