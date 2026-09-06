@@ -90,7 +90,26 @@ function withoutBlanks(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   );
 }
 
-const parsed = envSchema.safeParse(withoutBlanks(process.env));
+/**
+ * Vercel sets `VERCEL_ENV` (production | preview | development) on every
+ * deployment, and it is the honest signal for which of those this is.
+ *
+ * `NODE_ENV` deliberately is not read from the dashboard here, and should not
+ * be set there: Vercel applies dashboard variables to the *build* as well as
+ * the runtime, and npm skips devDependencies when it sees NODE_ENV=production
+ * — so setting it uninstalls TypeScript and Vite and the build dies before it
+ * starts. Deriving it instead means a deployment is correctly production
+ * without anyone having to set a variable that breaks the build.
+ */
+function withPlatformDefaults(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  if (source.NODE_ENV || !source.VERCEL_ENV) return source;
+  // A preview deployment is still a real deployment on real infrastructure;
+  // the only thing that is not production about it is the URL.
+  const nodeEnv = source.VERCEL_ENV === 'development' ? 'development' : 'production';
+  return { ...source, NODE_ENV: nodeEnv };
+}
+
+const parsed = envSchema.safeParse(withPlatformDefaults(withoutBlanks(process.env)));
 
 if (!parsed.success) {
   const issues = parsed.error.issues
