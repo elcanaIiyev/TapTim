@@ -81,18 +81,20 @@ export default function App() {
   const closeAuth = useCallback(() => setAuthOpen(false), []);
 
   /**
-   * The landing page's primary call to action.
+   * "Create profile", and only that.
    *
-   * It used to open the signup modal unconditionally, so someone who had just
-   * signed up and pressed "Find my team" was asked to create an account they
-   * already had. What the button should do depends entirely on how far along
-   * the person is, so it asks:
+   * This used to be the landing page's single shared call to action, which is
+   * how a button labelled "Create profile" ended up on the events list: the
+   * handler treated a finished profile as "nothing left to do here, go
+   * browse". Browsing is now the hero's own button and goes straight to
+   * /events, so this one is free to mean what it says.
    *
    *   signed out        -> sign up
-   *   profile unbuilt   -> finish the profile, because matching reads it
-   *   ready             -> the events list, since teams are formed per event
+   *   unconfirmed       -> confirm the address first
+   *   profile unbuilt   -> the guided builder
+   *   ready             -> the profile itself
    */
-  const handleGetStarted = useCallback(() => {
+  const handleCreateProfile = useCallback(() => {
     if (!user) {
       openAuth('signup');
       return;
@@ -106,7 +108,7 @@ export default function App() {
       navigate('/verify-email');
       return;
     }
-    navigate(user.next === 'dashboard' ? '/events' : '/onboarding');
+    navigate(user.next === 'dashboard' ? '/profile' : '/onboarding');
   }, [user, openAuth, navigate]);
 
   return (
@@ -127,7 +129,10 @@ export default function App() {
         <BackBar />
 
         <Routes>
-          <Route path="/" element={<HomePage onGetStarted={handleGetStarted} />} />
+          <Route
+            path="/"
+            element={<HomePage onCreateProfile={handleCreateProfile} signedOut={!user} />}
+          />
           <Route path="/events" element={<EventsPage />} />
 
           {/* Teams are formed per event, so creating and browsing them lives on

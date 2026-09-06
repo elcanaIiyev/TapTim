@@ -39,10 +39,11 @@ export function Footer() {
           <div className="md:col-span-2">
             {/*
               The footer sits on ink-950, so only the wordmark's base colour is
-              overridden. Scoped to the direct child span so the nested "Tim"
-              keeps its flame accent.
+              overridden. Scoped to the *first* child span — the one carrying
+              the text — so the nested "Tim" keeps its accent and the rule
+              underneath keeps its own colour.
             */}
-            <div className="[&>a>span:last-child]:text-ink-50">
+            <div className="[&>a>span:first-child]:text-ink-50">
               <Logo />
             </div>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-400">

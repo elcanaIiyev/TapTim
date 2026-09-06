@@ -45,10 +45,27 @@ export function TeamChannel({
   viewerId,
   /** Lets the page clear its unread badge once the channel has been opened. */
   onRead,
+  title,
+  onBack,
+  onOpenFull,
+  fill = false,
 }: {
   teamId: string;
   viewerId: string;
   onRead?: () => void;
+  /** The team's name, in the dock — on the team page the heading above says it. */
+  title?: string;
+  /** Present in the dock, where going back to the list is not closing. */
+  onBack?: () => void;
+  /** Present in the dock: leave the popup for this team's own page. */
+  onOpenFull?: () => void;
+  /**
+   * Fill the parent instead of standing at its own fixed height. A boolean
+   * rather than a className override: `cn` is a plain join with no conflict
+   * resolution, so `h-full` alongside the built-in `h-[30rem]` would leave
+   * both in the class list and let source order decide.
+   */
+  fill?: boolean;
 }) {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [draft, setDraft] = useState('');
@@ -119,14 +136,52 @@ export function TeamChannel({
   const messages = channel?.messages ?? [];
 
   return (
-    <div className="hud hud-ticks relative flex h-[30rem] flex-col overflow-hidden">
-      <div className="grid-floor pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+    <div
+      className={cn(
+        // People speaking, so: a panel. See the voice rule in index.css.
+        'panel relative flex flex-col overflow-hidden',
+        fill ? 'h-full' : 'h-[30rem]',
+      )}
+    >
+      <header className="relative flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-700">
+        <div className="flex min-w-0 items-center gap-2">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to conversations"
+              className="icon-btn -ml-1 grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full text-ink-600 transition-colors hover:text-ink-900 dark:text-ink-400 dark:hover:text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+          )}
+          <div className="min-w-0">
+            <h2 className="truncate type-label text-accent-text">
+              {title ?? channel?.teamName ?? 'Team channel'}
+            </h2>
+            <p className="readout text-[0.65rem] text-ink-500 dark:text-ink-400">
+              {channel
+                ? `${channel.members.length} member${channel.members.length === 1 ? '' : 's'}`
+                : '…'}
+            </p>
+          </div>
+        </div>
 
-      <header className="relative flex items-baseline justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-700">
-        <h2 className="type-label text-accent-text">Team channel</h2>
-        <p className="readout text-xs text-ink-500 dark:text-ink-400">
-          {channel ? `${channel.members.length} member${channel.members.length === 1 ? '' : 's'}` : '…'}
-        </p>
+        {onOpenFull && (
+          <button
+            type="button"
+            onClick={onOpenFull}
+            aria-label="Open this team full size"
+            title="Open full"
+            className="icon-btn grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-ink-950 hover:text-ink-900 dark:border-ink-700 dark:text-ink-400 dark:hover:text-white"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7" />
+            </svg>
+          </button>
+        )}
       </header>
 
       <div

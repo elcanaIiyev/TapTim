@@ -172,6 +172,15 @@ roles: {
   },
   experienceLevel: ref('ExperienceLevel'),
   availability: { type: 'array', items: ref('AvailabilitySlot') },
+  availabilityConfirmedAt: {
+    type: 'string',
+    format: 'date-time',
+    nullable: true,
+    description:
+      'When availability was last confirmed as still true. Distinct from `updatedAt`, which ' +
+      'moves on any profile edit — an availability answer nobody has revisited in months is ' +
+      'the quietest way this engine goes wrong.',
+  },
   hoursPerWeek: { type: 'integer', nullable: true, minimum: 0, maximum: 80, example: 20 },
   timezoneOffset: {
     type: 'integer',
@@ -800,6 +809,14 @@ const schemas = {
     properties: {
       skill: { type: 'string', example: 'Node.js' },
       count: { type: 'integer', example: 2 },
+      verified: {
+        type: 'integer',
+        example: 1,
+        description:
+          'How many of those carry the event they came from. One that does is a claim two ' +
+          "people's team membership can confirm, and it counts for twice as much in the " +
+          'coverage engine as one that does not.',
+      },
       byViewer: { type: 'boolean', description: 'Whether the caller endorsed this one.' },
     },
   },
@@ -1606,6 +1623,24 @@ const paths = {
         200: dataResponse('The new count.', ref('SkillEndorsement')),
         401: RESP_401,
         404: errorFor('You have not endorsed that skill.'),
+      },
+    },
+  },
+
+  '/api/users/me/availability/confirm': {
+    post: {
+      tags: ['Participants'],
+      summary: 'Confirm that your availability is still accurate',
+      description:
+        'Stamps `availabilityConfirmedAt` without changing anything. Availability is the ' +
+        'heaviest single component the matching engine weighs — up to 28 of 100 for a ' +
+        'hackathon — and it is the field people set once during onboarding and never revisit. ' +
+        'Stale availability is worse than none, because the engine trusts it. Saving any ' +
+        'availability field through `PATCH /api/users/me` stamps the same clock.',
+      security: AUTH,
+      responses: {
+        200: dataResponse('Confirmed.', ref('User')),
+        401: RESP_401,
       },
     },
   },

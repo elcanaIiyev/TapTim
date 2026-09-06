@@ -78,7 +78,6 @@ export function TeamsPage() {
     <Container className="py-12">
       <SectionHeading
         overline="Your teams"
-        index="01"
         title="Where you're signed up"
         description="One team per event. Creating and finding teams happens on each event's page, because a team only means something in the context of the event it's for."
       />

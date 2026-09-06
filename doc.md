@@ -1251,6 +1251,130 @@ control with one unread count rather than two pollers that disagree. It hides on
 `/connections`, where its only job would be to cover the full-size version of
 itself.
 
+### 7.11 Freshness, phase, and what an endorsement is worth
+
+Three changes to what the engine is willing to believe, and one to what the site
+knows about time.
+
+**Availability decays and nothing said so** (migration `018`). Availability is
+the heaviest single component the engine weighs — 28 of 100 for a hackathon —
+and it is the field people fill in during onboarding and never revisit. Stale
+availability is worse than absent: an empty slot list scores low and says so,
+while a wrong one scores high and lies, and nobody sees the failure because the
+team simply never overlaps.
+
+`users.availability_confirmed_at` records when it was last confirmed as true.
+`updatedAt` could not answer this — it moves on any profile edit, so somebody
+who rewrote their bio this morning looked like they had re-checked their
+Saturday too. `POST /api/users/me/availability/confirm` stamps it without
+changing anything, because confirming an unchanged answer is a distinct act and
+the only one that can keep a correct-but-old answer alive; saving any
+availability field through `PATCH /api/users/me` stamps the same clock, since
+editing it is a stronger statement than confirming it. `AvailabilityCheck` asks
+on the event page — the one screen where somebody is already thinking about a
+specific weekend — and is dismissible rather than modal.
+
+**The site knows what day it is** (`lib/event-phase.ts`). Registration
+deadlines, start dates and end dates had been stored since the first migration
+and all of them were inert: the page looked identical on the Tuesday before a
+hackathon, the Friday it started, and the week after it ended. `eventPhase()`
+derives `open | closing | locked | running | finished` from dates already on
+every payload — derived rather than stored, because a phase is a function of the
+clock and a column holding one would be wrong for most of every day.
+
+What it changes: a live badge and a line on the event page; team creation and
+joining stop when registration does; and once it is running the team panel moves
+above the matching panels, with the fit sheet replaced by a pointer to the
+channel. "Here is your fit and what you'd want a teammate for" is advice about a
+decision that has already been made.
+
+**Endorsements carry the event they came from** (migration `017`,
+`endorsement-weight.ts`). An endorsement was permanent and context-free: someone
+strong at React two years ago counted exactly as much as someone endorsed last
+weekend. The shared-team gate already existed, so the evidence was there — it
+simply was not kept in a form anything could read.
+
+`skill_endorsements.event_id` is backfilled from the team's event and stored
+denormalised, because `team_id` is `on delete set null` and a disbanded team
+would otherwise take its own context with it. Two multipliers, both gentle: an
+endorsement that cannot name its event counts half, and age halves the surplus
+above a floor of 0.3 every eighteen months past the first six. It never decays
+to nothing, because it did happen. The clock is the *event's* end date where
+known — `created_at` only records when somebody got round to clicking.
+
+The API now returns `count` and `verified` separately: the badge shows how many
+people vouched, the engine reads the weight. `coverageFor` needed no change at
+all — it feeds endorsements through `1 - exp(-endorsed)`, which is continuous,
+so handing it a float instead of an integer just works.
+
+### 7.12 The design system, tightened
+
+A pass over the parts of the visual language that had drifted into being
+decoration rather than system.
+
+**One motion vocabulary.** Components had been choosing their own timing — 150,
+180, 200, 320, 520ms across four easings — which is why the site read as several
+things moving near each other rather than as one object. Two tokens now:
+`--duration-quick` (160ms, a control answering you) and `--duration-settled`
+(320ms, something resolving on its own), and one curve.
+
+**One treatment, one job.** `.type-label` had been the overline, the badge, the
+nav link, the filter chip, the footer small print and the stat caption, and a
+mark that appears on everything marks nothing. It now means "this is structure,
+not content". Names — "UI/UX Designer", "Capture the Flag", "Web3" — moved to
+`.type-tag`, mono but sentence case: uppercasing a proper noun destroys the word
+shape the eye uses to recognise it, so `DATA SCIENTIST` has to be spelled out
+where "Data Scientist" is read whole.
+
+**Two fewer families, and a rule for the two voices.** Playfair Display was an
+entire third webfont, italic-only, loaded on every page for one string. The pull
+quote is now Inter at a light weight with negative tracking; it is already
+marked by its rule and its position, so the type only had to stop reading as
+body copy. Separately, the HUD treatment (`.hud`, corner ticks, grid floor) had
+no rule and simply appeared where it looked good. It has one now: **panels are
+where people speak, the HUD is where the engine speaks.** Conversations,
+profiles and pitches are panels; fit scores, coverage and risk findings are HUD.
+The distinction is real — you can argue with a coverage score and you cannot
+argue with somebody's own bio.
+
+**Elevation in dark mode.** Shadows are dropped on dark and replaced with a
+lifted border, which is right for a panel sitting in the page and useless for
+one floating over it: the dock, modals and the notification panel were the same
+near-black as the page with a slightly different edge. `.floating` carries
+elevation by tone instead — ink-900 over ink-950, the same trick the scrolled
+navbar uses.
+
+**A calmer bar.** The right-hand cluster had grown to seven controls, three of
+them near-identical icon circles next to an avatar that already linked to the
+profile. Settings, the theme and signing out are all the same category of thing
+and now live under that avatar; chat and the bell stay outside because they
+carry counts, and a number you need to see should not be behind a click. Four
+controls.
+
+**The logo softened.** Its comment said it had no rounding because "the logo has
+to carry the same rules as everything else" — true of a system built on hard
+corners, not of this one. The nav links were the other holdout, and a square
+mark beside a rounded rail read as unmigrated rather than deliberate.
+
+**Section indices removed.** `00`–`03` implied an ordered sequence the site does
+not have; they were assigned in the order pages happened to be written.
+
+**Thin states** (`lib/grid.ts`). A three-column grid holding one card is a card
+in the corner of a lot of nothing — the cold-start problem showing up visually,
+in the first four seconds, before any of the matching gets a chance to be
+impressive. Grids now narrow to what is in them: one item is a full-width row,
+two are a pair, and only a genuinely full set gets three columns. The empty
+recruiting board says what would fill it and why it is empty, rather than
+looking like content that failed to load.
+
+**The landing page's two calls to action.** "Find my team" opened the signup
+modal — promising the same thing as the button beside it, and asking somebody
+already signed in to create the account they had. It is "See what's on" → the
+events list now, with signing up offered as a line rather than a third button.
+And "Create profile" in the closing band was routed through the same shared
+handler, which sent anyone with a finished profile to */events*: one label, one
+destination, so it goes to the profile every time.
+
 ### 7.9 Verification
 
 Every suite below ran against the live Supabase database, not mocks or fixtures.
@@ -1272,8 +1396,11 @@ Every suite below ran against the live Supabase database, not mocks or fixtures.
 | `organiser-e2e` | organiser-defined scoring | 22 |
 | `public-team-e2e` | the public recruiting page | 14 |
 | `shell-ui` | the seam, the return control, navigation mode, the dock, the board | 37 |
+| `newscope-e2e` | endorsement decay, availability freshness, the endorsement gate | 24 |
+| `fixes-ui` | occlusion in navigation mode, the dock's two tabs, the logo | 17 |
+| `design-ui` | motion tokens, casing, the account menu, dark elevation, thin grids | 21 |
 
-All passing; 435 checks in total. Browser flows were driven through Chrome with Playwright.
+All passing; 497 checks in total. Browser flows were driven through Chrome with Playwright.
 
 **These suites are not in the repository** — they were written in a session scratchpad. §6.5
 item 1 is about moving them in.

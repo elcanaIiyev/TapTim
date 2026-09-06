@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { fittedGrid } from '../lib/grid';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ChatPanel } from '../components/connections/ChatPanel';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -69,6 +70,22 @@ export function ConnectionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [chatWith, setChatWith] = useState<string | null>(null);
 
+  // `?with=<id>` opens straight into one thread. The chat dock's "Open full"
+  // uses it, so leaving the popup lands on the conversation you were reading
+  // rather than on the index with everything closed.
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('with');
+  useEffect(() => {
+    if (!requested) return;
+    setChatWith(requested);
+    // Consumed, so a later close does not get undone by a refresh of this page.
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('with');
+      return next;
+    }, { replace: true });
+  }, [requested, setParams]);
+
   const loadOverview = useCallback(async () => {
     setOverview(await connectionsApi.overview());
   }, []);
@@ -129,7 +146,6 @@ export function ConnectionsPage() {
     <Container className="py-12">
       <SectionHeading
         overline="Connections"
-        index="02"
         title="People you could build with"
         description="Connect first, then message. Invitations to a team are sent from that team's page, because an invitation is always to one team at one event."
       />
@@ -314,7 +330,7 @@ export function ConnectionsPage() {
                 />
               </div>
 
-              <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+              <ul className={cn('mt-6 grid gap-4', fittedGrid(people.length, 2))}>
                 {people.map((person) => {
                   const relation = stateByPerson.get(person.id);
                   const topSkills = [...person.skills]
@@ -322,8 +338,7 @@ export function ConnectionsPage() {
                     .slice(0, 3);
 
                   return (
-                    <li key={person.id} className="hud hud-ticks relative overflow-hidden p-5">
-                      <div className="grid-floor pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+                    <li key={person.id} className="panel panel-soft-sm relative overflow-hidden p-5">
                       <div className="relative">
                         <div className="flex items-start gap-3">
                           <Avatar person={person} />

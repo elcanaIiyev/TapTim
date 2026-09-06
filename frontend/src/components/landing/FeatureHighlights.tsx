@@ -157,7 +157,6 @@ export function FeatureHighlights() {
     <section className="border-b border-ink-200 bg-ink-50 py-20 sm:py-24 dark:border-ink-700 dark:bg-ink-900/40">
       <Container>
         <SectionHeading
-          index="03"
           overline="Feature Highlights"
           title="What you get once your profile is live"
           description="Three pieces work together: a score that explains itself, a roster that shows its gaps, and credentials you can trust."

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/cn';
+import { eventPhase, phaseCopy } from '../../lib/event-phase';
 import { formatDateRange, formatParticipants, formatTeamSize } from '../../lib/format';
 import type { EventItem } from '../../lib/types';
 import { Badge } from '../ui/Badge';
@@ -47,6 +48,9 @@ function MetaRow({ icon, children }: { icon: React.ReactNode; children: React.Re
 }
 
 export function EventCard({ event }: { event: EventItem }) {
+  const phase = eventPhase(event);
+  const copy = phaseCopy(event);
+
   return (
     <Card
       interactive
@@ -64,11 +68,11 @@ export function EventCard({ event }: { event: EventItem }) {
         {/* Over the image rather than above it — the badges belong to the photo,
             and putting them here buys the text block below more room. */}
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
-          <span className="rounded-full bg-black/55 px-2.5 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+          <span className="type-tag rounded-full bg-black/55 px-2.5 py-1 font-semibold text-white backdrop-blur-sm">
             {event.format}
           </span>
           {event.featured && (
-            <span className="flex items-center gap-1 rounded-full bg-fern-600 px-2.5 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-wider text-white">
+            <span className="type-tag flex items-center gap-1 rounded-full bg-fern-600 px-2.5 py-1 font-semibold text-white">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z" />
               </svg>
@@ -111,6 +115,23 @@ export function EventCard({ event }: { event: EventItem }) {
             }
           >
             {formatDateRange(event.startDate, event.endDate)}
+            {/* Where the event is in its own life, on the row that already
+                carries its dates. A catalogue that reads the same the week
+                after an event as the week before it is a catalogue nobody can
+                trust to be current. */}
+            <span
+              className={
+                phase === 'running'
+                  ? 'ml-2 font-semibold text-success-text'
+                  : phase === 'finished'
+                    ? 'ml-2 text-ink-500 dark:text-ink-400'
+                    : phase === 'open'
+                      ? 'ml-2 text-ink-500 dark:text-ink-400'
+                      : 'ml-2 font-semibold text-signal-warn'
+              }
+            >
+              · {copy.label}
+            </span>
           </MetaRow>
           <MetaRow
             icon={

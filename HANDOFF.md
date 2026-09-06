@@ -38,6 +38,9 @@ with chat and the LinkedIn placeholder.
 | `public-team-e2e.mjs` | the public recruiting page | 14 |
 | `teamchat-ui.mjs`, `notifications-ui.mjs`, `risks-ui.mjs`, `eventfilters-ui.mjs`, `public-team-ui.mjs` | the same in Chrome | 46 |
 | `shell-ui.mjs` | the seam, return control, navigation mode, chat dock, recruiting board (Chrome) | 37 |
+| `newscope-e2e.mjs` | endorsement decay and context, availability freshness | 24 |
+| `fixes-ui.mjs` | navigation-mode occlusion, dock tabs, the logo (Chrome) | 17 |
+| `design-ui.mjs` | motion tokens, casing, account menu, dark elevation, thin grids (Chrome) | 21 |
 
 All passing. **The scratchpad is session-scoped and will be gone after a reset**,
 which makes porting these into `backend/` the highest-value next task — see §3.
@@ -102,6 +105,20 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 `013_notifications` · `014_endorsements` · `015_endorsement_notification` ·
 `016_event_taxonomy`
 
+### A warning about the suites
+
+Several of them — `e2e.mjs`, `roles-e2e2.mjs`, `connections-e2e.mjs`,
+`endorsements-e2e.mjs` and others — open with a teardown that **deletes every
+team owned by the eight seed accounts**, so they are repeatable rather than
+green-once. Against a scratch database that is correct. Against this one it also
+deletes whatever you were using those accounts to try out. Twice now a
+regression run has destroyed a team created by hand minutes earlier.
+
+Before running them, either accept that seed-account teams are disposable, or
+move the suites onto their own database first. They are safe for events (the
+catalogue is seeded and owned by nobody) and they do delete certificates on
+those accounts as well.
+
 ### Conventions worth not relearning
 
 - Commits carry **no AI attribution** — asked for explicitly.
@@ -156,6 +173,13 @@ Every item from every scope list so far is **done**.
 | 25 | A return button, top left | `BackBar.tsx`, mounted once in `App.tsx` |
 | 26 | WASD / arrow navigation behind a hotkey | `NavigationMode.tsx` — `` ` `` or F7 |
 | 27 | Chat needs its own button and a dock | `ChatDockContext.tsx`, `ChatDock.tsx`, navbar chat button |
+| 28 | Navigation mode reached things off screen and under the bar | `NavigationMode.tsx` — viewport coordinates + `elementFromPoint` |
+| 29 | The dock needs Chat / Team chat, and "Open full" per conversation | `ChatDock.tsx` tabs, `/connections?with=` |
+| 30 | Drop the logo's square mark | `Logo.tsx` — wordmark and a rule |
+| 31 | Availability goes stale and the engine trusts it | migration `018`, `AvailabilityCheck.tsx`, `POST /me/availability/confirm` |
+| 32 | Nothing knows the event has started | `lib/event-phase.ts`, phase-aware `EventDetailPage` |
+| 33 | Endorsements should decay and be scoped | migration `017`, `endorsement-weight.ts` |
+| 34 | The design system had drifted | see doc.md §7.12 |
 
 The design decision worth remembering from item 2: the compatibility engine was
 **not** forked. `scorePair` and `scoreAgainstTeam` take an optional weight

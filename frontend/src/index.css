@@ -25,7 +25,6 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
-  --font-quote: 'Playfair Display', ui-serif, Georgia, serif;
 
   /* Iris — the primary. Buttons, links, active states. Takes white text. */
   --color-iris-50: #f6f3ff;
@@ -95,6 +94,25 @@
     are the same idea, and splitting them is how they drift apart.
   */
   --color-seam: #e6e0f1;
+
+  /*
+    Motion, as two durations and one curve.
+
+    Every component had been choosing its own -- 150ms here, 180 there, 200,
+    320, 520, across four different easings -- which is why the site read as
+    several things moving near each other rather than as one object. The split
+    that matters is not per-component, it is who started the movement:
+
+    - `quick` is a control answering you. It should feel like the click landed.
+    - `settled` is something resolving on its own -- a panel arriving, a value
+      animating, a cursor travelling. Long enough to follow with your eye.
+
+    One curve for both. It decelerates hard, which is what makes a thing look
+    like it arrived somewhere rather than stopped.
+  */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-quick: 160ms;
+  --duration-settled: 320ms;
 
   /* Softness lives here: real radii instead of hard corners. */
   --radius-soft-sm: 0.5rem;
@@ -208,17 +226,73 @@
     letter-spacing: -0.018em;
   }
 
-  /* Mono labels: still the structural voice, with the tracking dialled back. */
+  /*
+    Mono labels: the structural voice.
+
+    Narrowed deliberately. This treatment had been the overline, the badge, the
+    nav link, the filter chip, the footer small print, the section caption and
+    the stat label -- and a mark that appears on everything marks nothing.
+
+    It now means one thing: *this is structure, not content*. Overlines above a
+    heading, captions on a figure, the labels on an instrument. Anything that is
+    a name a person reads for its meaning belongs in `.type-tag`.
+  */
   .type-label {
     @apply font-mono text-[0.6875rem] uppercase tracking-[0.13em];
   }
 
-  /* Playfair italic, reserved strictly for pull quotes. */
-  .type-quote {
-    @apply font-quote italic;
-    font-size: clamp(1.25rem, 2.5vw, 1.6rem);
-    line-height: 1.4;
+  /*
+    Mono, small, sentence case: names rendered in the technical voice.
+
+    Badges and filter chips carry proper nouns -- "UI/UX Designer", "Capture the
+    Flag", "Web3". Uppercasing those makes them slower to read, not more
+    structural: the eye loses the word shapes it uses to recognise a name, and
+    an all-caps "DATA SCIENTIST" has to be spelled out where "Data Scientist" is
+    recognised whole. The mono keeps them in the same family as the labels
+    without pretending they are structure.
+  */
+  .type-tag {
+    @apply font-mono text-[0.72rem] font-medium tracking-[0.01em];
   }
+
+  /*
+    The pull quote.
+
+    It used to be Playfair Display -- an entire third webfont, italic-only,
+    loaded on every page for a single string on the landing page. Two families
+    and a distinctive setting cost less and lose almost nothing: the quote is
+    already marked by its rule, its width and its position, so the type only has
+    to stop reading as body copy. Large, light, and tracked in rather than out
+    does that.
+  */
+  .type-quote {
+    @apply font-sans font-light;
+    font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /*
+    ## The two voices
+
+    There are two surface treatments on this site and, until now, no rule about
+    which to use -- the HUD simply appeared where it looked good, which made it
+    a texture rather than a system.
+
+    The rule:
+
+    - **`.panel` is where people speak.** Conversations, profiles, rosters,
+      pitches, forms. Soft, quiet, hairline-bordered; content the site is
+      carrying on somebody's behalf.
+    - **`.hud` is where the engine speaks.** Fit scores, coverage bars, risk
+      findings, gap reports, weightings. Corner ticks, grid floor, mono
+      readouts; output the site computed and is accountable for.
+
+    It is worth having because the difference is real: a person can argue with a
+    coverage score and cannot argue with somebody's own bio. Making the two look
+    different is how a reader knows which they are looking at.
+  */
 
   /* The structural motif: a rounded panel with a hairline border. */
   .panel {
@@ -246,11 +320,37 @@
   }
 
   /*
+    Elevation for things that float *over* the page rather than sit in it —
+    the chat dock, modals, the notification panel.
+
+    A lifted border is enough for a panel in the document flow, but not for a
+    surface that has to read as being in front of one: in dark mode those were
+    the same near-black as the page with a slightly different edge, so nothing
+    said they were on top. Tone carries elevation where shadow cannot, which is
+    the same thing the scrolled navbar does with its ink-900 lift.
+  */
+  .floating {
+    box-shadow: var(--shadow-soft-lg);
+  }
+
+  .dark .floating {
+    background-color: var(--color-ink-900);
+    border-color: var(--color-ink-700);
+    /* Not a shadow — a dark halo. It darkens the page it is over rather than
+       trying to cast light onto black. */
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.5),
+      0 18px 48px -12px rgb(0 0 0 / 0.75);
+  }
+
+  /*
     Press interaction: a gentle lift and shadow bloom, then settle. Replaces
     the hard travel-into-the-shadow of the previous system.
   */
   .press {
-    @apply transition-[transform,box-shadow,background-color,border-color] duration-200 ease-out;
+    transition-property: transform, box-shadow, background-color, border-color;
+    transition-duration: var(--duration-quick);
+    transition-timing-function: var(--ease-soft);
   }
 
   .press:hover {
@@ -494,7 +594,7 @@
     @apply h-full rounded-full;
     background: linear-gradient(90deg, var(--color-iris-500), var(--color-fern-500));
     box-shadow: 0 0 12px -1px rgb(16 185 129 / 0.6);
-    transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width var(--duration-settled) var(--ease-soft);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -507,8 +607,8 @@
   .pip {
     @apply h-1.5 rounded-full bg-ink-300 dark:bg-ink-700;
     transition:
-      width 260ms ease,
-      background-color 260ms ease;
+      width var(--duration-settled) var(--ease-soft),
+      background-color var(--duration-settled) var(--ease-soft);
     width: 0.375rem;
   }
 
@@ -534,10 +634,10 @@
       0 0 0 3px var(--color-iris-500),
       0 0 26px 2px rgb(139 92 246 / 0.75);
     transition:
-      top 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      left 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      width 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      top var(--duration-settled) var(--ease-soft),
+      left var(--duration-settled) var(--ease-soft),
+      width var(--duration-settled) var(--ease-soft),
+      height var(--duration-settled) var(--ease-soft);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -587,10 +687,10 @@
       0 0 0 6px rgb(139 92 246 / 0.20),
       0 0 22px 2px rgb(139 92 246 / 0.45);
     transition:
-      top 150ms cubic-bezier(0.22, 1, 0.36, 1),
-      left 150ms cubic-bezier(0.22, 1, 0.36, 1),
-      width 150ms cubic-bezier(0.22, 1, 0.36, 1),
-      height 150ms cubic-bezier(0.22, 1, 0.36, 1);
+      top var(--duration-quick) var(--ease-soft),
+      left var(--duration-quick) var(--ease-soft),
+      width var(--duration-quick) var(--ease-soft),
+      height var(--duration-quick) var(--ease-soft);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -612,7 +712,7 @@
   }
 
   .dock-in {
-    animation: taptim-dock-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: taptim-dock-in var(--duration-quick) var(--ease-soft);
     transform-origin: bottom right;
   }
 

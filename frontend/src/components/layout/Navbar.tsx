@@ -6,6 +6,7 @@ import { cn } from '../../lib/cn';
 import { ADMIN_CONSOLE_PATH } from '../../lib/routes';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
+import { AccountMenu } from './AccountMenu';
 import { AdminModeSwitch } from './AdminModeSwitch';
 import { Logo } from './Logo';
 import { NotificationBell } from './NotificationBell';
@@ -129,42 +130,20 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
                 console, so this is the only way in short of typing the URL. */}
             <AdminModeSwitch siteHref={lastSitePath} className="hidden md:grid" />
 
-            <ThemeToggle />
+            {!user && <ThemeToggle />}
 
             <div className="hidden items-center gap-2 md:flex">
               {user ? (
                 <>
-                  {/* The name is the link to the profile — a signed-in person
-                      looking for their own settings clicks their name first. */}
-                  <NavLink
-                    to="/profile"
-                    className={({ isActive }) =>
-                      cn(
-                        'type-label flex max-w-[12rem] items-center gap-2 truncate rounded-full border px-2.5 py-1.5 transition-colors',
-                        isActive
-                          ? 'border-iris-600 text-accent-text'
-                          : 'border-transparent text-ink-600 hover:border-ink-300 hover:text-ink-900 dark:text-ink-300 dark:hover:border-ink-600 dark:hover:text-white',
-                      )
-                    }
-                  >
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span
-                        aria-hidden="true"
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-iris-600 text-[0.6rem] font-bold text-white"
-                      >
-                        {user.firstName?.[0]?.toUpperCase() ?? '?'}
-                      </span>
-                    )}
-                    <span className="truncate">{user.firstName}</span>
-                  </NavLink>
-
                   {/* Chat had no control of its own: the only way to a
                       conversation was to navigate to /connections and find the
                       name, which is a strange amount of work to answer a
-                      message. This and the floating dock drive the same
-                      state, so the count on both is one count. */}
+                      message. This and the floating dock drive the same state,
+                      so the count on both is one count.
+
+                      It stays outside the account menu, as does the bell,
+                      because both carry a number — and a number you need to see
+                      is not something to put behind a click. */}
                   <button
                     type="button"
                     onClick={toggleChat}
@@ -204,41 +183,9 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
 
                   <NotificationBell />
 
-                  {/* Icon-only, because the label would be the third word in a
-                      row that is already name + action. The accessible name
-                      carries it instead. */}
-                  <NavLink
-                    to="/settings"
-                    aria-label="Settings"
-                    title="Settings"
-                    className={({ isActive }) =>
-                      cn(
-                        'grid h-8 w-8 place-items-center rounded-full border transition-colors',
-                        isActive
-                          ? 'border-iris-600 text-accent-text'
-                          : 'border-transparent text-ink-600 hover:border-ink-300 hover:text-ink-900 dark:text-ink-300 dark:hover:border-ink-600 dark:hover:text-white',
-                      )
-                    }
-                  >
-                    <svg
-                      width="17"
-                      height="17"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-                    </svg>
-                  </NavLink>
-
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    Log out
-                  </Button>
+                  {/* Profile, settings, theme and signing out, behind the one
+                      affordance people already reach for. */}
+                  <AccountMenu onLogout={handleLogout} />
                 </>
               ) : (
                 <>

@@ -79,11 +79,48 @@ export async function getProfile(id: string): Promise<UserProfileView> {
   };
 }
 
+/**
+ * Fields whose edit also means "and this is current as of now".
+ *
+ * Saving any of them is a stronger statement than pressing a confirm button, so
+ * it stamps the same clock -- otherwise somebody who had just rewritten their
+ * whole schedule would be asked, days later, whether it was still accurate.
+ */
+const AVAILABILITY_FIELDS = ['availability', 'hoursPerWeek', 'timezoneOffset'] as const;
+
 export async function updateProfile(
   id: string,
   input: UpdateProfileInput,
 ): Promise<PublicUser> {
-  const updated = await userStore.update(id, input);
+  const touchesAvailability = AVAILABILITY_FIELDS.some(
+    (field) => (input as Record<string, unknown>)[field] !== undefined,
+  );
+
+  const updated = await userStore.update(
+    id,
+    touchesAvailability
+      ? { ...input, availabilityConfirmedAt: new Date().toISOString() }
+      : input,
+  );
+  if (!updated) {
+    throw HttpError.notFound('The account for this token no longer exists.');
+  }
+  return toPublicUser(updated);
+}
+
+/**
+ * "Yes, that is still right."
+ *
+ * Its own endpoint rather than an empty profile PATCH, because confirming
+ * without changing anything is a distinct act and the only one that can keep a
+ * correct-but-old answer alive. Availability carries up to 28 of the 100 points
+ * a hackathon is scored on; stale availability is worse than none, because the
+ * engine trusts it.
+ */
+export async function confirmAvailability(id: string): Promise<PublicUser> {
+  const updated = await userStore.update(id, {
+    availabilityConfirmedAt: new Date().toISOString(),
+  });
   if (!updated) {
     throw HttpError.notFound('The account for this token no longer exists.');
   }

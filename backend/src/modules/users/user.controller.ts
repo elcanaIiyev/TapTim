@@ -36,6 +36,11 @@ function requireUser(req: Request) {
   return req.user;
 }
 
+export async function confirmAvailabilityHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  res.status(200).json({ data: await userService.confirmAvailability(user.id) });
+}
+
 export async function listUsersHandler(req: Request, res: Response) {
   const query = getValidatedQuery<ListUsersQuery>(req);
   const { items, total, limit, offset } = await userService.listUsers(query, req.user?.id);

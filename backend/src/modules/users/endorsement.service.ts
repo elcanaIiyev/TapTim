@@ -16,6 +16,15 @@ import { canonicaliseSkill } from './skill-catalogue.js';
 export interface SkillEndorsement {
   skill: string;
   count: number;
+  /**
+   * How many of those carry the event they came from.
+   *
+   * Surfaced rather than folded silently into the weight because it is the
+   * difference between "three people vouched for this" and "three people
+   * vouched for this, and we can name where". A reader deciding whether to
+   * trust the badge deserves to see which.
+   */
+  verified: number;
   /** Whether the person asking has endorsed this one. */
   byViewer: boolean;
 }
@@ -28,11 +37,11 @@ export async function forProfile(
   const user = await userStore.findById(userId);
   if (!user) throw HttpError.notFound(`No participant found with id "${userId}".`);
 
-  const [counts, mine, shared] = await Promise.all([
-    endorsementStore.countsFor(userId),
+  const [tallies, mine, shared] = await Promise.all([
+    endorsementStore.talliesFor(userId),
     viewerId ? endorsementStore.byEndorser(viewerId, userId) : Promise.resolve(new Set<string>()),
     viewerId && viewerId !== userId
-      ? endorsementStore.haveSharedATeam(viewerId, userId)
+      ? endorsementStore.lastSharedTeam(viewerId, userId)
       : Promise.resolve(null),
   ]);
 
@@ -42,7 +51,8 @@ export async function forProfile(
     // endorsements for it still exist.
     skills: user.skills.map((skill) => ({
       skill,
-      count: counts.get(skill) ?? 0,
+      count: tallies.get(skill)?.count ?? 0,
+      verified: tallies.get(skill)?.verified ?? 0,
       byViewer: mine.has(skill),
     })),
     canEndorse: shared !== null,
@@ -70,15 +80,21 @@ export async function endorse(
     throw HttpError.badRequest(`${user.firstName} does not list ${skill}.`);
   }
 
-  const teamId = await endorsementStore.haveSharedATeam(endorserId, userId);
-  if (!teamId) {
+  const shared = await endorsementStore.lastSharedTeam(endorserId, userId);
+  if (!shared) {
     throw HttpError.forbidden(
       'You can only endorse someone you have been on a team with — that is what makes an ' +
         'endorsement mean anything.',
     );
   }
 
-  const added = await endorsementStore.add(userId, endorserId, skill, teamId);
+  // The event is what dates the endorsement and what makes it auditable, so it
+  // is recorded alongside the team rather than left to be re-derived later --
+  // a disbanded team would take the context with it.
+  const added = await endorsementStore.add(userId, endorserId, skill, {
+    teamId: shared.teamId,
+    eventId: shared.eventId,
+  });
 
   // Only on a genuinely new one: a double-click should not send a second
   // notification for the same endorsement.
@@ -93,8 +109,9 @@ export async function endorse(
     });
   }
 
-  const counts = await endorsementStore.countsFor(userId);
-  return { skill, count: counts.get(skill) ?? 0, byViewer: true };
+  const tallies = await endorsementStore.talliesFor(userId);
+  const entry = tallies.get(skill);
+  return { skill, count: entry?.count ?? 0, verified: entry?.verified ?? 0, byViewer: true };
 }
 
 export async function withdraw(
@@ -108,6 +125,7 @@ export async function withdraw(
   const removed = await endorsementStore.remove(userId, endorserId, skill);
   if (!removed) throw HttpError.notFound('You have not endorsed that skill.');
 
-  const counts = await endorsementStore.countsFor(userId);
-  return { skill, count: counts.get(skill) ?? 0, byViewer: false };
+  const tallies = await endorsementStore.talliesFor(userId);
+  const entry = tallies.get(skill);
+  return { skill, count: entry?.count ?? 0, verified: entry?.verified ?? 0, byViewer: false };
 }

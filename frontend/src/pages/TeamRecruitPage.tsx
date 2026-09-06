@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { cn } from '../lib/cn';
+import { fittedGrid } from '../lib/grid';
 import { Link, useParams } from 'react-router-dom';
 import { TeamLogo } from '../components/teams/TeamLogo';
 import { Badge } from '../components/ui/Badge';
@@ -90,8 +92,8 @@ export function TeamRecruitPage() {
   return (
     <Container className="py-14 sm:py-20">
       {/* -- the pitch --------------------------------------------------------- */}
-      <div className="hud hud-ticks relative overflow-hidden p-6 sm:p-8">
-        <div className="grid-floor pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+      {/* Their pitch, in their words — a panel, not a readout. */}
+      <div className="panel panel-soft relative overflow-hidden p-6 sm:p-8">
 
         <div className="relative">
           <Link
@@ -218,7 +220,7 @@ export function TeamRecruitPage() {
         <h2 className="type-label text-accent-text">
           Who you would be working with
         </h2>
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+        <ul className={cn('mt-4 grid gap-4', fittedGrid(page.members.length, 2))}>
           {page.members.map((member) => (
             <li
               key={member.fullName}

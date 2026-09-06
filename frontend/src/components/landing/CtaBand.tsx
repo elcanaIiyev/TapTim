@@ -1,7 +1,14 @@
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
 
-export function CtaBand({ onGetStarted }: { onGetStarted: () => void }) {
+/**
+ * `onCreateProfile` and not the old shared "get started" handler.
+ *
+ * That handler routed anyone with a finished profile to /events, which meant a
+ * button reading "Create profile" took you to the events list. One label, one
+ * destination: this one goes to the profile, every time.
+ */
+export function CtaBand({ onCreateProfile }: { onCreateProfile: () => void }) {
   return (
     <section className="border-y border-ink-200 bg-iris-600 dark:border-ink-700">
       <Container className="py-16 sm:py-20">
@@ -27,7 +34,7 @@ export function CtaBand({ onGetStarted }: { onGetStarted: () => void }) {
               than it, which pushed the page into horizontal scroll at 1024px.
             */}
             <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-              <Button size="lg" variant="secondary" onClick={onGetStarted}>
+              <Button size="lg" variant="secondary" onClick={onCreateProfile}>
                 Create profile
               </Button>
               {/*

@@ -85,7 +85,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="panel-soft-lg relative max-h-[92vh] w-full max-w-md overflow-y-auto border border-ink-200 bg-white p-6 sm:p-8 dark:border-ink-700 dark:bg-ink-900"
+        className="floating relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-[var(--radius-soft)] border border-ink-200 bg-white p-6 sm:p-8 dark:border-ink-700 dark:bg-ink-900"
       >
         <button
           type="button"

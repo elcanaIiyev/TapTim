@@ -37,7 +37,7 @@ function Chip({
       // shape as data comes and goes rather than reflowing under the cursor.
       disabled={count === 0 && !active}
       className={cn(
-        'type-label cursor-pointer rounded-full border px-3.5 py-2 transition-colors duration-200',
+        'type-tag cursor-pointer rounded-full border px-3.5 py-2 transition-colors duration-200',
         active
           ? 'border-ink-950 bg-iris-600 text-white dark:border-ink-700'
           : 'border-ink-950 bg-white text-ink-700 hover:bg-ink-950 hover:text-ink-50 ' +

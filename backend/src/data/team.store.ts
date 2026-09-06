@@ -44,7 +44,7 @@ const USER_COLUMNS_PREFIXED = `
   u.location_city, u.location_country, u.languages, u.interest_domains,
   u.goals, u.hackathons_attended, u.preferred_team_size, u.discord_handle,
   u.email_verified, u.onboarding_completed, u.banned_until, u.banned_reason,
-  u.banned_at, u.banned_by, u.created_at, u.updated_at
+  u.banned_at, u.banned_by, u.availability_confirmed_at, u.created_at, u.updated_at
 `;
 
 export interface ListTeamsFilter {

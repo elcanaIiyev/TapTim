@@ -24,6 +24,33 @@ import { useLocation } from 'react-router-dom';
  * Escape leaves. So does Tab, which hands control back to the browser's own
  * focus order rather than fighting it.
  *
+ * ## The cursor cannot reach what you cannot see
+ *
+ * The first version measured every target in *document* coordinates, reasoning
+ * that "down" should mean down the page rather than down the window. It did —
+ * and it also meant the cursor could land on a control that had been scrolled
+ * off the top of the screen, or on one sitting underneath the sticky header,
+ * where Enter activated something invisible.
+ *
+ * The header made that worse rather than better. Sticky positioning gives it
+ * viewport coordinates that overlap whatever is scrolled beneath it, so in
+ * document space the bar and the content hidden behind it occupied the same
+ * band, and the cursor jumped between the two.
+ *
+ * Targets are therefore measured in viewport coordinates and filtered twice:
+ *
+ * 1. **Visibility** — the box has to intersect the part of the window actually
+ *    showing page content, which is the viewport minus whatever the sticky
+ *    header covers.
+ * 2. **Occlusion** — `elementFromPoint` has to agree that the element is what
+ *    is painted there. That excludes anything behind the header, the chat
+ *    dock, or an overlay, without this file needing to know they exist.
+ *
+ * Travelling past the fold becomes a separate motion: when nothing is left in
+ * the direction pressed, the page scrolls by most of a screen and the cursor
+ * re-seeds into what that reveals. Reaching a thing costs bringing it into
+ * view, which is the property that was missing.
+ *
  * ## Text fields
  *
  * The invariant is that nothing typed in this mode ever reaches a text field,
@@ -62,8 +89,22 @@ const SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-/** Elements that take over typing, so landing on one ends the mode. */
+/** Elements that take over typing, so the cursor passes over without focusing. */
 const TEXT_ENTRY = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+
+/** Breathing room kept between a target and the edges of the visible band. */
+const EDGE_PADDING = 8;
+
+/** How much of a screen one scroll step covers when the cursor runs out of page. */
+const SCROLL_STEP = 0.7;
+
+/**
+ * How far off the axis a candidate may sit, as a multiple of how far along the
+ * axis it is, when the two boxes share no cross-axis overlap. Roughly a 70°
+ * cone — permissive enough for the diagonal steps a real layout produces, tight
+ * enough to reject a jump across the whole screen.
+ */
+const CONE_RATIO = 3;
 
 interface Box {
   el: HTMLElement;
@@ -82,18 +123,67 @@ function isTypingTarget(node: EventTarget | null): boolean {
 }
 
 /**
- * Every target on the page, in document coordinates.
+ * The band of the window that is showing page content.
  *
- * Document rather than viewport coordinates on purpose: "down" has to mean the
- * next thing down the *page*, including things below the fold, or the mode
- * would stop at the bottom of the window and refuse to go further.
+ * The sticky header covers the top of it, and anything under the header is not
+ * visible however innocent its coordinates look.
  */
+function visibleBand(): { top: number; bottom: number; header: HTMLElement | null } {
+  const header = document.querySelector<HTMLElement>('header');
+  const covered =
+    header && window.getComputedStyle(header).position === 'sticky'
+      ? Math.max(0, header.getBoundingClientRect().bottom)
+      : 0;
+  return { top: covered, bottom: window.innerHeight, header };
+}
+
+/**
+ * Whether `el` is what is actually painted at its own position.
+ *
+ * The probe has to land inside the element's *visible slice*, not at its
+ * geometric centre and not at an arbitrary point in the band. Getting that
+ * wrong is subtle in both directions: a card half-covered by the header has a
+ * centre that is underneath the header, and a control inside the sticky bar
+ * lives entirely above the band, so clamping the sample into the band made
+ * every one of the bar's own buttons unreachable.
+ *
+ * Three samples across rather than one: a wide element's centre often lands on
+ * a child, and one near an edge can be clipped.
+ */
+function isOnTop(
+  el: HTMLElement,
+  rect: DOMRect,
+  band: { top: number; bottom: number },
+  inHeader: boolean,
+): boolean {
+  // The header is painted over the band, so its own contents are visible above
+  // it; everything else is only visible below it.
+  const lo = inHeader ? 1 : band.top + 1;
+  const hi = band.bottom - 1;
+
+  const sliceTop = Math.max(rect.top + 2, lo);
+  const sliceBottom = Math.min(rect.bottom - 2, hi);
+  if (sliceBottom < sliceTop) return false;
+
+  const y = (sliceTop + sliceBottom) / 2;
+  const xs = [rect.left + rect.width / 2, rect.left + 4, rect.right - 4];
+
+  for (const rawX of xs) {
+    const x = Math.min(Math.max(rawX, 1), window.innerWidth - 1);
+    const hit = document.elementFromPoint(x, y);
+    if (hit && (el === hit || el.contains(hit) || hit.contains(el))) return true;
+  }
+  return false;
+}
+
+/** Every target the person can currently see, in viewport coordinates. */
 function collectBoxes(): Box[] {
   // A modal makes the rest of the page inert, so navigation has to stay inside
   // it — otherwise the cursor wanders behind the overlay onto things the
   // person cannot see or click.
   const modal = document.querySelector<HTMLElement>('[aria-modal="true"]');
   const root: ParentNode = modal ?? document;
+  const band = visibleBand();
 
   const boxes: Box[] = [];
   for (const el of Array.from(root.querySelectorAll<HTMLElement>(SELECTOR))) {
@@ -108,16 +198,26 @@ function collectBoxes(): Box[] {
     const style = window.getComputedStyle(el);
     if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') continue;
 
-    const left = rect.left + window.scrollX;
-    const top = rect.top + window.scrollY;
+    // On screen at all.
+    if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+    if (rect.right <= 0 || rect.left >= window.innerWidth) continue;
+
+    // Below the sticky header — unless it *is* the sticky header, whose own
+    // controls are visible and have to stay reachable.
+    const inHeader = band.header?.contains(el) ?? false;
+    if (!inHeader && rect.bottom <= band.top + 2) continue;
+
+
+    if (!isOnTop(el, rect, band, inHeader)) continue;
+
     boxes.push({
       el,
-      left,
-      top,
-      right: left + rect.width,
-      bottom: top + rect.height,
-      cx: left + rect.width / 2,
-      cy: top + rect.height / 2,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      cx: rect.left + rect.width / 2,
+      cy: rect.top + rect.height / 2,
     });
   }
   return boxes;
@@ -150,6 +250,14 @@ function score(from: Box, to: Box, dir: Direction): number {
     ? Math.min(from.right, to.right) - Math.max(from.left, to.left)
     : Math.min(from.bottom, to.bottom) - Math.max(from.top, to.top);
 
+  // A cone, not a half-plane. Without it the *only* candidate in a direction
+  // wins however absurd the angle: pressing right on the last control in the
+  // top bar teleported to the floating chat button at the bottom of the
+  // screen, two pixels further right and seven hundred pixels down. Boxes that
+  // overlap on the cross axis are exempt — they are genuinely in the same row
+  // or column however far apart.
+  if (overlap <= 0 && drift > forward * CONE_RATIO) return Infinity;
+
   return forward + drift * (overlap > 0 ? 0.35 : 2.5);
 }
 
@@ -158,6 +266,16 @@ export function NavigationMode() {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [label, setLabel] = useState('');
   const targetRef = useRef<HTMLElement | null>(null);
+  /**
+   * The pending re-seed after a scroll step.
+   *
+   * It has to be cancellable. Travelling past the fold scrolls and then re-seeds
+   * once the smooth scroll has settled, which is a few hundred milliseconds —
+   * long enough for the next keypress to land first. Without this the queued
+   * seed fires *after* that move and throws the cursor somewhere the person did
+   * not ask for, which reads as the mode randomly losing its place.
+   */
+  const pendingSeed = useRef(0);
   const { pathname } = useLocation();
 
   const reduceMotion = useRef(false);
@@ -175,6 +293,28 @@ export function NavigationMode() {
     setRect(el.getBoundingClientRect());
   }, []);
 
+  /**
+   * Nudges a target clear of the sticky header and the bottom edge.
+   *
+   * `scrollIntoView({ block: 'nearest' })` cannot do this: it aligns to the
+   * scrollport, which starts at y=0 and includes the strip the header is
+   * painted over, so a target near the top of the page landed under the bar.
+   */
+  const reveal = useCallback((el: HTMLElement) => {
+    const band = visibleBand();
+    const box = el.getBoundingClientRect();
+
+    let delta = 0;
+    if (box.top < band.top + EDGE_PADDING) delta = box.top - (band.top + EDGE_PADDING);
+    else if (box.bottom > band.bottom - EDGE_PADDING) {
+      delta = box.bottom - (band.bottom - EDGE_PADDING);
+    }
+
+    if (delta !== 0) {
+      window.scrollBy({ top: delta, behavior: reduceMotion.current ? 'auto' : 'smooth' });
+    }
+  }, []);
+
   const focusTarget = useCallback(
     (el: HTMLElement) => {
       targetRef.current = el;
@@ -189,11 +329,7 @@ export function NavigationMode() {
         // leaves the mode mid-way.
         el.focus({ preventScroll: true });
       }
-      el.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: reduceMotion.current ? 'auto' : 'smooth',
-      });
+      reveal(el);
       setLabel(
         (el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || 'Element')
           .trim()
@@ -201,24 +337,24 @@ export function NavigationMode() {
       );
       syncCursor();
     },
-    [syncCursor],
+    [reveal, syncCursor],
   );
 
   /**
-   * Where the cursor starts: the first target at or below the top of the
-   * viewport — what the reader is actually looking at, rather than the top of
-   * a page they have already scrolled past.
+   * Where the cursor starts: the topmost target currently on screen. Every
+   * candidate is visible by construction now, so this is simply the first —
+   * or the last, when arriving from below after scrolling up.
    */
-  const seed = useCallback(() => {
-    const boxes = collectBoxes();
-    if (boxes.length === 0) return;
+  const seed = useCallback(
+    (fromBottom = false) => {
+      const boxes = collectBoxes();
+      if (boxes.length === 0) return;
 
-    const viewTop = window.scrollY;
-    const start =
-      boxes.filter((box) => box.bottom > viewTop).sort((a, b) => a.top - b.top || a.left - b.left)[0] ??
-      boxes[0];
-    focusTarget(start.el);
-  }, [focusTarget]);
+      const sorted = [...boxes].sort((a, b) => a.top - b.top || a.left - b.left);
+      focusTarget((fromBottom ? sorted[sorted.length - 1] : sorted[0]).el);
+    },
+    [focusTarget],
+  );
 
   const enter = useCallback(() => {
     const boxes = collectBoxes();
@@ -238,17 +374,23 @@ export function NavigationMode() {
     setActive(false);
     setRect(null);
     targetRef.current = null;
+    window.clearTimeout(pendingSeed.current);
+    pendingSeed.current = 0;
   }, []);
 
   const move = useCallback(
     (dir: Direction) => {
+      // Whatever the last scroll step queued, this keypress supersedes it.
+      window.clearTimeout(pendingSeed.current);
+      pendingSeed.current = 0;
+
       const current = targetRef.current;
       const boxes = collectBoxes();
       if (boxes.length === 0) return;
 
       const from = boxes.find((box) => box.el === current);
       if (!from) {
-        focusTarget(boxes[0].el);
+        seed();
         return;
       }
 
@@ -262,13 +404,35 @@ export function NavigationMode() {
           best = box;
         }
       }
-      // Nothing that way: stay put rather than wrapping. Wrapping from the
-      // bottom of a long page back to the top with no warning is disorienting.
-      if (!best) return;
+      if (best) {
+        focusTarget(best.el);
+        return;
+      }
 
-      focusTarget(best.el);
+      // Nothing left on screen that way. Vertically the page has more to show,
+      // so travel there — bringing it into view is the cost of reaching it.
+      // Horizontally there is nowhere to go, so stay put rather than wrapping,
+      // which is disorienting with no warning.
+      if (dir !== 'up' && dir !== 'down') return;
+
+      const before = window.scrollY;
+      window.scrollBy({
+        top: (dir === 'down' ? 1 : -1) * window.innerHeight * SCROLL_STEP,
+        behavior: reduceMotion.current ? 'auto' : 'smooth',
+      });
+
+      // Re-seed once the scroll settles, entering from the edge the cursor
+      // travelled towards: going down lands near the top of what was revealed.
+      pendingSeed.current = window.setTimeout(
+        () => {
+          pendingSeed.current = 0;
+          if (window.scrollY === before) return; // already at the end of the page
+          seed(dir === 'up');
+        },
+        reduceMotion.current ? 0 : 320,
+      );
     },
-    [focusTarget],
+    [focusTarget, seed],
   );
 
   // The global key handler. One listener, capture phase, so it sees the key
@@ -342,13 +506,30 @@ export function NavigationMode() {
   useEffect(() => {
     if (!active) return;
     let frame = 0;
+
+    const settle = () => {
+      frame = 0;
+      const el = targetRef.current;
+      if (el?.isConnected) {
+        const band = visibleBand();
+        const box = el.getBoundingClientRect();
+        const inHeader = band.header?.contains(el) ?? false;
+        // A wheel scroll can carry the target off screen or in behind the bar,
+        // and a cursor sitting on something invisible is exactly the bug this
+        // mode had. Re-seed into whatever is now in front of the person.
+        if (!inHeader && (box.bottom <= band.top || box.top >= band.bottom)) {
+          seed();
+          return;
+        }
+      }
+      syncCursor();
+    };
+
     const schedule = () => {
       if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        syncCursor();
-      });
+      frame = window.requestAnimationFrame(settle);
     };
+
     window.addEventListener('scroll', schedule, true);
     window.addEventListener('resize', schedule);
     return () => {
@@ -356,7 +537,7 @@ export function NavigationMode() {
       window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
     };
-  }, [active, syncCursor]);
+  }, [active, seed, syncCursor]);
 
   // A navigation replaces every target on the page. Re-seed rather than leave
   // the cursor pointing at a detached node.
@@ -365,7 +546,7 @@ export function NavigationMode() {
     targetRef.current = null;
     setRect(null);
     // One frame, so the new route has rendered before anything is measured.
-    const timer = window.setTimeout(seed, 60);
+    const timer = window.setTimeout(() => seed(), 60);
     return () => window.clearTimeout(timer);
     // `active` is deliberately not a trigger here — entering the mode already
     // seeds its own cursor, and re-running this on entry would overwrite it.

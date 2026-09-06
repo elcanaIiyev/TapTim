@@ -2,10 +2,8 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
 interface SectionHeadingProps {
-  /** Mono overline. Rendered with an index rule, e.g. "02 / EVENTS". */
+  /** Mono overline: what kind of thing this section is. */
   overline?: string;
-  /** Two-digit section index shown left of the overline. */
-  index?: string;
   title: ReactNode;
   description?: ReactNode;
   align?: 'left' | 'center';
@@ -17,9 +15,16 @@ interface SectionHeadingProps {
  * are the template look this design moves away from. `align="center"` remains
  * available for the few places that genuinely need it (empty states, auth).
  */
+/*
+ * The two-digit section index is gone.
+ *
+ * "00", "01", "02" implied an ordered sequence the site does not have — they
+ * were assigned first-come as pages were built, so the recruiting board became
+ * "03" for no reason except that it was written fourth. A number that promises
+ * an order and does not keep it is worse than no number.
+ */
 export function SectionHeading({
   overline,
-  index,
   title,
   description,
   align = 'left',
@@ -39,7 +44,6 @@ export function SectionHeading({
             align === 'center' && 'justify-center',
           )}
         >
-          {index && <span className="type-label text-accent-text">{index}</span>}
           <span className="type-label text-ink-600 dark:text-ink-400">{overline}</span>
           {align === 'left' && (
             <span aria-hidden="true" className="h-0.5 flex-1 bg-ink-950 dark:bg-ink-100" />

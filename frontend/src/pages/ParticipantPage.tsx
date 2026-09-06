@@ -29,12 +29,13 @@ function SkillRow({
 }: {
   skill: string;
   level: number | undefined;
-  endorsement: { count: number; byViewer: boolean } | undefined;
+  endorsement: { count: number; verified: number; byViewer: boolean } | undefined;
   canEndorse: boolean;
   busy: boolean;
   onToggle: () => void;
 }) {
   const count = endorsement?.count ?? 0;
+  const verified = endorsement?.verified ?? 0;
   const mine = endorsement?.byViewer ?? false;
 
   return (
@@ -54,8 +55,20 @@ function SkillRow({
           {count > 0 && (
             <>
               {' · '}
-              <span className="font-semibold text-success-text">
+              <span
+                className="font-semibold text-success-text"
+                // An endorsement that names the event it came from is one both
+                // people's team membership can confirm, and it counts for twice
+                // as much. Saying so is the difference between a number and
+                // evidence.
+                title={
+                  verified === count
+                    ? 'Every one of these came from an event you both worked at.'
+                    : `${verified} of ${count} came from an event you both worked at; the rest predate that record.`
+                }
+              >
                 {count} endorsement{count === 1 ? '' : 's'}
+                {verified > 0 && verified < count ? ` (${verified} from events)` : ''}
               </span>
             </>
           )}

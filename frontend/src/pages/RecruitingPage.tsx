@@ -7,6 +7,7 @@ import { Container } from '../components/ui/Container';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { Spinner } from '../components/ui/Spinner';
 import { cn } from '../lib/cn';
+import { fittedGrid } from '../lib/grid';
 import { eventsApi, teamsApi } from '../lib/api';
 import { formatDate } from '../lib/format';
 import type { EventItem, Team } from '../lib/types';
@@ -99,7 +100,6 @@ export function RecruitingPage() {
     <Container className="py-12">
       <SectionHeading
         overline="Open seats"
-        index="03"
         title="Teams looking for someone"
         description="Every team here has a seat open and has said what it is short of. Soonest event first — the ones at the top are deciding this week."
       />
@@ -114,14 +114,20 @@ export function RecruitingPage() {
           {error}
         </p>
       ) : listings.length === 0 ? (
-        <div className="panel panel-soft mt-9 px-6 py-14 text-center">
-          <p className="type-label text-ink-600 dark:text-ink-400">Nobody is recruiting yet</p>
-          <p className="mx-auto mt-3 max-w-sm text-sm text-ink-600 dark:text-ink-300">
-            Teams appear here the moment one opens a seat. Until then, the fastest route to a
-            team is to pick an event and start one.
+        // An empty state that reads as a decision rather than as content
+        // that failed to load: it says what would fill the space, why it is
+        // empty right now, and what the reader can do about it.
+        <div className="wash panel panel-soft mt-9 px-6 py-16 text-center">
+          <p className="type-label text-ink-600 dark:text-ink-400">No open seats right now</p>
+          <h3 className="type-section mx-auto mt-4 max-w-lg text-ink-900 dark:text-white">
+            Be the team people find here.
+          </h3>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+            This board fills the moment any team opens a seat. Starting one puts you at the top
+            of it — and in front of everybody browsing for a team this week.
           </p>
-          <Button className="mt-7" to="/events">
-            Browse events
+          <Button className="mt-8" to="/events">
+            Pick an event
           </Button>
         </div>
       ) : (
@@ -181,7 +187,7 @@ export function RecruitingPage() {
               No team is looking for that right now.
             </p>
           ) : (
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className={cn('mt-8 grid gap-4', fittedGrid(shown.length))}>
               {shown.map(({ team, event }) => (
                 <li key={team.id}>
                   <Link

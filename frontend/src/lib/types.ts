@@ -125,6 +125,27 @@ export interface User {
    */
   lookingForTeam: boolean;
 
+  /**
+   * Which parts of a week this person can work.
+   *
+   * Returned by the API since the first release and never declared here, so
+   * nothing on the site could read the field the engine weighs most heavily —
+   * the same gap `lookingForTeam` had.
+   */
+  availability: string[];
+  hoursPerWeek: number | null;
+  timezoneOffset: number | null;
+
+  /**
+   * When availability was last confirmed as still true.
+   *
+   * Not the same as any other timestamp on the profile: availability is the
+   * heaviest single component the matching engine weighs, and it is the one
+   * people fill in during onboarding and never revisit. Null means nobody has
+   * ever confirmed it.
+   */
+  availabilityConfirmedAt: string | null;
+
   // -- lifecycle -------------------------------------------------------------
   emailVerified: boolean;
   onboardingCompleted: boolean;
@@ -681,6 +702,14 @@ export type NotificationKind =
 export interface SkillEndorsement {
   skill: string;
   count: number;
+  /**
+   * How many of those carry the event they came from.
+   *
+   * An endorsement that names an event is one two people's team membership can
+   * confirm, and it counts for twice as much in the coverage engine as one that
+   * cannot be placed.
+   */
+  verified: number;
   /** Whether the person viewing has endorsed this one. */
   byViewer: boolean;
 }

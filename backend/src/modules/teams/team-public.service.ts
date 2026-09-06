@@ -1,5 +1,7 @@
 import { eventStore } from '../../data/event.store.js';
 import { endorsementStore } from '../../data/endorsement.store.js';
+import { weightsOf } from '../users/endorsement-weight.js';
+import type { SkillTally } from '../users/endorsement-weight.js';
 import { teamStore } from '../../data/team.store.js';
 import { userStore } from '../../data/user.store.js';
 import { HttpError } from '../../utils/http-error.js';
@@ -85,11 +87,11 @@ export async function publicPage(teamId: string): Promise<PublicTeamPage> {
 
   const members = await userStore.findManyByIds(team.members.map((member) => member.userId));
   const profile = resolveStatProfile(event.format, event.domains, event.statProfile);
-  const endorsements = await endorsementStore.countsForMany(members.map((member) => member.id));
+  const endorsements = await endorsementStore.talliesForMany(members.map((member) => member.id));
 
   // Team coverage: each area as well as the best person on it covers it.
   const perMember = members.map((member) =>
-    coverageFor(member, profile.focusAreas, endorsements.get(member.id) ?? new Map()),
+    coverageFor(member, profile.focusAreas, weightsOf(endorsements.get(member.id) ?? new Map())),
   );
 
   const coverage = profile.focusAreas.map((area, index) => {
@@ -119,7 +121,8 @@ export async function publicPage(teamId: string): Promise<PublicTeamPage> {
   const lookingFor = [...new Set([...(team.lookingFor as TeamRole[]), ...missingKeyRoles])].slice(0, 4);
 
   const publicMembers: PublicTeamMember[] = members.map((member) => {
-    const counts = endorsements.get(member.id) ?? new Map<string, number>();
+    const tallies = endorsements.get(member.id) ?? new Map<string, SkillTally>();
+    const countOf = (skill: string) => tallies.get(skill)?.count ?? 0;
     return {
       fullName: member.fullName,
       firstName: member.firstName,
@@ -129,12 +132,12 @@ export async function publicPage(teamId: string): Promise<PublicTeamPage> {
       // vouched for is the more useful thing to lead with on a public page.
       topSkills: [...member.skills]
         .sort((a, b) => {
-          const byEndorsement = (counts.get(b) ?? 0) - (counts.get(a) ?? 0);
+          const byEndorsement = countOf(b) - countOf(a);
           if (byEndorsement !== 0) return byEndorsement;
           return (member.skillLevels[b] ?? 0) - (member.skillLevels[a] ?? 0);
         })
         .slice(0, SKILLS_SHOWN)
-        .map((name) => ({ name, endorsements: counts.get(name) ?? 0 })),
+        .map((name) => ({ name, endorsements: countOf(name) })),
       verified: member.verified,
     };
   });

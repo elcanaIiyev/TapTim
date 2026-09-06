@@ -10,6 +10,7 @@ import {
 import { asyncHandler } from '../../utils/async-handler.js';
 import { createExperienceSchema, updateExperienceSchema } from './experience.schema.js';
 import {
+  confirmAvailabilityHandler,
   createExperienceHandler,
   deleteExperienceHandler,
   getMeHandler,
@@ -61,6 +62,11 @@ userRouter.post(
   asyncHandler(uploadAvatarHandler),
 );
 userRouter.delete('/me/avatar', requireAuth, asyncHandler(removeAvatarHandler));
+
+// "Yes, that is still right." Its own route rather than an empty PATCH, because
+// confirming an unchanged answer is a distinct act — and the only one that can
+// keep a correct-but-old availability alive.
+userRouter.post('/me/availability/confirm', requireAuth, asyncHandler(confirmAvailabilityHandler));
 
 userRouter.get('/me/experiences', requireAuth, asyncHandler(listExperiencesHandler));
 userRouter.post(

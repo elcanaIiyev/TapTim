@@ -49,7 +49,6 @@ export function ProblemSolution() {
     <section className="border-b border-ink-200 bg-ink-50 py-20 sm:py-24 dark:border-ink-700 dark:bg-ink-900/40">
       <Container>
         <SectionHeading
-          index="01"
           overline="Problem & Solution"
           title="Great hackathon ideas die on mismatched teams"
           description="Most participants pick teammates in the first ten minutes, with almost no information. TapTim replaces that scramble with a structured match."

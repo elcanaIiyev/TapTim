@@ -4,14 +4,20 @@ import { FeatureHighlights } from '../components/landing/FeatureHighlights';
 import { Hero } from '../components/landing/Hero';
 import { ProblemSolution } from '../components/landing/ProblemSolution';
 
-export function HomePage({ onGetStarted }: { onGetStarted: () => void }) {
+export function HomePage({
+  onCreateProfile,
+  signedOut,
+}: {
+  onCreateProfile: () => void;
+  signedOut: boolean;
+}) {
   return (
     <>
-      <Hero onGetStarted={onGetStarted} />
+      <Hero signedOut={signedOut} />
       <ProblemSolution />
       <EventShowcase />
       <FeatureHighlights />
-      <CtaBand onGetStarted={onGetStarted} />
+      <CtaBand onCreateProfile={onCreateProfile} />
     </>
   );
 }

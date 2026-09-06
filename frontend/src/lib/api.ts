@@ -186,6 +186,18 @@ export const profileApi = {
     }).then((r) => r.data),
 
   /**
+   * "Yes, that is still right."
+   *
+   * Distinct from `update`, which is for changing it. Confirming an unchanged
+   * answer is the only thing that can keep a correct-but-old availability
+   * alive, and availability carries more weight than anything else on a profile.
+   */
+  confirmAvailability: () =>
+    request<{ data: User }>('/api/users/me/availability/confirm', { method: 'POST' }).then(
+      (r) => r.data,
+    ),
+
+  /**
    * Multipart, so `Content-Type` is deliberately left unset — the browser has
    * to add its own `boundary` and would be overridden if we named the type.
    */

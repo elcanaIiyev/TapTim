@@ -160,7 +160,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="panel absolute right-0 z-50 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-lg">
+        <div className="panel floating absolute right-0 z-50 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-3 dark:border-ink-700">
             <p className="type-label text-ink-700 dark:text-ink-300">Notifications</p>
             {unread > 0 && (

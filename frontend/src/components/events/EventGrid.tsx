@@ -1,4 +1,6 @@
 import type { EventItem } from '../../lib/types';
+import { cn } from '../../lib/cn';
+import { fittedGrid } from '../../lib/grid';
 import { EventCard } from './EventCard';
 
 interface EventGridProps {
@@ -60,8 +62,10 @@ export function EventGrid({ events, loading, error, skeletonCount = 6 }: EventGr
     );
   }
 
+  // The grid narrows to what is in it — a filter that matches one event should
+  // not render a card in the corner of two empty columns. See `lib/grid`.
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={cn('grid gap-6', fittedGrid(events.length))}>
       {events.map((event) => (
         <EventCard key={event.id} event={event} />
       ))}

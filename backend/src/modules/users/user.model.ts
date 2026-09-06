@@ -172,6 +172,16 @@ export interface UserRecord {
   bannedAt: string | null;
   bannedBy: string | null;
 
+  /**
+   * When availability was last confirmed as still true.
+   *
+   * Separate from `updatedAt`, which moves whenever any field changes -- so
+   * somebody who edited their bio this morning would otherwise look like they
+   * had just re-checked their Saturday availability too. Availability is the
+   * heaviest component the engine weighs, so knowing how old it is matters more
+   * than it does for anything else on the profile.
+   */
+  availabilityConfirmedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,6 +334,7 @@ export interface UserRow {
   banned_at: Date | null;
   banned_by: string | null;
   created_at: Date;
+  availability_confirmed_at: Date | null;
   updated_at: Date;
 }
 
@@ -368,6 +379,9 @@ export function mapUserRow(row: UserRow): UserRecord {
     bannedReason: row.banned_reason,
     bannedAt: toIsoOrNull(row.banned_at),
     bannedBy: row.banned_by,
+    availabilityConfirmedAt: row.availability_confirmed_at
+      ? toIso(row.availability_confirmed_at)
+      : null,
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };

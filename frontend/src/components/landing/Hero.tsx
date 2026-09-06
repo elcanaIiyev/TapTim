@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
 
@@ -17,10 +18,11 @@ const ROSTER = [
 ];
 
 interface HeroProps {
-  onGetStarted: () => void;
+  /** True when nobody is signed in, which is the only time signing up is a call to action. */
+  signedOut: boolean;
 }
 
-export function Hero({ onGetStarted }: HeroProps) {
+export function Hero({ signedOut }: HeroProps) {
   return (
     <section className="relative overflow-hidden border-b border-ink-200 dark:border-ink-700">
       <div
@@ -66,8 +68,16 @@ export function Hero({ onGetStarted }: HeroProps) {
             </p>
 
             <div className="reveal reveal-delay-3 mt-9 flex flex-col gap-4 sm:flex-row">
-              <Button size="lg" onClick={onGetStarted} className="group w-full sm:w-auto">
-                Find my team
+              {/*
+                This said "Find my team" and opened the signup modal, which was
+                two problems in one label. The secondary button below is the one
+                that finds teams, so the primary was promising the same thing
+                twice — and for somebody already signed in it was a button
+                asking them to make the account they had. It goes where the
+                sentence says it goes.
+              */}
+              <Button size="lg" to="/events" className="group w-full sm:w-auto">
+                See what's on
                 <svg
                   width="16"
                   height="16"
@@ -94,8 +104,23 @@ export function Hero({ onGetStarted }: HeroProps) {
               </Button>
             </div>
 
-            <p className="type-label reveal reveal-delay-3 mt-5 text-ink-600 dark:text-ink-400">
-              Free to join · No credit card
+            {/* The signup path, as a line rather than a third button: it is the
+                thing to do *after* looking, not instead of it. */}
+            <p className="reveal reveal-delay-3 mt-5 text-sm text-ink-600 dark:text-ink-400">
+              {signedOut ? (
+                <>
+                  Free to join, no credit card —{' '}
+                  <Link
+                    to="/signup"
+                    className="font-semibold text-accent-text underline decoration-2 underline-offset-4"
+                  >
+                    create your profile
+                  </Link>
+                  .
+                </>
+              ) : (
+                'Your profile is what the matching reads. The fuller it is, the better this works.'
+              )}
             </p>
           </div>
 

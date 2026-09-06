@@ -229,7 +229,6 @@ export function AdminConsolePage() {
     <Container className="py-14">
       <SectionHeading
         overline={`${user?.accountRole} console`}
-        index="00"
         title="Accounts"
         description="Everyone who has created an account, and what each of them is allowed to do on the site."
       />

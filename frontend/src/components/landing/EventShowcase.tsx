@@ -18,7 +18,6 @@ export function EventShowcase() {
     <section className="border-b border-ink-200 py-20 sm:py-24 dark:border-ink-700">
       <Container>
         <SectionHeading
-          index="02"
           overline="Event Showcase"
           title="Pick an event, then build the team for it"
           description="Browse hackathons, AI sprints, design jams, and CTFs. Every listing shows the team size it expects, so you know what you are recruiting for."

@@ -14,7 +14,7 @@ const COLUMNS = `
   location_city, location_country, languages, interest_domains, goals,
   hackathons_attended, preferred_team_size, discord_handle, email_verified,
   onboarding_completed, banned_until, banned_reason, banned_at, banned_by,
-  created_at, updated_at
+  availability_confirmed_at, created_at, updated_at
 `;
 
 /**
@@ -52,6 +52,7 @@ const UPDATABLE_COLUMNS = {
   preferredTeamSize: 'preferred_team_size',
   discordHandle: 'discord_handle',
   onboardingCompleted: 'onboarding_completed',
+  availabilityConfirmedAt: 'availability_confirmed_at',
 } as const;
 
 export type UpdatableUserField = keyof typeof UPDATABLE_COLUMNS;

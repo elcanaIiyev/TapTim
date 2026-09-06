@@ -29,6 +29,7 @@ export function ChatPanel({
   onClose,
   onRead,
   onBack,
+  onOpenFull,
   fill = false,
 }: {
   partnerId: string;
@@ -38,6 +39,8 @@ export function ChatPanel({
   onRead: () => void;
   /** Present in the dock, where closing and going back to the list differ. */
   onBack?: () => void;
+  /** Present in the dock: leave the popup for this same conversation, full size. */
+  onOpenFull?: () => void;
   /**
    * Fill the parent instead of standing at its own fixed height.
    *
@@ -119,12 +122,13 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        'hud hud-ticks relative flex flex-col overflow-hidden',
+        // A conversation is people speaking, so it is a panel — see the
+        // voice rule in index.css. It used to wear the HUD, which framed
+        // somebody's message as computed output.
+        'panel relative flex flex-col overflow-hidden',
         fill ? 'h-full' : 'h-[32rem]',
       )}
     >
-      <div className="grid-floor pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
-
       <header className="relative flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-700">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
@@ -156,16 +160,32 @@ export function ChatPanel({
           </div>
         </div>
 
+        <div className="flex shrink-0 items-center gap-1">
+          {onOpenFull && (
+            <button
+              type="button"
+              onClick={onOpenFull}
+              aria-label="Open this conversation full size"
+              title="Open full"
+              className="icon-btn grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-ink-950 hover:text-ink-900 dark:border-ink-700 dark:text-ink-400 dark:hover:text-white"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7" />
+              </svg>
+            </button>
+          )}
+
         <button
           type="button"
           onClick={onClose}
           aria-label="Close conversation"
-          className="icon-btn grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-ink-950 hover:text-ink-900 dark:border-ink-700 dark:text-ink-400 dark:hover:text-white"
+          className="icon-btn grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-ink-950 hover:text-ink-900 dark:border-ink-700 dark:text-ink-400 dark:hover:text-white"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
+        </div>
       </header>
 
       <div

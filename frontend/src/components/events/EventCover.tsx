@@ -103,7 +103,7 @@ export function EventCover({
       {/* Only shown when there is no photo — otherwise the format is already
           on a badge over the image. */}
       {!showPhoto && (
-        <span className="absolute bottom-3 left-4 font-mono text-xs font-semibold uppercase tracking-widest text-white/80">
+        <span className="type-tag absolute bottom-3 left-4 font-semibold text-white/80">
           {format}
         </span>
       )}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { TeamLogo } from '../components/teams/TeamLogo';
 import { CoverageBar, FitScore, WeightBreakdown } from '../components/events/FitMeter';
+import { AvailabilityCheck } from '../components/events/AvailabilityCheck';
 import { ScoringEditor } from '../components/events/ScoringEditor';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -11,6 +12,8 @@ import { Input } from '../components/ui/Input';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, eventsApi, teamsApi } from '../lib/api';
+import { cn } from '../lib/cn';
+import { acceptsTeams, eventPhase, matchingMatters, phaseCopy } from '../lib/event-phase';
 import { formatDateRange, formatParticipants, formatTeamSize } from '../lib/format';
 import type { EventItem, EventStats, MyEventFit, Team } from '../lib/types';
 import { NotFoundPage } from './NotFoundPage';
@@ -147,10 +150,13 @@ function CreateTeamForm({
 function TeamRow({
   team,
   isMine,
+  canJoin,
   onJoined,
 }: {
   team: Team;
   isMine: boolean;
+  /** False once registration has closed — the rosters are settled by then. */
+  canJoin: boolean;
   onJoined: () => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -182,7 +188,7 @@ function TeamRow({
           </div>
         </div>
 
-        {!isMine && team.openSeats > 0 && (
+        {!isMine && team.openSeats > 0 && canJoin && (
           <Button
             size="sm"
             variant="outline"
@@ -266,6 +272,17 @@ export function EventDetailPage() {
 
   const myTeam = teams.find((team) => team.id === fit?.myTeamId);
 
+  // Every date this reads has been stored since the first migration and none of
+  // it did anything: the page looked identical on the Tuesday before, the
+  // Friday of, and the week after. See `lib/event-phase`.
+  const phase = eventPhase(event);
+  const copy = phaseCopy(event);
+  const open = acceptsTeams(phase);
+  // Once it is running, "here is your fit and what you'd want a teammate for"
+  // is advice about a decision that has already been made — so the team, and
+  // its channel, come first instead.
+  const teamFirst = !matchingMatters(phase);
+
   return (
     <Container className="py-12">
       {/* -- the event ------------------------------------------------------ */}
@@ -281,11 +298,43 @@ export function EventDetailPage() {
             ))}
             <Badge tone="neutral">{event.mode}</Badge>
             {event.featured && <Badge tone="accent">Featured</Badge>}
+            <Badge
+              tone={
+                copy.tone === 'success'
+                  ? 'success'
+                  : copy.tone === 'warning'
+                    ? 'warning'
+                    : copy.tone === 'accent'
+                      ? 'accent'
+                      : 'neutral'
+              }
+            >
+              {phase === 'running' && (
+                <span
+                  aria-hidden="true"
+                  className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-fern-500 pulse-cta"
+                />
+              )}
+              {copy.label}
+            </Badge>
           </div>
 
           <h1 className="type-display mt-4 text-ink-900 dark:text-white">{event.name}</h1>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-600 dark:text-ink-300">
             {event.description}
+          </p>
+
+          <p
+            className={cn(
+              'mt-4 inline-block rounded-[var(--radius-soft-sm)] border px-3.5 py-2 text-sm font-semibold',
+              phase === 'running'
+                ? 'border-fern-600/50 bg-fern-600/10 text-success-text'
+                : phase === 'finished'
+                  ? 'border-ink-300 text-ink-600 dark:border-ink-700 dark:text-ink-300'
+                  : 'border-signal-warn/40 bg-signal-warn/5 text-ink-800 dark:text-ink-100',
+            )}
+          >
+            {copy.line}
           </p>
 
           <dl className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -310,7 +359,13 @@ export function EventDetailPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      {/* Asked here and nowhere else: this is the one page where somebody is
+          thinking about a specific weekend, which is the only moment the
+          question "is that still your availability" is cheap to answer. */}
+      {phase !== 'finished' && <AvailabilityCheck />}
+
+      <div className="flex flex-col">
+      <div className={cn('mt-6 grid gap-6 lg:grid-cols-2', teamFirst && 'order-2')}>
         {/* -- what the event rewards --------------------------------------- */}
         <Panel title="What this event rewards" hint={stats.profile.summary} tone="accent">
           <div className="space-y-6">
@@ -364,6 +419,23 @@ export function EventDetailPage() {
         )}
 
         {/* -- my stat sheet for this event ---------------------------------- */}
+        {!matchingMatters(phase) ? (
+          <Panel
+            title="Your stat sheet for this event"
+            hint="Kept for the record — matching is what happens before the doors open."
+          >
+            <p className="text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+              {phase === 'running'
+                ? 'This event is under way, so the useful thing on this page is your team, not your fit. Your channel and roster are above.'
+                : 'This event has finished. Fit scores only mean something while there is still a team to be formed.'}
+            </p>
+            {myTeam && (
+              <Button className="mt-5" variant="outline" size="sm" to={`/teams/${myTeam.id}`}>
+                Open {myTeam.name}
+              </Button>
+            )}
+          </Panel>
+        ) : (
         <Panel
           title="Your stat sheet for this event"
           hint={
@@ -410,20 +482,23 @@ export function EventDetailPage() {
             </div>
           )}
         </Panel>
+        )}
       </div>
 
       {/* -- teams for this event -------------------------------------------- */}
-      <div className="mt-6">
+      <div className={cn('mt-6', teamFirst && 'order-1')}>
         <Panel
           title="Teams at this event"
           hint={
             myTeam
               ? `You're on ${myTeam.name}. A person can be on one team per event, so leave it before joining another.`
-              : 'Start your own, or ask to join one that has room.'
+              : open
+                ? 'Start your own, or ask to join one that has room.'
+                : 'Registration has closed for this event, so these rosters are settled.'
           }
         >
           <div className="space-y-6">
-            {user && !fit?.myTeamId && (
+            {user && !fit?.myTeamId && open && (
               <CreateTeamForm
                 eventId={event.id}
                 maxSize={event.teamSize.max}
@@ -446,6 +521,7 @@ export function EventDetailPage() {
                     key={team.id}
                     team={team}
                     isMine={team.id === fit?.myTeamId}
+                    canJoin={open}
                     onJoined={() => void load()}
                   />
                 ))}
@@ -453,6 +529,7 @@ export function EventDetailPage() {
             )}
           </div>
         </Panel>
+      </div>
       </div>
     </Container>
   );
