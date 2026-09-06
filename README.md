@@ -75,6 +75,15 @@ The frontend and the API deploy together. `vercel.json` builds both workspaces, 
 serverless function at `api/index.ts`, which re-exports the Express app. Every other path
 falls through to `index.html`, so deep links survive a refresh.
 
+The function is pinned to `hnd1` (Tokyo) via `regions`, because the Supabase project
+lives in `ap-northeast-1` and Vercel otherwise defaults to `iad1` (US East) — which would
+put the Pacific between the API and its database on every query. Measured round-trip to
+the pooler is ~300ms from outside the region. Move this if the database ever moves.
+
+Note that `vercel.json` is validated strictly (`additionalProperties: false`), so it cannot
+carry comment keys — an unknown property makes the whole file invalid and Vercel then
+behaves as though there is no config at all.
+
 Because both are one origin, the browser calls `/api/...` with no host — there is no API
 base URL to configure, and `VITE_API_URL` is only an escape hatch for pointing a local UI at
 a deployed API.
