@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
+  "//regions": "The Supabase project lives in ap-northeast-1 (Tokyo). Vercel defaults to iad1 (US East), which would put the Pacific between the function and its database on every single query -- and several endpoints issue a few in sequence. hnd1 is Vercel's Tokyo region, so the function sits beside the database instead. Change this if you ever move the database.",
+  "regions": ["hnd1"],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/health", "destination": "/api" },
