@@ -2,6 +2,7 @@
   "name": "taptim",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "TapTim - find your perfect hackathon team",
   "workspaces": [
     "backend",
@@ -12,7 +13,7 @@
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "build": "npm run build --workspace backend && npm run build --workspace frontend",
-    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend"
+    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend && tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

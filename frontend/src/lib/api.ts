@@ -37,7 +37,19 @@ import type {
   User,
 } from './types';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+/**
+ * Empty by default, which makes every call same-origin: `/api/...` resolves
+ * against whichever host served the SPA.
+ *
+ * In production that is the Vercel deployment, where `vercel.json` rewrites
+ * `/api/*` onto the Express function. In `npm run dev` it is the Vite dev
+ * server, whose proxy forwards `/api` and `/health` to the API on :4000.
+ *
+ * `VITE_API_URL` survives as an override for pointing a local UI at a deployed
+ * API, but it is unset by default and nothing needs it. A hardcoded localhost
+ * base is exactly what breaks the moment the app is deployed anywhere.
+ */
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 const TOKEN_KEY = 'taptim-token';
 
 /** Mirrors the backend's `{ error: { code, message, details } }` envelope. */
@@ -79,6 +91,12 @@ export const tokenStorage = {
   },
 };
 
+/** What to name in a network error -- same-origin resolves to the page's host. */
+function apiOrigin(): string {
+  if (API_URL) return API_URL;
+  return typeof window === 'undefined' ? 'the API' : window.location.origin;
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   // FormData sets its own multipart Content-Type including the boundary;
@@ -98,7 +116,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(
       0,
       'NETWORK_ERROR',
-      `Could not reach the API at ${API_URL}. Is the backend running?`,
+      `Could not reach the API at ${apiOrigin()}. Is the backend running?`,
     );
   }
 
