@@ -39,6 +39,17 @@ const envSchema = z.object({
    */
   APP_URL: z.string().url().default('http://localhost:5173'),
 
+  /**
+   * The API's own public origin, used to build OAuth callback URLs.
+   *
+   * Distinct from `APP_URL` because the two are only the same in some
+   * deployments. Locally the SPA is on :5173 and the API on :4000, so they
+   * differ; on Vercel the whole app is one project behind one origin, so they
+   * are identical. Left unset it derives the right answer for both, and can be
+   * set explicitly for any layout that is neither.
+   */
+  API_URL: z.string().url().optional(),
+
   // -- Email (Resend) --------------------------------------------------------
   RESEND_API_KEY: z.string().optional(),
   MAIL_FROM: z.string().default('TapTim <onboarding@resend.dev>'),
@@ -135,6 +146,16 @@ export const env = {
   anthropicApiKey: raw.ANTHROPIC_API_KEY?.trim() || null,
   certVerifierModel: raw.CERT_VERIFIER_MODEL,
   appUrl: raw.APP_URL.replace(/\/$/, ''),
+
+  /**
+   * Explicit setting wins. Otherwise: on a Vercel deployment the API is served
+   * from the same origin as the SPA, so `APP_URL` is the honest answer; off
+   * Vercel the API is its own process on its own port.
+   */
+  apiUrl: (
+    raw.API_URL ??
+    (process.env.VERCEL_ENV ? raw.APP_URL : `http://localhost:${raw.PORT}`)
+  ).replace(/\/$/, ''),
 
   /**
    * Each integration is optional and reports its own readiness, so the API

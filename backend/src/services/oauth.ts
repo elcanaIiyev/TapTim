@@ -49,9 +49,17 @@ export function isProviderConfigured(provider: OAuthProvider): boolean {
   return env.oauth[provider].configured;
 }
 
-/** The provider must send the browser back to exactly this, byte for byte. */
+/**
+ * The provider must send the browser back to exactly this, byte for byte.
+ *
+ * Built from the API's own origin rather than a hardcoded localhost, which
+ * worked only for as long as the API was never reachable anywhere else. Every
+ * origin this resolves to has to be registered in the provider's console --
+ * that is the byte-for-byte part, and it is why this is derived from one
+ * setting instead of assembled per call site.
+ */
 export function redirectUri(provider: OAuthProvider): string {
-  return `http://localhost:${env.port}/api/auth/oauth/${provider}/callback`;
+  return `${env.apiUrl}/api/auth/oauth/${provider}/callback`;
 }
 
 /**
