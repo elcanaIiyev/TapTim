@@ -113,7 +113,7 @@ Recommended:
 
 | Variable | Value |
 | --- | --- |
-| `CORS_ORIGIN` | The deployment origin. Same-origin traffic never reaches this check, but set it so nothing depends on that |
+| `CORS_ORIGIN` | Only needed for *extra* origins. The deployment's own origin is always allowed — do not rely on setting this to make the app work |
 | `DATABASE_SSL` | `no-verify` — what the Supabase pooler expects without its root cert |
 
 Optional, each feature degrades gracefully if its key is absent:

@@ -131,13 +131,36 @@ if (!parsed.success) {
 
 const raw = parsed.data;
 
+const appUrl = raw.APP_URL.replace(/\/$/, '');
+const apiUrl = (
+  raw.API_URL ?? (process.env.VERCEL_ENV ? raw.APP_URL : `http://localhost:${raw.PORT}`)
+).replace(/\/$/, '');
+
+/**
+ * Origins the browser may call this API from.
+ *
+ * `CORS_ORIGIN` lists the extra ones. The app's own origins are always allowed
+ * and are not configurable, because an API refusing the page it is served from
+ * is never the intended outcome -- it is a forgotten variable, which is exactly
+ * what happened the first time this shipped.
+ *
+ * The subtlety worth recording: a same-origin deployment does not escape CORS.
+ * Browsers omit `Origin` on same-origin GETs, so a naive test passes, then send
+ * it on every same-origin POST -- so signup and login were rejected by a check
+ * everything else had sailed through.
+ */
+function allowedOrigins(): string[] {
+  const configured = raw.CORS_ORIGIN.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return [...new Set([...configured, appUrl, apiUrl])];
+}
+
 export const env = {
   nodeEnv: raw.NODE_ENV,
   isProduction: raw.NODE_ENV === 'production',
   port: raw.PORT,
-  corsOrigins: raw.CORS_ORIGIN.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+  corsOrigins: allowedOrigins(),
   jwtSecret: raw.JWT_SECRET,
   jwtExpiresIn: raw.JWT_EXPIRES_IN,
   databaseUrl: raw.DATABASE_URL,
@@ -145,17 +168,14 @@ export const env = {
   databasePoolMax: raw.DATABASE_POOL_MAX,
   anthropicApiKey: raw.ANTHROPIC_API_KEY?.trim() || null,
   certVerifierModel: raw.CERT_VERIFIER_MODEL,
-  appUrl: raw.APP_URL.replace(/\/$/, ''),
+  appUrl,
 
   /**
    * Explicit setting wins. Otherwise: on a Vercel deployment the API is served
    * from the same origin as the SPA, so `APP_URL` is the honest answer; off
    * Vercel the API is its own process on its own port.
    */
-  apiUrl: (
-    raw.API_URL ??
-    (process.env.VERCEL_ENV ? raw.APP_URL : `http://localhost:${raw.PORT}`)
-  ).replace(/\/$/, ''),
+  apiUrl,
 
   /**
    * Each integration is optional and reports its own readiness, so the API
