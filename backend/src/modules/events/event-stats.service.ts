@@ -11,7 +11,8 @@ import {
   type SlotCoverage,
   type TeamRisk,
 } from '../teams/team-risk.js';
-import { scoreAgainstTeam } from '../compatibility/compatibility.engine.js';
+import { scoreAgainstTeam, scorePair } from '../compatibility/compatibility.engine.js';
+import type { CompatibilityResult } from '../compatibility/compatibility.model.js';
 import {
   toDirectoryUser,
   type DirectoryUser,
@@ -123,32 +124,155 @@ export interface TeamEventReport extends TeamEventGaps {
  * one is derived entirely from the other — splitting them would mean computing
  * the same coverage twice to answer one question.
  */
+/** Each member's endorsements, as the weights the coverage engine reads. */
+async function endorsementWeightsFor(
+  members: readonly UserRecord[],
+): Promise<Map<string, Map<string, number>>> {
+  const tallies = await endorsementStore.talliesForMany(members.map((member) => member.id));
+  return new Map([...tallies].map(([id, entry]) => [id, weightsOf(entry)]));
+}
+
+/**
+ * Everything about a roster that depends only on who is on it and what the
+ * event rewards.
+ *
+ * Shared by the real team report and the lab. A team that exists and a group
+ * that is only being tried out are scored by the same engine for the same
+ * event — which is the lab's whole claim to be worth reading.
+ */
+function analyseRoster(
+  members: readonly UserRecord[],
+  profile: EventStatProfile,
+  weights: ReadonlyMap<string, ReadonlyMap<string, number>>,
+  team: { maxSize: number; requiredSkills: readonly string[]; lookingFor: readonly string[] },
+) {
+  const gaps = teamGapsForEvent(members, profile, weights);
+  return {
+    ...gaps,
+    profile,
+    brief: recruitBriefFor(gaps, profile, team.lookingFor as TeamRole[]),
+    risks: assessTeamRisks(members, { maxSize: team.maxSize, requiredSkills: team.requiredSkills }),
+    availability: slotCoverage(members),
+  };
+}
+
 export async function teamReport(teamId: string): Promise<TeamEventReport> {
   const team = await teamStore.findDetail(teamId);
   if (!team) throw HttpError.notFound(`No team found with id "${teamId}".`);
 
   const event = await requireEvent(team.eventId);
-  const profile = profileFor(event);
   const members = await userStore.findManyByIds(team.members.map((member) => member.userId));
 
-  const tallies = await endorsementStore.talliesForMany(members.map((member) => member.id));
-  const gaps = teamGapsForEvent(
-    members,
-    profile,
-    new Map([...tallies].map(([id, entry]) => [id, weightsOf(entry)])),
-  );
-
   return {
-    ...gaps,
+    ...analyseRoster(members, profileFor(event), await endorsementWeightsFor(members), team),
     teamId,
     teamName: team.name,
     eventId: team.eventId,
     eventName: event.name,
-    profile,
     size: { current: team.members.length, max: team.maxSize },
-    brief: recruitBriefFor(gaps, profile, team.lookingFor as TeamRole[]),
-    risks: assessTeamRisks(members, { maxSize: team.maxSize, requiredSkills: team.requiredSkills }),
-    availability: slotCoverage(members),
+  };
+}
+
+// -- the lab --------------------------------------------------------------------
+
+export interface LabMember {
+  user: DirectoryUser;
+  /** Their own fit for the event, before anyone else is considered. */
+  eventFit: number;
+  /** A team they are already on for this event — which would stop them joining another. */
+  existingTeam: { id: string; name: string } | null;
+}
+
+export interface LabPair {
+  userIds: [string, string];
+  score: number;
+  band: CompatibilityResult['band'];
+  summary: string;
+}
+
+export interface LabReport extends TeamEventGaps {
+  eventId: string;
+  eventName: string;
+  profile: EventStatProfile;
+  size: { current: number; max: number };
+  members: LabMember[];
+  /** Every pair on the roster, scored under this event's weights. */
+  pairs: LabPair[];
+  /** The mean of every pair: how well the group gets on, apart from what it can do. */
+  cohesion: number;
+  brief: RecruitBrief;
+  risks: TeamRisk[];
+  availability: SlotCoverage[];
+}
+
+/**
+ * A roster that does not exist yet, scored as if it did.
+ *
+ * Every other surface answers a question about one person or one team that is
+ * already formed. This answers the one people ask before either: "if these
+ * specific people teamed up for this event, would it work — and where would it
+ * break?" Nothing is written; nobody is asked anything.
+ */
+export async function labReport(eventId: string, userIds: readonly string[]): Promise<LabReport> {
+  const event = await requireEvent(eventId);
+  const profile = profileFor(event);
+
+  const ids = [...new Set(userIds)];
+  const found = await userStore.findManyByIds(ids);
+  const byId = new Map(found.map((user) => [user.id, user]));
+  const missing = ids.find((id) => !byId.has(id));
+  if (missing) throw HttpError.notFound(`No participant found with id "${missing}".`);
+
+  // Kept in the caller's order, so the matrix reads in the order people were added.
+  const roster = ids.map((id) => byId.get(id) as UserRecord);
+  const maxSize = Math.max(event.teamSize.max, roster.length);
+
+  const [weights, certificateCounts, memberships] = await Promise.all([
+    endorsementWeightsFor(roster),
+    certificateStore.verifiedCountsFor(ids),
+    Promise.all(roster.map((member) => teamStore.findEventMembership(member.id, eventId))),
+  ]);
+
+  const analysis = analyseRoster(roster, profile, weights, {
+    maxSize,
+    requiredSkills: [],
+    lookingFor: [],
+  });
+
+  const pairs: LabPair[] = [];
+  for (let i = 0; i < roster.length; i += 1) {
+    for (let j = i + 1; j < roster.length; j += 1) {
+      const result = scorePair(roster[i], roster[j], certificateCounts, profile.weights);
+      pairs.push({
+        userIds: [roster[i].id, roster[j].id],
+        score: result.score,
+        band: result.band,
+        summary: result.summary,
+      });
+    }
+  }
+
+  const teamIds = [...new Set(memberships.filter((id): id is string => id !== null))];
+  const teams = await Promise.all(teamIds.map((id) => teamStore.findById(id)));
+  const teamName = new Map(teams.flatMap((team) => (team ? [[team.id, team.name] as const] : [])));
+
+  return {
+    ...analysis,
+    eventId,
+    eventName: event.name,
+    size: { current: roster.length, max: maxSize },
+    members: roster.map((member, index) => {
+      const teamId = memberships[index];
+      return {
+        user: toDirectoryUser(member),
+        eventFit: fitForEvent(member, profile, weights.get(member.id) ?? new Map()).score,
+        existingTeam: teamId ? { id: teamId, name: teamName.get(teamId) ?? 'another team' } : null,
+      };
+    }),
+    pairs,
+    cohesion: pairs.length
+      ? Math.round(pairs.reduce((sum, pair) => sum + pair.score, 0) / pairs.length)
+      : 0,
   };
 }
 

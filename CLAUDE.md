@@ -3,14 +3,34 @@
 Hackathon team matching. Skills, roles, personality, and availability feed a
 compatibility score; AI certificate verification backs the "Verified" badge.
 
-Architecture, API reference, and the sprint log live in `doc.md`.
+Architecture, API reference, and the sprint log live in `doc.md`. `HANDOFF.md`
+is the working state: what exists, what is configured, how to verify it.
 
 ## Layout
 
-- `backend/` — Express 4 + TypeScript API (JWT auth, Zod validation, in-memory
-  store, hand-authored OpenAPI spec at `backend/src/docs/openapi.ts`)
+- `backend/` — Express 4 + TypeScript API (JWT auth, Zod validation, Supabase
+  Postgres via `pg`, hand-authored OpenAPI spec at `backend/src/docs/openapi.ts`)
 - `frontend/` — React 18 + Vite 6 + Tailwind v4 SPA
+- `api/index.ts` — the Vercel serverless entry; re-exports the Express app
 - npm workspaces; `npm run dev` runs both
+
+Data access lives in `backend/src/data/*.store.ts`, raw SQL over the pool in
+`backend/src/db/pool.ts`. Schema changes are forward-only SQL files in
+`backend/src/db/migrations/`. There is no in-memory store — there has not been
+one since Sprint 2, whatever older prose says.
+
+## Verifying a change
+
+```bash
+npm run typecheck                          # backend, frontend, and api/
+npm run build                              # both workspaces
+npm run audit:openapi --workspace backend  # every route documented
+npm test                                   # e2e against a running API (API_BASE, default :4000)
+npm run test:ui --workspace frontend       # every page x 3 widths in Chrome (UI_BASE, default :4173)
+```
+
+Both test suites create `@taptim.test` accounts and delete them through the API
+when they finish; they never touch the seed accounts.
 
 ## Skill routing
 

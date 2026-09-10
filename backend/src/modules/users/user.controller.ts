@@ -27,7 +27,11 @@ import {
   TEAM_ROLES,
   toPublicUser,
 } from './user.model.js';
-import type { ListUsersQuery, UpdateProfileInput } from './user.schema.js';
+import type {
+  DeleteMeInput,
+  ListUsersQuery,
+  UpdateProfileInput,
+} from './user.schema.js';
 import * as endorsements from './endorsement.service.js';
 import * as userService from './user.service.js';
 
@@ -61,6 +65,12 @@ export async function updateMeHandler(req: Request, res: Response) {
   const user = requireUser(req);
   const updated = await userService.updateProfile(user.id, req.body as UpdateProfileInput);
   res.status(200).json({ data: updated });
+}
+
+export async function deleteMeHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  await userService.deleteOwnAccount(user, (req.body as DeleteMeInput).confirmEmail);
+  res.status(204).send();
 }
 
 export async function getUserHandler(req: Request, res: Response) {

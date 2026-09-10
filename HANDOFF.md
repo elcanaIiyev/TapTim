@@ -1,8 +1,37 @@
 # TapTim — working state & next scope
 
-Updated 6 September 2026. Read this first after a context reset: it records what
+Updated 11 September 2026. Read this first after a context reset: it records what
 exists, what is configured, how to verify it, and what is worth doing next.
 `doc.md` is the reference documentation; this is the working log.
+
+---
+
+## 0. Sprint 4 — where it ended (11 September 2026)
+
+**Live at https://tap-tim.vercel.app** — one Vercel project (static `frontend/dist` plus the
+Express app as a single function at `api/index.ts`), on Supabase Postgres through the
+transaction pooler (port 6543), function pinned to `hnd1` beside the database.
+
+Sprint 4 added profiles worth opening (`/participants/:id`), names that link to them
+everywhere, a "waiting for an answer" list of invitations and applications on every team, the
+**Team Lab** in place of the old Compatibility tab, change-password, self-serve account
+deletion, and live landing numbers — and removed every placeholder. `doc.md` §9 has the
+checklist, item by item.
+
+**The tests live in the repository now.** The scratchpad suites described in §1 are gone:
+
+```bash
+npm test                                   # 47 API checks against API_BASE (default :4000)
+npm run test:ui --workspace frontend       # 59 checks in Chrome against UI_BASE (default :4173)
+```
+
+Both create `@taptim.test` accounts and delete them through the API, and never touch the seed
+accounts or their teams.
+
+Deploy gotchas that each broke a deploy once — do not relearn them: never set `NODE_ENV` in
+Vercel (npm then skips devDependencies and the build dies at `tsc`); Root Directory must be the
+repo root; `vercel.json` cannot carry comment keys; and a same-origin app still sees CORS on
+POSTs, which is why the app's own origin is always allowed in `config/env.ts`.
 
 ---
 
@@ -42,8 +71,8 @@ with chat and the LinkedIn placeholder.
 | `fixes-ui.mjs` | navigation-mode occlusion, dock tabs, the logo (Chrome) | 17 |
 | `design-ui.mjs` | motion tokens, casing, account menu, dark elevation, thin grids (Chrome) | 21 |
 
-All passing. **The scratchpad is session-scoped and will be gone after a reset**,
-which makes porting these into `backend/` the highest-value next task — see §3.
+All passing at the time — and all gone now: the scratchpad was session-scoped.
+Their replacements live in the repository; see §0.
 
 `backend/scripts/audit-openapi.mjs` *is* in the repository and survives resets:
 `npm run audit:openapi --workspace backend` fails if a route is undocumented.
@@ -66,10 +95,10 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 | `kenan@taptim.dev` | **moderator** |
 | `leyla@`, `nigar@`, `orkhan@`, `sabina@`, `tural@`, `emin@` `taptim.dev` | user |
 
-> The owner's account `elcanaliyevinfo@gmail.com` is **no longer in the
-> database** — it was already absent before the September 2 test-residue
-> cleanup, most likely removed by an earlier run of the account-deletion suite.
-> Signing up again is now instant, since confirmation is off.
+> The owner's account exists again as an ordinary signup (site role `user`).
+> Grant it more with `npm run admin:grant --workspace backend -- <email> admin`.
+> On 7 September eighteen leftover QA accounts (`@example.com`) were deleted, so
+> the directory is the eight seed accounts plus real signups.
 
 ### Integrations (live; keys in `backend/.env`, which is gitignored)
 
@@ -82,13 +111,11 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
   on. Nothing else needs changing.
 - **Supabase Storage** — working. Bucket `avatars`, created at boot. Verified
   upload → public read → delete.
-- **Google OAuth** — credentials set and the authorize request is correct.
-  **Blocked on a console setting, not on code:** the OAuth consent screen is set
-  to *Internal*, so Google refuses everyone outside the Workspace org with
-  "TapTim can only be used within its organization". Fix in Google Cloud
-  Console → OAuth consent screen → **Make external**, then add test users or
-  publish. The scopes are `openid email profile`, all non-sensitive, so
-  publishing needs no Google review.
+- **Google OAuth** — working in production (confirmed 7 September). Redirect URIs
+  for `localhost:4000` and `tap-tim.vercel.app` are both registered. If anyone is
+  refused with "can only be used within its organization", the consent screen is
+  still *Internal*: Google Cloud Console → OAuth consent screen → **Make
+  external**. The scopes are `openid email profile`, so no Google review.
 - **LinkedIn OAuth** — not configured. The flow is written; the button renders
   disabled with a "soon" label until `LINKEDIN_CLIENT_ID`/`SECRET` are set.
 - **ANTHROPIC_API_KEY** — unset, so certificate verification runs the
@@ -103,7 +130,7 @@ npm run admin:grant --workspace backend -- <email> [user|moderator|admin]
 `005_skill_levels` · `006_moderation` · `007_event_stats` · `008_connections` ·
 `009_skill_scale` · `010_team_roles` · `011_images` · `012_team_chat` ·
 `013_notifications` · `014_endorsements` · `015_endorsement_notification` ·
-`016_event_taxonomy`
+`016_event_taxonomy` · `017_endorsement_context` · `018_availability_freshness`
 
 ### A warning about the suites
 
@@ -190,30 +217,25 @@ untouched. Gaming weights credibility 3; Cybersecurity weights it 18.
 
 ## 3. What is worth doing next
 
-Nothing outstanding was asked for. In value order:
+Nothing asked for is outstanding. In value order:
 
-1. **Port the end-to-end suites into `backend/`.** ~600 checks currently live in
-   a session scratchpad and vanish on reset. They are plain Node scripts using
-   `fetch`, so they need no framework to keep working — moving them into
-   `backend/tests/` behind an `npm test` is mostly a file move. The pure,
-   synchronous compatibility engine is the cheapest thing to unit-test first.
-2. **Make Google sign-in work for real people** — one console setting (above).
-   Until then, only the Workspace org can use it.
-3. **Rate limiting on the auth routes.** There is none, and `check-email` and
-   `login` are both worth protecting.
-4. **Refresh tokens.** Still a single 7-day access token.
-5. **Team invitations from a conversation.** The Connections tab can invite to a
-   team by event, but the chat panel cannot yet — a natural place for it, and
-   now that the dock follows you around the site, the obvious one.
-6. **LinkedIn** — the OAuth flow is written and waiting on credentials.
+1. **Organisers creating events.** `POST /api/events` exists and any signed-in account may call
+   it, but there is no form — the catalogue is the seeded one. A "host an event" page is the
+   largest piece of the product still missing, and the scoring editor it would sit beside
+   (`ScoringEditor.tsx`) already exists.
+2. **Rate limiting on the auth routes.** There is none; `login`, `check-email`, and now
+   `password` are all worth protecting.
+3. **Refresh tokens.** Still a single 7-day access token.
+4. **"Events that suit you"** — `fitForEvent` across the catalogue, ranked. A loop and a sort
+   over code that already exists.
+5. **Post-event outcomes** — did the team ship, did it place — which would give credibility
+   scoring something real to read.
+6. **Email notifications.** Resend is wired but only delivers to the key owner until a domain is
+   verified; the Settings row that promised this was removed rather than left as a promise.
+7. **LinkedIn** — the OAuth flow is written and waiting on credentials. Unconfigured providers
+   are simply not offered.
 
-Still open from earlier scope lists, neither of which was asked for again:
-**"events that suit you"** (run `fitForEvent` across the catalogue and rank it —
-a loop and a sort over code that already exists) and **post-event outcomes**
-(did the team ship, did it place), which would give credibility scoring
-something real to read.
-
-Chat is polled every 5 seconds and paused while the tab is hidden. That is a
-deliberate choice, not a shortcut: both people are usually on the page, so a
-websocket would add connection lifecycle, reconnection, and a second transport
-for the same felt latency. Revisit only if conversations get busy.
+Chat is polled every 5 seconds and paused while the tab is hidden. That is a deliberate choice,
+not a shortcut: both people are usually on the page, so a websocket would add connection
+lifecycle, reconnection, and a second transport for the same felt latency. Revisit only if
+conversations get busy.

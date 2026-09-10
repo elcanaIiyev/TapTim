@@ -1,12 +1,37 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
+import { statsApi } from '../../lib/api';
+import type { PlatformStats } from '../../lib/types';
 
-const STATS = [
-  { value: '12K+', label: 'Builders matched' },
-  { value: '480', label: 'Teams formed' },
-  { value: '92%', label: 'Avg. match score' },
-];
+/**
+ * The stats rail, counted rather than claimed.
+ *
+ * It read "12K+ builders matched · 480 teams formed · 92% average match" on a
+ * site with ten accounts and one team. Numbers like that are the first thing a
+ * judge checks and the last thing that survives someone signing up to look.
+ */
+function usePlatformStats() {
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  useEffect(() => {
+    statsApi
+      .platform()
+      .then(setStats)
+      .catch(() => setStats(null));
+  }, []);
+  return stats;
+}
+
+function statsRail(stats: PlatformStats | null) {
+  const figure = (value: number | undefined) =>
+    value === undefined ? '—' : value.toLocaleString();
+  return [
+    { value: figure(stats?.participants), label: 'People on TapTim' },
+    { value: figure(stats?.teams), label: stats?.teams === 1 ? 'Team formed' : 'Teams formed' },
+    { value: figure(stats?.events), label: 'Events to enter' },
+  ];
+}
 
 // The hero visual: a team roster mid-assembly, with the open seat called out.
 // It shows the product's actual output instead of an abstract illustration.
@@ -23,6 +48,8 @@ interface HeroProps {
 }
 
 export function Hero({ signedOut }: HeroProps) {
+  const stats = statsRail(usePlatformStats());
+
   return (
     <section className="relative overflow-hidden border-b border-ink-200 dark:border-ink-700">
       <div
@@ -37,7 +64,7 @@ export function Hero({ signedOut }: HeroProps) {
             <div className="reveal flex items-center gap-3">
               <span className="inline-flex h-2 w-2 rounded-full bg-fern-500" aria-hidden="true" />
               <span className="type-label text-ink-600 dark:text-ink-400">
-                Sprint 1 MVP / Built for hackathon season
+                Built for hackathon season
               </span>
             </div>
 
@@ -177,12 +204,12 @@ export function Hero({ signedOut }: HeroProps) {
 
         {/* Stats rail: mono figures on a hard rule, not soft dividers. */}
         <dl className="reveal reveal-delay-3 mt-16 grid grid-cols-1 overflow-hidden rounded-[var(--radius-soft)] border border-ink-200 sm:grid-cols-3 dark:border-ink-700">
-          {STATS.map((stat, i) => (
+          {stats.map((stat, i) => (
             <div
               key={stat.label}
               className={
                 'bg-white px-5 py-6 dark:bg-ink-900' +
-                (i < STATS.length - 1
+                (i < stats.length - 1
                   ? ' border-b border-ink-200 sm:border-b-0 sm:border-r dark:border-ink-700'
                   : '')
               }

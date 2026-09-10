@@ -25,6 +25,7 @@ import {
   respondToRequestHandler,
   suggestMembersHandler,
   teamGapsHandler,
+  teamRequestsHandler,
   transferOwnershipHandler,
   updateTeamHandler,
   uploadTeamLogoHandler,
@@ -147,6 +148,13 @@ teamRouter.get(
   requireAuth,
   validateParams(idParam),
   asyncHandler(teamGapsHandler),
+);
+
+teamRouter.get(
+  '/:id/requests',
+  requireAuth,
+  validateParams(idParam),
+  asyncHandler(teamRequestsHandler),
 );
 
 teamRouter.get(

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { PersonLink } from '../components/people/PersonLink';
 import { cn } from '../lib/cn';
 import { fittedGrid } from '../lib/grid';
 import { Link, useParams } from 'react-router-dom';
@@ -223,7 +224,7 @@ export function TeamRecruitPage() {
         <ul className={cn('mt-4 grid gap-4', fittedGrid(page.members.length, 2))}>
           {page.members.map((member) => (
             <li
-              key={member.fullName}
+              key={member.id}
               className="flex gap-3 rounded-[var(--radius-soft-sm)] border border-ink-200 p-4 dark:border-ink-700"
             >
               {member.avatarUrl ? (
@@ -239,7 +240,7 @@ export function TeamRecruitPage() {
 
               <div className="min-w-0">
                 <p className="font-semibold text-ink-900 dark:text-white">
-                  {member.fullName}
+                  <PersonLink person={member} />
                   {member.verified && (
                     <Badge tone="success" className="ml-2">
                       Verified

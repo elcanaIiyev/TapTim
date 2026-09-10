@@ -265,6 +265,37 @@ const schemas = {
     },
   },
 
+  ProfileTeam: {
+    type: 'object',
+    description: 'A team someone is on, as their profile lists it.',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      name: { type: 'string' },
+      logoUrl: { type: 'string', nullable: true },
+      eventId: { type: 'string' },
+      eventName: { type: 'string', nullable: true },
+      isOwner: { type: 'boolean' },
+      memberCount: { type: 'integer' },
+      maxSize: { type: 'integer' },
+    },
+  },
+
+  ParticipantProfile: {
+    description:
+      'One participant opened on their own page: the directory row, plus the teams they ' +
+      'are on and the experience they have listed.',
+    allOf: [
+      ref('Participant'),
+      {
+        type: 'object',
+        properties: {
+          teams: { type: 'array', items: ref('ProfileTeam') },
+          experiences: { type: 'array', items: ref('Experience') },
+        },
+      },
+    ],
+  },
+
   AuthResult: {
     type: 'object',
     properties: {
@@ -600,6 +631,28 @@ const schemas = {
       createdBy: { type: 'string', format: 'uuid' },
       createdAt: { type: 'string', format: 'date-time' },
       updatedAt: { type: 'string', format: 'date-time' },
+      team: {
+        type: 'object',
+        description: 'Which team, so a list can say so without a lookup per row.',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          eventId: { type: 'string' },
+          logoUrl: { type: 'string', nullable: true },
+        },
+      },
+      user: {
+        type: 'object',
+        nullable: true,
+        description: 'Who the request is about: the invitee, or the applicant.',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          fullName: { type: 'string' },
+          firstName: { type: 'string' },
+          avatarUrl: { type: 'string', nullable: true },
+          roles: { type: 'array', items: ref('TeamRole') },
+        },
+      },
     },
   },
 
@@ -842,14 +895,18 @@ const schemas = {
     type: 'object',
     properties: {
       id: { type: 'string', format: 'uuid' },
-      kind: { type: 'string', example: EXPERIENCE_KINDS[0] },
+      userId: { type: 'string', format: 'uuid' },
+      kind: { type: 'string', enum: [...EXPERIENCE_KINDS], example: EXPERIENCE_KINDS[0] },
       title: { type: 'string', example: 'Runner-up, BakuHack 2025' },
       organisation: { type: 'string', nullable: true },
+      startDate: { type: 'string', format: 'date', nullable: true },
+      endDate: { type: 'string', format: 'date', nullable: true },
+      isCurrent: { type: 'boolean' },
       description: { type: 'string', nullable: true },
-      startedOn: { type: 'string', format: 'date', nullable: true },
-      endedOn: { type: 'string', format: 'date', nullable: true },
       url: { type: 'string', format: 'uri', nullable: true },
+      skills: { type: 'array', items: { type: 'string' } },
       createdAt: { type: 'string', format: 'date-time' },
+      updatedAt: { type: 'string', format: 'date-time' },
     },
   },
 
@@ -861,8 +918,10 @@ const schemas = {
       title: { type: 'string', minLength: 2, maxLength: 140 },
       organisation: { type: 'string', maxLength: 120, nullable: true },
       description: { type: 'string', maxLength: 600, nullable: true },
-      startedOn: { type: 'string', format: 'date', nullable: true },
-      endedOn: { type: 'string', format: 'date', nullable: true },
+      startDate: { type: 'string', format: 'date', nullable: true },
+      endDate: { type: 'string', format: 'date', nullable: true },
+      isCurrent: { type: 'boolean', default: false },
+      skills: { type: 'array', items: { type: 'string' }, maxItems: 20 },
       url: { type: 'string', format: 'uri', maxLength: 300, nullable: true },
     },
   },
@@ -1044,6 +1103,7 @@ const schemas = {
         items: {
           type: 'object',
           properties: {
+            id: { type: 'string', format: 'uuid' },
             fullName: { type: 'string' },
             firstName: { type: 'string' },
             avatarUrl: { type: 'string', nullable: true },
@@ -1146,6 +1206,86 @@ const schemas = {
       missingRoles: { type: 'array', items: ref('TeamRole') },
       readiness: { type: 'integer', minimum: 0, maximum: 100 },
       summary: { type: 'string' },
+    },
+  },
+
+  LabRequest: {
+    type: 'object',
+    required: ['eventId', 'userIds'],
+    properties: {
+      eventId: { type: 'string', example: 'evt-001' },
+      userIds: {
+        type: 'array',
+        items: { type: 'string', format: 'uuid' },
+        minItems: 2,
+        maxItems: 8,
+        description: 'Anyone at all — nobody has to be on a team or have agreed to anything.',
+      },
+    },
+  },
+
+  LabMember: {
+    type: 'object',
+    properties: {
+      user: ref('Participant'),
+      eventFit: {
+        type: 'integer',
+        minimum: 0,
+        maximum: 100,
+        description: 'Their own fit for the event, before anyone else is considered.',
+      },
+      existingTeam: {
+        type: 'object',
+        nullable: true,
+        description: 'A team they are already on for this event, which would stop them joining another.',
+        properties: { id: { type: 'string', format: 'uuid' }, name: { type: 'string' } },
+      },
+    },
+  },
+
+  LabPair: {
+    type: 'object',
+    properties: {
+      userIds: { type: 'array', items: { type: 'string', format: 'uuid' }, minItems: 2, maxItems: 2 },
+      score: { type: 'integer', minimum: 0, maximum: 100 },
+      band: ref('FitBand'),
+      summary: { type: 'string' },
+    },
+  },
+
+  LabReport: {
+    type: 'object',
+    description:
+      'A roster that does not exist yet, scored as if it did — by the same engine, under ' +
+      'the same event weights, as a real team report.',
+    properties: {
+      eventId: { type: 'string' },
+      eventName: { type: 'string' },
+      profile: ref('EventStatProfile'),
+      size: {
+        type: 'object',
+        properties: { current: { type: 'integer' }, max: { type: 'integer' } },
+      },
+      members: { type: 'array', items: ref('LabMember') },
+      pairs: {
+        type: 'array',
+        description: 'Every pair on the roster, scored under this event’s weights.',
+        items: ref('LabPair'),
+      },
+      cohesion: {
+        type: 'integer',
+        minimum: 0,
+        maximum: 100,
+        description: 'The mean of every pair: how well the group gets on, apart from what it can do.',
+      },
+      readiness: { type: 'integer', minimum: 0, maximum: 100 },
+      summary: { type: 'string' },
+      coverage: { type: 'array', items: ref('FocusCoverage') },
+      missingAreas: { type: 'array', items: { type: 'string' } },
+      missingRoles: { type: 'array', items: ref('TeamRole') },
+      brief: ref('RecruitBrief'),
+      risks: { type: 'array', items: ref('TeamRisk') },
+      availability: { type: 'array', items: ref('SlotCoverage') },
     },
   },
 
@@ -1382,6 +1522,44 @@ const schemas = {
     },
   },
 
+  ChangePasswordRequest: {
+    type: 'object',
+    required: ['newPassword'],
+    properties: {
+      currentPassword: {
+        type: 'string',
+        description: 'Required whenever the account already has a password.',
+      },
+      newPassword: {
+        type: 'string',
+        minLength: 10,
+        maxLength: 128,
+        description: 'At least 10 characters, with a lower-case letter, an upper-case letter, and a number.',
+      },
+    },
+  },
+
+  DeleteMeRequest: {
+    type: 'object',
+    required: ['confirmEmail'],
+    properties: {
+      confirmEmail: {
+        type: 'string',
+        description: 'Your own address, typed back. Deletion is refused if it does not match.',
+      },
+    },
+  },
+
+  PlatformStats: {
+    type: 'object',
+    properties: {
+      participants: { type: 'integer', description: 'Accounts not currently banned.' },
+      teams: { type: 'integer', description: 'Teams that have not been disbanded.' },
+      onTeams: { type: 'integer', description: 'People on at least one team.' },
+      events: { type: 'integer' },
+    },
+  },
+
   DeleteAccountRequest: {
     type: 'object',
     required: ['confirmEmail'],
@@ -1456,6 +1634,24 @@ const paths = {
       summary: 'Current account',
       security: AUTH,
       responses: { 200: dataResponse('The signed-in account.', ref('User')), 401: RESP_401 },
+    },
+  },
+
+  '/api/auth/password': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Change my password',
+      description:
+        'Proving the current password is required whenever the account has one. An ' +
+        'account that has only ever signed in through a provider may set its first ' +
+        'password with the session alone.',
+      security: AUTH,
+      requestBody: jsonBody(ref('ChangePasswordRequest')),
+      responses: {
+        204: { description: 'Changed.' },
+        400: RESP_400,
+        401: RESP_401,
+      },
     },
   },
 
@@ -1779,6 +1975,22 @@ const paths = {
         401: RESP_401,
       },
     },
+    delete: {
+      tags: ['Participants'],
+      summary: 'Delete my account',
+      description:
+        'Permanent, and cascades to everything attached to the account. Refused for the ' +
+        'last admin, and for anyone who owns a team that has other people on it — hand ' +
+        'those over first, or the cascade would delete them for everyone.',
+      security: AUTH,
+      requestBody: jsonBody(ref('DeleteMeRequest')),
+      responses: {
+        204: { description: 'Deleted.' },
+        400: RESP_400,
+        401: RESP_401,
+        409: errorFor('Refused: last admin, or owns a team other people are on.'),
+      },
+    },
   },
 
   '/api/users/{id}': {
@@ -1787,7 +1999,7 @@ const paths = {
       summary: 'A participant profile',
       parameters: [pathParam('id', 'Participant UUID.', 'uuid')],
       responses: {
-        200: dataResponse('The participant.', ref('Participant')),
+        200: dataResponse('The participant, with their teams and experience.', ref('ParticipantProfile')),
         400: RESP_400,
         404: RESP_404,
       },
@@ -2001,7 +2213,8 @@ const paths = {
       summary: 'Accept, decline, or cancel a request',
       description:
         'An invitation is answered by the invited participant; an application by the team ' +
-        'owner. `cancel` is for whoever raised it. Accepting seats the member in the same ' +
+        'owner. `cancel` is for whoever raised it or, for an invitation, the team’s current ' +
+        'owner. Accepting seats the member in the same ' +
         'transaction that resolves the request.',
       security: AUTH,
       parameters: [pathParam('requestId', 'Request UUID.', 'uuid')],
@@ -2222,6 +2435,24 @@ const paths = {
     },
   },
 
+  '/api/teams/{id}/requests': {
+    get: {
+      tags: ['Teams'],
+      summary: 'Pending invitations and applications for one team',
+      description:
+        'Who the team has invited and who has asked to join, still unanswered. Visible to ' +
+        'everyone on the roster; only the owner can act on them.',
+      security: AUTH,
+      parameters: [pathParam('id', 'Team UUID.', 'uuid')],
+      responses: {
+        200: listResponse('Pending requests, newest first.', ref('TeamRequest'), false),
+        401: RESP_401,
+        403: RESP_403,
+        404: RESP_404,
+      },
+    },
+  },
+
   '/api/teams/{id}/suggestions': {
     get: {
       tags: ['Teams', 'Compatibility'],
@@ -2372,6 +2603,25 @@ const paths = {
   },
 
   // -- certificates -----------------------------------------------------------
+
+  '/api/compatibility/lab': {
+    post: {
+      tags: ['Compatibility'],
+      summary: 'Try out a roster before it exists',
+      description:
+        'Two to eight participants against one event, scored as if they were already a ' +
+        'team: every pair under the event’s weights, the group’s coverage and readiness, ' +
+        'what it would still be missing, and what could go wrong. Nothing is written.',
+      security: AUTH,
+      requestBody: jsonBody(ref('LabRequest')),
+      responses: {
+        200: dataResponse('The lab report.', ref('LabReport')),
+        400: RESP_400,
+        401: RESP_401,
+        404: RESP_404,
+      },
+    },
+  },
 
   '/api/certificates': {
     get: {
@@ -2539,6 +2789,15 @@ const paths = {
   },
 
   // -- notifications ----------------------------------------------------------
+
+  '/api/stats': {
+    get: {
+      tags: ['Platform'],
+      summary: 'Live platform numbers',
+      description: 'What the landing page shows. Counted, not estimated; cached for a minute.',
+      responses: { 200: dataResponse('The numbers.', ref('PlatformStats')) },
+    },
+  },
 
   '/api/notifications': {
     get: {
@@ -2712,13 +2971,14 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: 'TapTim API',
-    version: '0.2.0',
+    version: '1.0.0',
     description:
       'Backend for TapTim — a matchmaking platform that helps hackathon and tech-event ' +
       'participants find teammates by skills, roles, personality, and compatibility.\n\n' +
-      '**Sprint 2 scope:** participant profiles, the event catalogue, team formation with ' +
-      'invitations and applications, the compatibility engine, and certificate verification. ' +
-      'Everything is persisted in Supabase Postgres.\n\n' +
+      'Participant profiles, the event catalogue, team formation with invitations and ' +
+      'applications, the compatibility engine and the team lab, connections and chat, ' +
+      'notifications, endorsements, and certificate verification. Everything is persisted ' +
+      'in Supabase Postgres.\n\n' +
       '### Envelopes\n' +
       'Success: `{ "data": … }`, with `{ "meta": { total, limit, offset } }` on list ' +
       'endpoints. Failure is always ' +
@@ -2731,7 +2991,12 @@ export const openApiDocument = {
     contact: { name: 'TapTim Team' },
     license: { name: 'MIT' },
   },
-  servers: [{ url: `http://localhost:${env.port}`, description: 'Local development' }],
+  // Same-origin first. With only localhost listed, "Try it out" on a deployed copy of
+  // these docs sent every request to the reader's own machine.
+  servers: [
+    { url: '/', description: 'This server' },
+    { url: `http://localhost:${env.port}`, description: 'Local development' },
+  ],
   tags: [
     { name: 'Health', description: 'Service liveness, readiness, and metadata.' },
     { name: 'Auth', description: 'Registration, login, and current-user lookup.' },
@@ -2741,8 +3006,12 @@ export const openApiDocument = {
     },
     { name: 'Events', description: 'Event catalogue and organiser CRUD.' },
     { name: 'Teams', description: 'Team formation: rosters, invitations, and applications.' },
-    { name: 'Compatibility', description: 'Pair scoring, ranked matches, and team suggestions.' },
+    {
+      name: 'Compatibility',
+      description: 'Pair scoring, ranked matches, team suggestions, and the team lab.',
+    },
     { name: 'Certificates', description: 'Credential claims and the verification pipeline.' },
+    { name: 'Platform', description: 'Public numbers about the platform itself.' },
     {
       name: 'Notifications',
       description: 'What happened while you were away.',

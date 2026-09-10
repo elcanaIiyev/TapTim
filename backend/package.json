@@ -13,7 +13,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "admin:grant": "tsx src/db/grant-admin.ts",
-    "admin:revoke": "tsx src/db/grant-admin.ts"
+    "admin:revoke": "tsx src/db/grant-admin.ts",
+    "test": "node tests/e2e.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

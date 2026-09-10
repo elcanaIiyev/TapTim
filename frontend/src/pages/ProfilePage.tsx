@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AVAILABILITY_LABELS, TRAIT_COPY } from '../lib/people';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AvatarPicker } from '../components/profile/AvatarPicker';
 import { ExperienceEditor } from '../components/profile/ExperienceEditor';
@@ -23,33 +24,6 @@ import type { Experience, ProfileOptions, ProfilePayload } from '../lib/types';
  * profile screen and then dropping them on the real one teaches them the wrong
  * layout. `data-tour` attributes mark what the spotlight highlights.
  */
-
-const AVAILABILITY_LABELS: Record<string, string> = {
-  'weekday-mornings': 'Weekday mornings',
-  'weekday-afternoons': 'Weekday afternoons',
-  'weekday-evenings': 'Weekday evenings',
-  'weekend-mornings': 'Weekend mornings',
-  'weekend-afternoons': 'Weekend afternoons',
-  'weekend-evenings': 'Weekend evenings',
-};
-
-/**
- * Every slider is phrased as two ends of a real working preference, not as
- * good-versus-bad. Nobody should be able to work out which answer "wins",
- * because the engine matches complementary styles rather than high scores.
- */
-const TRAIT_COPY: Record<string, { label: string; low: string; high: string }> = {
-  leadership: { label: 'Leading', low: 'Happy to follow', high: 'Likes to steer' },
-  communication: { label: 'Syncing', low: 'Heads-down', high: 'Constant contact' },
-  structure: { label: 'Planning', low: 'Improvise', high: 'Plan it out' },
-  pace: { label: 'Pace', low: 'Steady', high: 'Sprint' },
-  risk: { label: 'Ideas', low: 'Proven ground', high: 'Try the wild one' },
-  autonomy: { label: 'Autonomy', low: 'Check in often', high: 'Leave me to it' },
-  feedback: { label: 'Feedback', low: 'Soften it', high: 'Say it straight' },
-  decisions: { label: 'Decisions', low: 'Agree together', high: 'Someone calls it' },
-  deadlines: { label: 'Deadlines', low: 'Finish early', high: 'Thrive near the wire' },
-  conflict: { label: 'Disagreement', low: 'Smooth it over', high: 'Hash it out' },
-};
 
 const TOUR_STEPS: TourStep[] = [
   {

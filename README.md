@@ -3,8 +3,23 @@
 **Find your perfect hackathon team.** TapTim! matches hackathon and tech-event participants into
 balanced teams based on skills, roles, personality, and compatibility.
 
-> **Sprint 1 (MVP Foundation) — complete.** Full architecture notes, operations log, API
-> reference, and the sprint checklist live in **[doc.md](doc.md)**.
+**Live at [tap-tim.vercel.app](https://tap-tim.vercel.app).** Architecture notes, the API
+reference, and every sprint's log live in **[doc.md](doc.md)**.
+
+## What it does
+
+- **Profiles that answer "should I team up with them?"** — skills with levels and endorsements,
+  when and how someone likes to work, their experience and teams, and for anyone signed in, how
+  the two of you fit, broken into the five components the score is made of.
+- **Events and per-event matching** — each event weighs a teammate differently; your fit, a
+  team's readiness, and every suggestion are scored under that event's weights.
+- **Teams** — created per event, with invitations and applications in both directions, a list of
+  who is still waiting for an answer, team chat, a risk panel, and a public recruiting page.
+- **The Team Lab** — put any two to eight people in a room for an event and see how they would
+  do as a team before it exists: every pair, what the group covers, when it can meet, and where
+  it would break. Then turn it into a real team in one step.
+- **Connections and chat**, **notifications**, **endorsements**, and **certificate
+  verification** (Claude when `ANTHROPIC_API_KEY` is set, a rule-based verifier otherwise).
 
 ---
 
@@ -33,7 +48,10 @@ npm run dev                                   # runs the API and the web app tog
 | `npm run dev:backend` | API only, with watch-reload |
 | `npm run dev:frontend` | Vite dev server only |
 | `npm run build` | Production build of both workspaces |
-| `npm run typecheck` | TypeScript check across both workspaces |
+| `npm run typecheck` | TypeScript check across both workspaces and `api/` |
+| `npm test` | End-to-end API suite against a running API (`API_BASE`, default `:4000`) |
+| `npm run test:ui --workspace frontend` | Every page at three widths in Chrome (`UI_BASE`, default `:4173`) |
+| `npm run audit:openapi --workspace backend` | Fails if any mounted route is missing from the spec |
 
 ## Stack
 
@@ -43,14 +61,21 @@ OpenAPI 3.0.3 via `swagger-ui-express`.
 
 ## API at a glance
 
+82 operations, all documented in Swagger at `/api/docs` (and `/api/docs.json`). The ones the
+main flows run on:
+
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `POST` | `/api/auth/signup` | — | Register, returns a JWT |
-| `POST` | `/api/auth/login` | — | Authenticate, returns a JWT |
-| `GET` | `/api/auth/me` | Bearer | Current user profile |
-| `GET` | `/api/events` | — | Event catalogue, filterable by category |
-| `GET` | `/api/events/categories` | — | Categories with counts |
-| `GET` | `/api/events/{id}` | — | Single event |
+| `POST` | `/api/auth/signup` · `/api/auth/login` | — | Register or sign in; returns a JWT |
+| `POST` | `/api/auth/password` | Bearer | Change your password |
+| `GET` | `/api/users/{id}` | — | A profile, with teams and experience |
+| `DELETE` | `/api/users/me` | Bearer | Delete your own account |
+| `GET` | `/api/events` · `/api/events/{id}/my-fit` | — / Bearer | The catalogue; your fit for one event |
+| `POST` | `/api/teams` · `/api/teams/{id}/invitations` | Bearer | Create a team; invite someone |
+| `GET` | `/api/teams/{id}/requests` | Bearer | Who the team has invited, and who has asked in |
+| `POST` | `/api/compatibility` | Bearer | You and someone else, broken down |
+| `POST` | `/api/compatibility/lab` | Bearer | A roster that does not exist yet, scored as a team |
+| `GET` | `/api/stats` | — | Live platform numbers for the landing page |
 
 See [doc.md](doc.md) for the full API reference and the list of known limitations.
 

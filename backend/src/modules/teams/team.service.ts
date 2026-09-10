@@ -446,8 +446,13 @@ export async function respondToRequest(
   const recipientId = request.kind === 'invite' ? request.userId : team.ownerId;
 
   if (action === 'cancel') {
-    if (request.createdBy !== actor.id) {
-      throw HttpError.forbidden('Only whoever raised this request can cancel it.');
+    // Whoever raised it may withdraw it, and so may whoever owns the team now.
+    // An invitation belongs to the team rather than to the person who clicked,
+    // and after a handover it must not sit in the new owner's list as something
+    // they can see but not take back.
+    const ownsTeamNow = request.kind === 'invite' && team.ownerId === actor.id;
+    if (request.createdBy !== actor.id && !ownsTeamNow) {
+      throw HttpError.forbidden('Only whoever raised this request, or the team owner, can cancel it.');
     }
     const cancelled = await teamStore.setRequestStatus(requestId, 'cancelled');
     if (!cancelled) throw HttpError.conflict('This request is no longer pending.');
@@ -525,15 +530,73 @@ export async function respondToRequest(
   }
 }
 
+/**
+ * A request as a person reads it.
+ *
+ * The bare record names two ids and nothing else, which is why the Teams page
+ * could only ever say "you were invited to a team" — it had no way to say which
+ * team, or who, short of a request per row. The names ride along instead.
+ */
+export interface TeamRequestView extends TeamRequestRecord {
+  team: { id: string; name: string; eventId: string; logoUrl: string | null };
+  /** Who the request is about: the invitee, or the applicant. */
+  user: {
+    id: string;
+    fullName: string;
+    firstName: string;
+    avatarUrl: string | null;
+    roles: string[];
+  } | null;
+}
+
+async function withNames(requests: TeamRequestRecord[]): Promise<TeamRequestView[]> {
+  if (requests.length === 0) return [];
+
+  const teamIds = [...new Set(requests.map((request) => request.teamId))];
+  const [teams, people] = await Promise.all([
+    Promise.all(teamIds.map((id) => teamStore.findById(id))),
+    userStore.findManyByIds([...new Set(requests.map((request) => request.userId))]),
+  ]);
+  const teamById = new Map(
+    teams.filter((team): team is TeamRecord => team !== null).map((team) => [team.id, team]),
+  );
+  const personById = new Map(people.map((person) => [person.id, person]));
+
+  return requests.flatMap((request) => {
+    const team = teamById.get(request.teamId);
+    // Gone between the two reads. Nothing about it is actionable any more.
+    if (!team) return [];
+    const person = personById.get(request.userId);
+    return [
+      {
+        ...request,
+        team: { id: team.id, name: team.name, eventId: team.eventId, logoUrl: team.logoUrl },
+        user: person
+          ? {
+              id: person.id,
+              fullName: person.fullName,
+              firstName: person.firstName,
+              avatarUrl: person.avatarUrl,
+              roles: person.roles,
+            }
+          : null,
+      },
+    ];
+  });
+}
+
 export async function listRequests(
   query: ListRequestsQuery,
   actor: UserRecord,
-): Promise<TeamRequestRecord[]> {
+): Promise<TeamRequestView[]> {
   if (query.direction === 'outgoing') {
     // Everything this account raised — applications it sent and invitations it
-    // issued as a team owner.
-    const raised = await teamStore.listRequests({ kind: query.kind, status: query.status });
-    return raised.filter((request) => request.createdBy === actor.id);
+    // issued as a team owner. Filtered in SQL: this used to fetch the newest
+    // 200 requests on the whole platform and keep the caller's, which would
+    // have quietly dropped theirs as soon as the site was busier than that.
+    return withNames(
+      await teamStore.listRequests({ createdBy: actor.id, kind: query.kind, status: query.status }),
+    );
   }
 
   const [invitesToMe, applicationsToMyTeams] = await Promise.all([
@@ -545,7 +608,26 @@ export async function listRequests(
     (request) => query.kind === undefined || request.kind === query.kind,
   );
 
-  return combined.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return withNames(combined.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+}
+
+/**
+ * Everything still open on one team: who it has invited, and who has asked in.
+ *
+ * Visible to the whole roster, not just the owner — "who have we invited" is a
+ * question the team asks together, and nothing here is private from the people
+ * the newcomer would be joining. Only the owner can act on it.
+ */
+export async function listTeamRequests(
+  teamId: string,
+  actor: UserRecord,
+): Promise<TeamRequestView[]> {
+  const team = await getTeam(teamId);
+  const onTeam = team.members.some((member) => member.userId === actor.id);
+  if (!onTeam && !canModerate(actor.accountRole)) {
+    throw HttpError.forbidden('Only people on this team can see its pending requests.');
+  }
+  return withNames(await teamStore.listRequests({ teamId, status: 'pending' }));
 }
 
 // -- suggestions --------------------------------------------------------------

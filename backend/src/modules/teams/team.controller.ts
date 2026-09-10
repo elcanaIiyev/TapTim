@@ -84,6 +84,11 @@ export async function listRequestsHandler(req: Request, res: Response) {
   res.status(200).json({ data: await teamService.listRequests(query, user) });
 }
 
+export async function teamRequestsHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  res.status(200).json({ data: await teamService.listTeamRequests(req.params.id, user) });
+}
+
 export async function leaveTeamHandler(req: Request, res: Response) {
   const user = requireUser(req);
   await teamService.leaveTeam(req.params.id, user);

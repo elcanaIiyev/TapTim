@@ -3,6 +3,7 @@ import { requireAuth } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
+  changePasswordHandler,
   checkEmailHandler,
   disconnectProviderHandler,
   loginHandler,
@@ -16,6 +17,7 @@ import {
   verifyEmailHandler,
 } from './auth.controller.js';
 import {
+  changePasswordSchema,
   checkEmailSchema,
   loginSchema,
   resendVerificationSchema,
@@ -32,6 +34,12 @@ authRouter.post('/check-email', validateBody(checkEmailSchema), asyncHandler(che
 authRouter.post('/signup', validateBody(signupSchema), asyncHandler(signupHandler));
 authRouter.post('/login', validateBody(loginSchema), asyncHandler(loginHandler));
 authRouter.get('/me', requireAuth, asyncHandler(meHandler));
+authRouter.post(
+  '/password',
+  requireAuth,
+  validateBody(changePasswordSchema),
+  asyncHandler(changePasswordHandler),
+);
 
 // -- email confirmation -------------------------------------------------------
 

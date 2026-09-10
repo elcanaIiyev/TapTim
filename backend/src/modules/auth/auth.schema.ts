@@ -65,7 +65,18 @@ export const verifyEmailSchema = z.object({
 
 export const resendVerificationSchema = z.object({ email: emailField });
 
+/**
+ * Changing the password. `currentPassword` is required whenever the account
+ * already has one; an account that has only ever signed in through a provider
+ * has nothing to prove, and may set its first password with the session alone.
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().max(128).optional(),
+  newPassword: passwordField,
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CheckEmailInput = z.infer<typeof checkEmailSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;

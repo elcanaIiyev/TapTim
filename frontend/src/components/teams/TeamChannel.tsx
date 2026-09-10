@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PersonLink } from '../people/PersonLink';
 import { ApiError, teamsApi } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import type { TeamChannel as Channel } from '../../lib/types';
@@ -248,9 +249,11 @@ export function TeamChannel({
                   <div className="min-w-0 flex-1">
                     {!grouped && (
                       <p className="flex items-baseline gap-2">
-                        <span className="text-sm font-semibold text-ink-900 dark:text-white">
-                          {mine ? 'You' : message.sender.fullName}
-                        </span>
+                        {mine ? (
+                          <span className="text-sm font-semibold text-ink-900 dark:text-white">You</span>
+                        ) : (
+                          <PersonLink person={message.sender} className="text-sm" />
+                        )}
                         <span className="readout text-[0.65rem] text-ink-500 dark:text-ink-400">
                           {timeOf(message.createdAt)}
                         </span>

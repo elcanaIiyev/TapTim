@@ -251,3 +251,10 @@ export const endorseSkillSchema = z.object({
 });
 
 export type EndorseSkillInput = z.infer<typeof endorseSkillSchema>;
+
+/** Deleting your own account. The address is typed back, not a box ticked. */
+export const deleteMeSchema = z.object({
+  confirmEmail: z.string().trim().min(1, 'Type your email address to confirm.').max(160),
+});
+
+export type DeleteMeInput = z.infer<typeof deleteMeSchema>;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { PersonAvatar, PersonLink } from '../components/people/PersonLink';
 import { fittedGrid } from '../lib/grid';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ChatPanel } from '../components/connections/ChatPanel';
@@ -11,7 +12,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, connectionsApi, profileApi } from '../lib/api';
 import { cn } from '../lib/cn';
-import { rolesSummary } from '../lib/types';
+import { rolesSummary, skillLabel } from '../lib/types';
 import type { ConnectionsOverview, ConnectionState, DirectoryUser } from '../lib/types';
 
 /**
@@ -25,37 +26,7 @@ import type { ConnectionsOverview, ConnectionState, DirectoryUser } from '../lib
 type Tab = 'connections' | 'discover' | 'requests';
 
 function Avatar({ person, size = 44 }: { person: DirectoryUser; size?: number }) {
-  return person.avatarUrl ? (
-    <img
-      src={person.avatarUrl}
-      alt=""
-      style={{ width: size, height: size }}
-      className="shrink-0 rounded-full object-cover"
-    />
-  ) : (
-    <span
-      style={{ width: size, height: size }}
-      className="grid shrink-0 place-items-center rounded-full bg-iris-600 text-sm font-bold text-white"
-    >
-      {person.firstName?.[0]?.toUpperCase() ?? '?'}
-    </span>
-  );
-}
-
-/** An honest placeholder: names the feature and says it is not here yet. */
-function ComingSoon({ title, body }: { title: string; body: string }) {
-  return (
-    <section className="relative overflow-hidden rounded-[var(--radius-soft-lg)] border border-dashed border-ink-300 p-6 dark:border-ink-700">
-      <div className="grid-floor pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
-      <div className="relative">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="type-label text-ink-600 dark:text-ink-400">{title}</h2>
-          <Badge tone="warning">Coming soon</Badge>
-        </div>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-600 dark:text-ink-400">{body}</p>
-      </div>
-    </section>
-  );
+  return <PersonAvatar person={person} size={size} link />;
 }
 
 export function ConnectionsPage() {
@@ -147,7 +118,7 @@ export function ConnectionsPage() {
       <SectionHeading
         overline="Connections"
         title="People you could build with"
-        description="Connect first, then message. Invitations to a team are sent from that team's page, because an invitation is always to one team at one event."
+        description="Connect first, then message. Open anyone's profile to see how the two of you would fit — and to invite them to one of your teams."
       />
 
       {/* -- tabs ------------------------------------------------------------ */}
@@ -207,9 +178,7 @@ export function ConnectionsPage() {
                         <Avatar person={view.person} />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-ink-900 dark:text-white">
-                              {view.person.fullName}
-                            </p>
+                            <PersonLink person={view.person} />
                             {view.unread > 0 && <Badge tone="accent">{view.unread} new</Badge>}
                           </div>
                           <p className="text-xs text-ink-600 dark:text-ink-400">
@@ -259,9 +228,7 @@ export function ConnectionsPage() {
                         <div className="flex min-w-0 items-center gap-3">
                           <Avatar person={view.person} size={38} />
                           <div className="min-w-0">
-                            <p className="font-semibold text-ink-900 dark:text-white">
-                              {view.person.fullName}
-                            </p>
+                            <PersonLink person={view.person} />
                             <p className="text-xs text-ink-600 dark:text-ink-400">
                               {rolesSummary(view.person.roles)}
                             </p>
@@ -301,9 +268,7 @@ export function ConnectionsPage() {
                       <li key={view.person.id} className="panel panel-soft-sm flex flex-wrap items-center justify-between gap-4 p-5">
                         <div className="flex min-w-0 items-center gap-3">
                           <Avatar person={view.person} size={38} />
-                          <p className="font-semibold text-ink-900 dark:text-white">
-                            {view.person.fullName}
-                          </p>
+                          <PersonLink person={view.person} />
                         </div>
                         <Button
                           size="sm"
@@ -343,9 +308,7 @@ export function ConnectionsPage() {
                         <div className="flex items-start gap-3">
                           <Avatar person={person} />
                           <div className="min-w-0">
-                            <p className="font-semibold text-ink-900 dark:text-white">
-                              {person.fullName}
-                            </p>
+                            <PersonLink person={person} />
                             <p className="text-xs text-ink-600 dark:text-ink-400">
                               {rolesSummary(person.roles)}
                               {person.locationCity ? ` · ${person.locationCity}` : ''}
@@ -358,7 +321,9 @@ export function ConnectionsPage() {
                             {topSkills.map((skill) => (
                               <Badge key={skill} tone="neutral">
                                 {skill}
-                                {person.skillLevels?.[skill] ? ` ${person.skillLevels[skill]}/5` : ''}
+                                {person.skillLevels?.[skill] !== undefined
+                                  ? ` · ${skillLabel(person.skillLevels[skill])}`
+                                  : ''}
                               </Badge>
                             ))}
                           </div>
@@ -424,16 +389,9 @@ export function ConnectionsPage() {
         </div>
       </div>
 
-      <div className="mt-10">
-        <ComingSoon
-          title="LinkedIn sync"
-          body="Import your experience from LinkedIn so your profile fills itself in, and see which people here you already know. The sign-in half is written and waiting on LinkedIn app credentials; the import is not started."
-        />
-      </div>
-
       <p className="mt-8 max-w-2xl text-xs leading-relaxed text-ink-500 dark:text-ink-400">
-        Inviting someone to a team happens on that team's page, where the suggestions are already
-        ranked by how much of what your team is missing each person would cover.{' '}
+        You can invite someone from their profile, or from your team's page, where suggestions
+        are ranked by how much of what your team is missing each person would cover.{' '}
         <Link to="/events" className="text-accent-text underline decoration-2 underline-offset-4">
           Browse events →
         </Link>

@@ -506,6 +506,7 @@ export interface RecruitBrief {
 }
 
 export interface PublicTeamMember {
+  id: string;
   fullName: string;
   firstName: string;
   avatarUrl: string | null;
@@ -660,6 +661,16 @@ export interface TeamRequest {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Which team, so a list can say so without a lookup per row. */
+  team: { id: string; name: string; eventId: string; logoUrl: string | null };
+  /** Who it is about: the invitee, or the applicant. */
+  user: {
+    id: string;
+    fullName: string;
+    firstName: string;
+    avatarUrl: string | null;
+    roles: string[];
+  } | null;
 }
 
 
@@ -770,4 +781,96 @@ export interface Conversation {
   /** False when the two are not connected — the composer is disabled. */
   canSend: boolean;
   messages: ChatMessage[];
+}
+
+
+// -- profiles, compatibility, the lab, platform numbers --------------------------
+
+/** A team someone is on, as their profile lists it. */
+export interface ProfileTeam {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  eventId: string;
+  eventName: string | null;
+  isOwner: boolean;
+  memberCount: number;
+  maxSize: number;
+}
+
+/** One participant opened on their own page. */
+export interface ParticipantProfile extends DirectoryUser {
+  /** Returned for every participant; the directory type never declared them. */
+  hoursPerWeek: number | null;
+  timezoneOffset: number | null;
+  /** Trait -> 1–5. Only traits the person actually set are present. */
+  personality: Record<string, number>;
+  verifiedCertificates: number;
+  profileCompleteness: number;
+  teams: ProfileTeam[];
+  experiences: Experience[];
+}
+
+export interface ScoreComponent {
+  key: 'skills' | 'roles' | 'availability' | 'workingStyle' | 'credibility';
+  label: string;
+  /** 0–100, before weighting. */
+  score: number;
+  /** Share of the final score this component can contribute. */
+  weight: number;
+  explanation: string;
+}
+
+/** Two people, and why the number is what it is. */
+export interface PairCompatibility {
+  score: number;
+  band: FitBand;
+  summary: string;
+  components: ScoreComponent[];
+  sharedSkills: string[];
+  complementarySkills: string[];
+  sharedAvailability: string[];
+  participants: DirectoryUser[];
+}
+
+export interface LabMember {
+  user: DirectoryUser;
+  /** Their own fit for the event, before anyone else is considered. */
+  eventFit: number;
+  /** Already on a team for this event, which would stop them joining another. */
+  existingTeam: { id: string; name: string } | null;
+}
+
+export interface LabPair {
+  userIds: [string, string];
+  score: number;
+  band: FitBand;
+  summary: string;
+}
+
+/** A roster that does not exist yet, scored as if it did. */
+export interface LabReport {
+  eventId: string;
+  eventName: string;
+  profile: EventStatProfile;
+  size: { current: number; max: number };
+  members: LabMember[];
+  pairs: LabPair[];
+  /** Mean of every pair: how well the group gets on, apart from what it can do. */
+  cohesion: number;
+  readiness: number;
+  summary: string;
+  coverage: FocusCoverage[];
+  missingAreas: string[];
+  missingRoles: string[];
+  brief: RecruitBrief;
+  risks: TeamRisk[];
+  availability: SlotCoverage[];
+}
+
+export interface PlatformStats {
+  participants: number;
+  teams: number;
+  onTeams: number;
+  events: number;
 }

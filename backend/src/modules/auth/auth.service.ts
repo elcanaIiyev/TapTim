@@ -14,6 +14,8 @@ import {
   type UserRecord,
 } from '../users/user.model.js';
 import type { LoginInput, SignupInput } from './auth.schema.js';
+import type { ChangePasswordInput } from './auth.schema.js';
+import type { UserRecord as PasswordOwner } from '../users/user.model.js';
 
 const SALT_ROUNDS = 10;
 
@@ -303,4 +305,38 @@ export async function disconnectProvider(user: UserRecord, provider: string): Pr
   if (!removed) {
     throw HttpError.notFound(`No ${provider} account is connected.`);
   }
+}
+
+/**
+ * Sets a new password.
+ *
+ * Proving the old one is what stops a session left open on a shared machine
+ * from becoming a permanent takeover — the session can be ended; a changed
+ * password cannot be un-changed by its owner.
+ */
+export async function changePassword(
+  user: PasswordOwner,
+  input: ChangePasswordInput,
+): Promise<void> {
+  if (user.passwordHash) {
+    const proven =
+      input.currentPassword !== undefined &&
+      (await bcrypt.compare(input.currentPassword, user.passwordHash));
+    if (!proven) {
+      throw HttpError.badRequest('Your current password is not right.', [
+        { field: 'currentPassword', message: 'That is not your current password.' },
+      ]);
+    }
+    if (await bcrypt.compare(input.newPassword, user.passwordHash)) {
+      throw HttpError.badRequest('That is already your password.', [
+        { field: 'newPassword', message: 'Pick one you are not using now.' },
+      ]);
+    }
+  }
+
+  const updated = await userStore.setPasswordHash(
+    user.id,
+    await bcrypt.hash(input.newPassword, SALT_ROUNDS),
+  );
+  if (!updated) throw HttpError.notFound('The account for this token no longer exists.');
 }

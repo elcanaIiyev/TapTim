@@ -38,6 +38,7 @@ const MOUNTS = {
   'connection.routes.ts': '/api/connections',
   'admin.routes.ts': '/api/ops',
   'notification.routes.ts': '/api/notifications',
+  'stats.routes.ts': '/api/stats',
 };
 
 const METHODS = ['get', 'post', 'patch', 'put', 'delete'];

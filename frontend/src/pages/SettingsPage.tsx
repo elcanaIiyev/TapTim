@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { ChangePassword, DeleteAccount } from '../components/settings/AccountControls';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -18,7 +19,7 @@ import type { ProviderStatus } from '../lib/types';
  * is to fill it out with plausible-looking switches — email digests, push
  * notifications, marketing preferences — that write to nothing; a switch that
  * silently does nothing is worse than an empty section, because someone will
- * set it and believe it. Anything not built yet says so instead.
+ * set it and believe it. So nothing is offered here that does not work.
  */
 
 /** A labelled on/off control backed by a real setting. */
@@ -110,6 +111,7 @@ function Section({
 export function SettingsPage() {
   const { user, initialising, refresh, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [busyField, setBusyField] = useState<string | null>(null);
@@ -312,16 +314,7 @@ export function SettingsPage() {
           </Badge>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-          <div>
-            <p className="font-semibold text-ink-900 dark:text-white">Password</p>
-            <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">
-              {user.hasPassword
-                ? 'Set. Changing it from here is not built yet.'
-                : 'None — you sign in through a linked account.'}
-            </p>
-          </div>
-        </div>
+        <ChangePassword hasPassword={user.hasPassword} onChanged={() => void refresh()} />
 
         <div className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div>
@@ -348,10 +341,10 @@ export function SettingsPage() {
         </div>
       </Section>
 
-      {/* -- not built yet ------------------------------------------------------ */}
+      {/* -- notifications ------------------------------------------------ */}
       <Section
         title="Notifications"
-        hint="In-app notifications are always on — the bell in the header carries invitations, applications, and replies. Email is not built yet, and is shown as a label rather than a switch until it is."
+        hint="Everything that needs you arrives in the app — the bell in the header carries invitations, applications, replies, and people joining your team."
       >
         <div className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div>
@@ -364,23 +357,17 @@ export function SettingsPage() {
           <Badge tone="success">On</Badge>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-          <div>
-            <p className="font-semibold text-ink-900 dark:text-white">
-              Email me about invitations and messages
-            </p>
-            <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">
-              Needs a verified sending domain first.
-            </p>
-          </div>
-          <Badge tone="neutral">Coming soon</Badge>
-        </div>
       </Section>
 
-      <p className="mt-8 text-xs text-ink-500 dark:text-ink-400">
-        Deleting your account is handled by an administrator for now — ask in your event's
-        channel and it will be removed along with everything attached to it.
-      </p>
+      <Section title="Danger zone">
+        <DeleteAccount
+          email={user.email}
+          onDeleted={() => {
+            logout();
+            navigate('/', { replace: true });
+          }}
+        />
+      </Section>
     </Container>
   );
 }

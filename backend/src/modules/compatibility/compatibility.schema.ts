@@ -29,5 +29,20 @@ export const matchesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(25).optional().default(10),
 });
 
+/**
+ * A roster to try out: two to eight participants against one event.
+ *
+ * Nobody has to be on a team or have agreed to anything; nothing is written.
+ * Eight is where a pairwise matrix (28 cells) stops being readable at a glance.
+ */
+export const labSchema = z.object({
+  eventId: z.string().trim().min(1, 'Pick an event.').max(64),
+  userIds: z
+    .array(z.string().uuid('Participant ids must be UUIDs.'))
+    .min(2, 'Add at least two people.')
+    .max(8, 'The lab compares at most eight people at once.'),
+});
+
 export type CompatibilityInput = z.infer<typeof compatibilitySchema>;
+export type LabInput = z.infer<typeof labSchema>;
 export type MatchesQuery = z.infer<typeof matchesQuerySchema>;

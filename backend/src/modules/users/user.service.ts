@@ -1,5 +1,9 @@
 import { certificateStore } from '../../data/certificate.store.js';
+import { eventStore } from '../../data/event.store.js';
+import { experienceStore, type ExperienceRecord } from '../../data/experience.store.js';
+import { teamStore } from '../../data/team.store.js';
 import { userStore } from '../../data/user.store.js';
+import { deleteImage } from '../../services/storage.js';
 import { HttpError } from '../../utils/http-error.js';
 import {
   toDirectoryUser,
@@ -10,10 +14,31 @@ import {
 } from './user.model.js';
 import type { ListUsersQuery, UpdateProfileInput } from './user.schema.js';
 
-export interface UserProfileView extends DirectoryUser {
+/** A team someone is on, as their profile lists it. */
+export interface ProfileTeam {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  eventId: string;
+  eventName: string | null;
+  isOwner: boolean;
+  memberCount: number;
+  maxSize: number;
+}
+
+/** A directory row: the person, plus the two numbers a list can afford to compute. */
+export interface DirectoryEntry extends DirectoryUser {
   verifiedCertificates: number;
   /** How complete the matching inputs are, 0–100. */
   profileCompleteness: number;
+}
+
+/** One profile opened on its own: the row, plus what only a full page shows. */
+export interface UserProfileView extends DirectoryEntry {
+  /** Teams they are on now. Public, as the teams themselves already are. */
+  teams: ProfileTeam[];
+  /** What they have actually done — the evidence behind the skill numbers. */
+  experiences: ExperienceRecord[];
 }
 
 /**
@@ -72,11 +97,79 @@ export async function getProfile(id: string): Promise<UserProfileView> {
     throw HttpError.notFound(`No participant found with id "${id}".`);
   }
 
+  const [verifiedCertificates, experiences, { items: teams }] = await Promise.all([
+    certificateStore.countVerified(id),
+    experienceStore.listByUser(id),
+    teamStore.list({ memberId: id, limit: 20, offset: 0 }),
+  ]);
+
+  // Teams name only their event's id; one read per distinct event, not per team.
+  const eventIds = [...new Set(teams.map((team) => team.eventId))];
+  const events = await Promise.all(eventIds.map((eventId) => eventStore.findById(eventId)));
+  const eventName = new Map(events.flatMap((event) => (event ? [[event.id, event.name] as const] : [])));
+
   return {
     ...toDirectoryUser(user),
-    verifiedCertificates: await certificateStore.countVerified(id),
+    verifiedCertificates,
     profileCompleteness: profileCompleteness(user),
+    teams: teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      logoUrl: team.logoUrl,
+      eventId: team.eventId,
+      eventName: eventName.get(team.eventId) ?? null,
+      isOwner: team.ownerId === id,
+      memberCount: team.memberCount,
+      maxSize: team.maxSize,
+    })),
+    experiences,
   };
+}
+
+/**
+ * Deleting your own account.
+ *
+ * Two refusals, both about other people. The last admin cannot leave, or the
+ * console would have nobody left who can open it. And someone who owns a team
+ * with other people on it has to hand it over first: the cascade would
+ * otherwise delete that team out from under everyone else on it, which is not
+ * a side effect anybody deleting *their own* account means to cause.
+ */
+export async function deleteOwnAccount(user: UserRecord, confirmEmail: string): Promise<void> {
+  if (confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+    throw HttpError.badRequest('That email does not match this account. Nothing was deleted.', [
+      { field: 'confirmEmail', message: `Type ${user.email} exactly to confirm.` },
+    ]);
+  }
+
+  if (user.accountRole === 'admin' && (await userStore.countAdmins()) <= 1) {
+    throw HttpError.conflict(
+      'You are the only admin. Make someone else an admin first, or nobody will be able to open the console.',
+    );
+  }
+
+  const { items: owned } = await teamStore.list({ ownerId: user.id, limit: 50, offset: 0 });
+  const shared = owned.filter((team) => team.memberCount > 1);
+  if (shared.length > 0) {
+    const names = shared.map((team) => `"${team.name}"`).join(', ');
+    throw HttpError.conflict(
+      `Hand over ${names} to someone else on ${shared.length === 1 ? 'it' : 'them'} first — ` +
+        `deleting your account would delete ${shared.length === 1 ? 'that team' : 'those teams'} ` +
+        'for everyone on it.',
+    );
+  }
+
+  // Solo teams go with the account; their logos are the part the cascade misses.
+  const logoPaths = await Promise.all(owned.map((team) => teamStore.logoPathOf(team.id)));
+
+  const removed = await userStore.deleteUser(user.id);
+  if (!removed) throw HttpError.notFound('The account for this token no longer exists.');
+
+  // Storage is outside the transaction. A failure here leaves an orphaned file,
+  // never a half-deleted account.
+  for (const path of [removed.avatarPath, ...logoPaths]) {
+    if (path) void deleteImage(path);
+  }
 }
 
 /**
@@ -128,7 +221,7 @@ export async function confirmAvailability(id: string): Promise<PublicUser> {
 }
 
 export interface ListUsersResult {
-  items: UserProfileView[];
+  items: DirectoryEntry[];
   total: number;
   limit: number;
   offset: number;

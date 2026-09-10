@@ -434,6 +434,8 @@ class TeamStore {
     status?: string;
     /** Requests aimed at teams this user owns. */
     ownerId?: string;
+    /** Requests this user raised. */
+    createdBy?: string;
   }): Promise<TeamRequestRecord[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];
@@ -459,6 +461,10 @@ class TeamStore {
       conditions.push(
         `team_id in (select id from teams where owner_id = $${values.length})`,
       );
+    }
+    if (filter.createdBy) {
+      values.push(filter.createdBy);
+      conditions.push(`created_by = $${values.length}`);
     }
 
     const where = conditions.length ? `where ${conditions.join(' and ')}` : '';

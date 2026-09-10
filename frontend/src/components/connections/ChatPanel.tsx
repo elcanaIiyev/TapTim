@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PersonLink } from '../people/PersonLink';
 import { ApiError, connectionsApi } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import { rolesSummary } from '../../lib/types';
@@ -152,7 +153,7 @@ export function ChatPanel({
           )}
           <div className="min-w-0">
             <p className="truncate font-semibold text-ink-900 dark:text-white">
-              {conversation?.partner.fullName ?? 'Loading…'}
+              {conversation ? <PersonLink person={conversation.partner} /> : 'Loading…'}
             </p>
             <p className="truncate text-xs text-ink-600 dark:text-ink-400">
               {conversation ? rolesSummary(conversation.partner.roles) : ''}

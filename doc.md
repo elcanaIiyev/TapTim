@@ -1432,4 +1432,113 @@ API without further configuration.
 
 ---
 
-*Last updated: 2 September 2026.*
+## 9. Sprint 4 — Finalization
+
+> Status: **complete**, verified 11 September 2026 against the Supabase database. Two test
+> suites now live in the repository and pass: `npm test` (47 API checks) and
+> `npm run test:ui --workspace frontend` (59 browser checks across 16 pages at three widths).
+
+The brief was to take the project to 100% for the final presentation. The product came first,
+as it has every sprint: the new work is what someone looking for a teammate actually needed —
+a profile worth opening, knowing who you have already invited, and a reason to open the
+Compatibility tab — and the checklist below is judged against that.
+
+### 9.1 The checklist, item by item
+
+| Deliverable | Status | Where |
+| --- | --- | --- |
+| **Backend 1** — remaining functionality | Done | Self-serve account deletion, password change, live platform stats, the Team Lab, pending-request views (§9.2) |
+| **Backend 2** — issues from the Sprint Review | Not verifiable | The review's notes are not in the repository. Everything found by reading the code and running it is fixed (§9.3) |
+| **Backend 3** — refactoring and optimisation | Done | Team report and lab share one roster analysis; outgoing requests filtered in SQL; request lists carry names |
+| **Backend 4** — error handling and validation | Done | Every new endpoint is Zod-validated; 400, 401, 403, 404 and 409 paths are exercised by `npm test` |
+| **Backend 5** — Swagger up to date | Done | 82 routes mounted, 82 documented (`audit:openapi`); version 1.0.0 |
+| **Frontend 1** — every page and flow complete | Done | No "coming soon", no "not built yet", no invented numbers left (§9.3) |
+| **Frontend 2** — UI/UX issues from the Sprint Review | Not verifiable | As Backend 2 |
+| **Frontend 3** — responsive on every page | Done | 16 pages × 360 / 768 / 1280 px, zero horizontal overflow, in `npm run test:ui` |
+| **Frontend 4** — design-system consistency | Done | One `PersonLink`/`PersonAvatar`; shared label maps in `lib/people.ts`; stale sprint labels gone |
+| **Frontend 5** — UX optimised | Done | Names open profiles everywhere (was 1 place in 18); invite from a profile; lab → team in one step |
+| **Final 1** — review feedback applied | Not verifiable | As Backend 2 |
+| **Final 2** — end-to-end functionality verified | Done | Both suites, against the real database, self-cleaning |
+| **Final 3** — deployed version current | On push | Vercel deploys `main`; no new environment variables are needed |
+| **Final 4** — README and documentation | Done | README, CLAUDE.md, this section, HANDOFF.md |
+| **Final 5** — ready to present | Done | |
+
+### 9.2 What was built
+
+**Profiles worth opening.** `/participants/:id` was the thinnest page on the site — a name, roles,
+a bio, and skills — because it existed only so endorsing had somewhere to live. Everything the
+engine reads about a person was already public in the API and never shown. It now carries what
+they can do and how far it is trusted, when and how they like to work, their experience and
+teams, and — for anyone signed in — how the two of you fit, broken into the five components the
+score is made of, each with its sentence. Connect, message, and invite-to-a-team are on the same
+screen. `GET /api/users/:id` gained `teams` and `experiences`; a directory row stays lean.
+
+**Every name is a way in.** Names were plain text in seventeen places and a link in one. A
+shared `PersonLink` and `PersonAvatar` now make them links in Connections, team rosters, team
+chat, the chat header, request lists, the lab, and the public recruiting page (whose members
+now carry their id — profiles are public, so this discloses nothing). The account menu has
+"How others see you".
+
+**Who have we invited?** `GET /api/teams/:id/requests` lists a team's open invitations and
+applications, readable by everyone on the roster, actionable by the owner. Request records now
+carry the person and the team, so the Teams page says *which* team invited you and *who* asked
+to join — it used to say "You were invited to a team". It also lists what you sent and are still
+waiting on, with Withdraw. The current owner can withdraw an invitation the previous owner sent;
+before, only its creator could, so a handover left invitations nobody could take back.
+
+**The Team Lab.** The Compatibility tab had been two pages that were each answered better
+elsewhere, and once every candidate list carried a score there was nothing left in it.
+`POST /api/compatibility/lab` answers the question people ask *before* a team exists: two to
+eight people, one event, scored as though they were already a team — every pair under that
+event's weights, the group's coverage and readiness, what it would still be missing, and what
+could go wrong. It is the same engine as the real team report (`analyseRoster` is shared by
+both), and nothing is written until "Create team & invite" turns the room into a team.
+
+### 9.3 Placeholders and fictions removed
+
+| Was | Now |
+| --- | --- |
+| Hero: "12K+ builders matched · 480 teams formed · 92% avg. match" | Live counts from `GET /api/stats` |
+| "Sprint 1 MVP" on the hero and in the footer | Gone |
+| Feature card: "Scores are illustrative in Sprint 1; the scoring engine ships in Sprint 2" | Labelled *Example*, with the engine's real component names |
+| Connections: a "LinkedIn sync — coming soon" block | Removed |
+| Sign-up: a disabled LinkedIn button labelled "soon" | Unconfigured providers are not offered (the login form already did this) |
+| Settings: password "changing it from here is not built yet" | Change password (`POST /api/auth/password`) |
+| Settings: "deleting your account is handled by an administrator" | Delete your own account (`DELETE /api/users/me`) — refused for the last admin, and for the owner of a team other people are on |
+| Settings: email notifications "coming soon" | Removed; in-app notifications are what exists |
+| Discover cards read a 0–100 level against the old 1–5 scale ("Node.js 88/5") | The level's band ("Expert") |
+| Swagger "Try it out" pointed only at `localhost:4000` | Same-origin first, so it works on the deployment |
+| OpenAPI documented experiences as `startedOn`/`endedOn` | `startDate`/`endDate`/`isCurrent`/`skills`, as returned |
+
+### 9.4 Endpoints added
+
+| Method | Path | |
+| --- | --- | --- |
+| `GET` | `/api/stats` | Live platform numbers; CDN-cached for a minute |
+| `GET` | `/api/teams/{id}/requests` | A team's open invitations and applications |
+| `POST` | `/api/compatibility/lab` | A roster scored as a team before it exists |
+| `POST` | `/api/auth/password` | Change (or first set) your password |
+| `DELETE` | `/api/users/me` | Delete your own account |
+
+### 9.5 Verification
+
+```bash
+npm run typecheck && npm run build
+npm run audit:openapi --workspace backend            # 82 / 82
+npm test                                             # 47 checks, API_BASE (default :4000)
+npm run preview --workspace frontend &
+npm run test:ui --workspace frontend                 # 59 checks, UI_BASE (default :4173)
+```
+
+Both suites send an `Origin` header on every request, as a browser does — every "it works"
+that missed the production CORS bug was made without one. Both create `@taptim.test` accounts
+and delete them through the self-serve deletion they test, so neither touches the seed
+accounts, unlike the old scratchpad suites that deleted seed-owned teams. The browser suite uses
+the installed Chrome through `playwright-core`, and fails on horizontal overflow, console
+errors, 5xx responses, and any of the placeholder copy above coming back. Its copy checks are
+case-insensitive because the design system uppercases labels in CSS: `innerText` reads
+"SPRINT 1 MVP", which is how the stale footer label got past the first version of the list.
+
+---
+
+*Last updated: 11 September 2026.*

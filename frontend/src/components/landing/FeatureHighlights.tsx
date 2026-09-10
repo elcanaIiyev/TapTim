@@ -4,9 +4,11 @@ import { Card } from '../ui/Card';
 import { Container } from '../ui/Container';
 import { SectionHeading } from '../ui/SectionHeading';
 
+// An example, and labelled as one. These are three of the five components every
+// real score on the site is broken into, with the names the product uses.
 const MATCH_FACTORS = [
-  { label: 'Complementary skills', score: 96 },
-  { label: 'Availability overlap', score: 88 },
+  { label: 'Skills', score: 96 },
+  { label: 'Availability', score: 88 },
   { label: 'Working style', score: 91 },
 ];
 
@@ -23,7 +25,10 @@ const CERTS = ['TensorFlow Developer', 'AWS Solutions Architect', 'Kaggle Expert
 function CompatibilityCard() {
   return (
     <Card className="flex h-full flex-col">
-      <Badge tone="success">Compatibility</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <Badge tone="success">Compatibility</Badge>
+        <span className="type-label text-[0.7rem] text-ink-500 dark:text-ink-400">Example</span>
+      </div>
 
       <div className="mt-7 flex items-baseline gap-2">
         <span className="font-mono text-6xl font-bold tracking-tighter text-success-text">92%</span>
@@ -48,7 +53,8 @@ function CompatibilityCard() {
       </div>
 
       <p className="mt-auto pt-7 text-xs leading-relaxed text-ink-600 dark:text-ink-400">
-        Scores are illustrative in Sprint 1; the scoring engine ships in Sprint 2.
+        Every real score on TapTim comes broken down like this — five components, each with a
+        sentence saying why.
       </p>
     </Card>
   );
@@ -58,7 +64,10 @@ function CompatibilityCard() {
 function TeamBuilderCard() {
   return (
     <Card className="flex h-full flex-col">
-      <Badge tone="accent">Team Builder</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <Badge tone="accent">Team Builder</Badge>
+        <span className="type-label text-[0.7rem] text-ink-500 dark:text-ink-400">Example</span>
+      </div>
 
       <h3 className="mt-7 text-xl font-bold tracking-tight text-ink-900 dark:text-white">
         Team Nebula
@@ -108,7 +117,10 @@ function TeamBuilderCard() {
 function VerifiedBadgeCard() {
   return (
     <Card className="flex h-full flex-col">
-      <Badge tone="success">Verified</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <Badge tone="success">Verified</Badge>
+        <span className="type-label text-[0.7rem] text-ink-500 dark:text-ink-400">Example</span>
+      </div>
 
       <div className="mt-7 flex items-center gap-3">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-ink-200 bg-ink-900 font-mono text-sm font-bold text-ink-50 dark:border-ink-700">
@@ -176,7 +188,7 @@ export function FeatureHighlights() {
 
         <div className="mt-12">
           <Button variant="outline" to="/compatibility">
-            Try the compatibility preview
+            Try the Team Lab
           </Button>
         </div>
       </Container>

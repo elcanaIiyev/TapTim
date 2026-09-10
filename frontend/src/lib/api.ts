@@ -1,39 +1,43 @@
 import type {
   AdminAccount,
   AdminSummary,
+  AuthResult,
   ChatMessage,
   ConnectionsOverview,
   ConnectionView,
   Conversation,
   DirectoryUser,
   EventCandidate,
-  EventStats,
-  MyEventFit,
-  Team,
-  TeamDetail,
-  NotificationFeed,
-  PublicTeamPage,
-  ProfileEndorsements,
-  SkillEndorsement,
-  NotificationItem,
-  TeamChannel,
-  TeamChatMessage,
-  TeamEventReport,
-  TeamRequest,
-  AuthResult,
   EventFacets,
-  StatProfileOverride,
   EventItem,
+  EventStats,
   Experience,
   ExperiencePayload,
   FieldIssue,
+  LabReport,
   LoginPayload,
   MeResponse,
+  MyEventFit,
+  NotificationFeed,
+  NotificationItem,
+  PairCompatibility,
+  ParticipantProfile,
+  PlatformStats,
+  ProfileEndorsements,
   ProfileOptions,
   ProfilePayload,
   ProviderStatus,
+  PublicTeamPage,
   SignupPayload,
   SignupResult,
+  SkillEndorsement,
+  StatProfileOverride,
+  Team,
+  TeamChannel,
+  TeamChatMessage,
+  TeamDetail,
+  TeamEventReport,
+  TeamRequest,
   User,
 } from './types';
 
@@ -156,6 +160,10 @@ export const authApi = {
       body: JSON.stringify(body),
     }).then((r) => r.data),
 
+  /** `currentPassword` is required whenever the account already has one. */
+  changePassword: (body: { currentPassword?: string; newPassword: string }) =>
+    request<void>('/api/auth/password', { method: 'POST', body: JSON.stringify(body) }),
+
   me: () => request<{ data: MeResponse }>('/api/auth/me').then((r) => r.data),
 
   verifyEmail: (token: string) =>
@@ -231,9 +239,9 @@ export const profileApi = {
   removeAvatar: () =>
     request<{ data: User }>('/api/users/me/avatar', { method: 'DELETE' }).then((r) => r.data),
 
-  /** One participant, as everyone but they themselves see them. */
+  /** One participant, as everyone but they themselves see them — with teams and experience. */
   get: (id: string) =>
-    request<{ data: DirectoryUser }>(`/api/users/${id}`).then((r) => r.data),
+    request<{ data: ParticipantProfile }>(`/api/users/${id}`).then((r) => r.data),
 
   /** Everyone open to joining a team. The caller is excluded server-side. */
   directory: (query: { search?: string; roles?: string[] } = {}) => {
@@ -264,6 +272,13 @@ export const profileApi = {
 
   removeExperience: (id: string) =>
     request<void>(`/api/users/me/experiences/${id}`, { method: 'DELETE' }),
+
+  /** Permanent. The server refuses if it would take anyone else's team with it. */
+  deleteMe: (confirmEmail: string) =>
+    request<void>('/api/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmEmail }),
+    }),
 };
 
 export interface EventQuery {
@@ -401,6 +416,10 @@ export const teamsApi = {
       (r) => r.data,
     ),
 
+  /** Still-open invitations and applications on one team. Anyone on the roster. */
+  pendingFor: (teamId: string) =>
+    request<{ data: TeamRequest[] }>(`/api/teams/${teamId}/requests`).then((r) => r.data),
+
   requests: (direction: 'incoming' | 'outgoing' = 'incoming') =>
     request<{ data: TeamRequest[] }>(`/api/teams/requests?direction=${direction}&status=pending`).then(
       (r) => r.data,
@@ -503,6 +522,27 @@ export const connectionsApi = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }).then((r) => r.data),
+};
+
+export const compatibilityApi = {
+  /** You and them, broken into the five components the score is made of. */
+  withMe: (userId: string) =>
+    request<{ data: PairCompatibility }>('/api/compatibility', {
+      method: 'POST',
+      body: JSON.stringify({ userIds: [userId] }),
+    }).then((r) => r.data),
+
+  /** A roster that does not exist yet, scored as if it did. Nothing is written. */
+  lab: (eventId: string, userIds: string[]) =>
+    request<{ data: LabReport }>('/api/compatibility/lab', {
+      method: 'POST',
+      body: JSON.stringify({ eventId, userIds }),
+    }).then((r) => r.data),
+};
+
+export const statsApi = {
+  /** The landing page's numbers — counted, not invented. */
+  platform: () => request<{ data: PlatformStats }>('/api/stats').then((r) => r.data),
 };
 
 export { API_URL };

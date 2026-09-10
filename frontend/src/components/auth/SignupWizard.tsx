@@ -57,32 +57,25 @@ function StepPips({ index }: { index: number }) {
 }
 
 function ProviderButtons({ providers }: { providers: ProviderStatus[] }) {
-  if (providers.length === 0) return null;
+  // Only providers this server can actually complete. An unconfigured one used
+  // to render disabled with a "soon" label — a button that exists to say it
+  // does not work. The login form already hid them; now both forms agree.
+  const usable = providers.filter((provider) => provider.configured);
+  if (usable.length === 0) return null;
 
   return (
     <div className="space-y-2.5">
-      {providers.map((provider) => (
+      {usable.map((provider) => (
         <Button
           key={provider.provider}
           type="button"
           variant="outline"
           size="lg"
           className="w-full"
-          disabled={!provider.configured}
-          // A provider with no credentials on the server would bounce straight
-          // back with an error, so it is shown disabled and labelled instead of
-          // being offered as if it works.
-          title={
-            provider.configured
-              ? `Continue with ${provider.label}`
-              : `${provider.label} sign-in is not set up on this server yet`
-          }
+          title={`Continue with ${provider.label}`}
           onClick={() => authApi.startOAuth(provider.provider)}
         >
           Continue with {provider.label}
-          {!provider.configured && (
-            <span className="type-label ml-1 text-ink-500 dark:text-ink-400">soon</span>
-          )}
         </Button>
       ))}
     </div>

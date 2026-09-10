@@ -26,7 +26,7 @@ const PUBLIC_LINKS = [
 const MEMBER_LINKS = [
   { label: 'Teams', to: '/teams' },
   { label: 'Connections', to: '/connections' },
-  { label: 'Compatibility', to: '/compatibility' },
+  { label: 'Team Lab', to: '/compatibility' },
 ];
 
 interface NavbarProps {

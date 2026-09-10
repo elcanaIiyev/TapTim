@@ -30,6 +30,12 @@ import type { TeamRole } from '../users/user.model.js';
  */
 
 export interface PublicTeamMember {
+  /**
+   * Profiles are public, so this discloses nothing new — and without it the
+   * page listed who you would be working with while giving you no way to look
+   * any of them up.
+   */
+  id: string;
   fullName: string;
   firstName: string;
   avatarUrl: string | null;
@@ -124,6 +130,7 @@ export async function publicPage(teamId: string): Promise<PublicTeamPage> {
     const tallies = endorsements.get(member.id) ?? new Map<string, SkillTally>();
     const countOf = (skill: string) => tallies.get(skill)?.count ?? 0;
     return {
+      id: member.id,
       fullName: member.fullName,
       firstName: member.firstName,
       avatarUrl: member.avatarUrl,

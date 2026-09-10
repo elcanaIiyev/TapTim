@@ -10,7 +10,7 @@ const FOOTER_COLUMNS = [
       { label: 'Home', to: '/' },
       { label: 'Events', to: '/events' },
       { label: 'Teams recruiting', to: '/recruiting' },
-      { label: 'Compatibility', to: '/compatibility' },
+      { label: 'Team Lab', to: '/compatibility' },
     ],
   },
   {
@@ -74,7 +74,7 @@ export function Footer() {
         </div>
 
         <div className="type-label mt-14 flex flex-col gap-3 border-t border-ink-800 pt-6 text-ink-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} TapTim / Sprint 1 MVP</p>
+          <p>© {new Date().getFullYear()} TapTim</p>
           {/* A mode nobody is told about is a mode nobody uses. The footer is
               where the rest of the site's small print already lives. */}
           <p className="text-ink-500">

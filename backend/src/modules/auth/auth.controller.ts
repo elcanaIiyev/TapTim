@@ -15,6 +15,7 @@ import { HttpError } from '../../utils/http-error.js';
 import { toPublicUser } from '../users/user.model.js';
 import { profileCompleteness } from '../users/user.service.js';
 import type {
+  ChangePasswordInput,
   CheckEmailInput,
   LoginInput,
   ResendVerificationInput,
@@ -171,5 +172,11 @@ export async function disconnectProviderHandler(req: Request, res: Response) {
   const user = requireUser(req);
   const provider = parseProvider(req.params.provider);
   await authService.disconnectProvider(user, provider);
+  res.status(204).send();
+}
+
+export async function changePasswordHandler(req: Request, res: Response) {
+  const user = requireUser(req);
+  await authService.changePassword(user, req.body as ChangePasswordInput);
   res.status(204).send();
 }

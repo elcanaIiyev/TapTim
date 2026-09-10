@@ -14,6 +14,7 @@ import { connectionRouter } from './modules/connections/connection.routes.js';
 import { notificationRouter } from './modules/notifications/notification.routes.js';
 import { compatibilityRouter } from './modules/compatibility/compatibility.routes.js';
 import { eventRouter } from './modules/events/event.routes.js';
+import { statsRouter } from './modules/stats/stats.routes.js';
 import { teamRouter } from './modules/teams/team.routes.js';
 import { userRouter } from './modules/users/user.routes.js';
 import { HttpError } from './utils/http-error.js';
@@ -89,6 +90,7 @@ export function createApp() {
   app.use('/api/certificates', certificateRouter);
   app.use('/api/connections', connectionRouter);
   app.use('/api/notifications', notificationRouter);
+  app.use('/api/stats', statsRouter);
 
   // The admin console. Mounted under `/api/ops` rather than the obvious
   // `/api/admin`, and absent from the OpenAPI document on purpose — publishing

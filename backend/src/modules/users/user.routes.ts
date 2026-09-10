@@ -13,12 +13,13 @@ import {
   confirmAvailabilityHandler,
   createExperienceHandler,
   deleteExperienceHandler,
+  deleteMeHandler,
+  endorseHandler,
+  endorsementsHandler,
   getMeHandler,
   getUserHandler,
   listExperiencesHandler,
   listUsersHandler,
-  endorseHandler,
-  endorsementsHandler,
   profileOptionsHandler,
   removeAvatarHandler,
   updateExperienceHandler,
@@ -27,6 +28,7 @@ import {
   withdrawEndorsementHandler,
 } from './user.controller.js';
 import {
+  deleteMeSchema,
   endorseSkillSchema,
   listUsersQuerySchema,
   updateProfileSchema,
@@ -54,6 +56,7 @@ userRouter.get('/profile-options', profileOptionsHandler);
 // captured as an id.
 userRouter.get('/me', requireAuth, asyncHandler(getMeHandler));
 userRouter.patch('/me', requireAuth, validateBody(updateProfileSchema), asyncHandler(updateMeHandler));
+userRouter.delete('/me', requireAuth, validateBody(deleteMeSchema), asyncHandler(deleteMeHandler));
 
 userRouter.post(
   '/me/avatar',
