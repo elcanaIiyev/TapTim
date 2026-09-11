@@ -59,6 +59,17 @@ export function ChatPanel({
   const endRef = useRef<HTMLDivElement>(null);
   const readNotified = useRef(false);
 
+  // The latest `onRead`, read through a ref rather than listed as a dependency.
+  // Callers pass an inline arrow, so it is a new function on every render of
+  // theirs — and calling it re-renders them. As a dependency it rebuilt `load`,
+  // which re-ran the reset below: the header blanked to "Loading…", the thread
+  // refetched, and `onRead` fired again. Measured on the live site at 19
+  // fetches in ten seconds, where the five-second poll alone makes two.
+  const onReadRef = useRef(onRead);
+  useEffect(() => {
+    onReadRef.current = onRead;
+  }, [onRead]);
+
   const load = useCallback(
     async (announce = false) => {
       try {
@@ -66,15 +77,17 @@ export function ChatPanel({
         setConversation(next);
         if (announce && !readNotified.current) {
           readNotified.current = true;
-          onRead();
+          onReadRef.current();
         }
       } catch (caught) {
         setError(caught instanceof ApiError ? caught.message : 'Could not load the conversation.');
       }
     },
-    [partnerId, onRead],
+    [partnerId],
   );
 
+  // Only when the person changes: a new thread starts blank and announces
+  // itself read once. Anything else re-running this is the bug above.
   useEffect(() => {
     readNotified.current = false;
     setConversation(null);

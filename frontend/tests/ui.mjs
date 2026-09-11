@@ -97,6 +97,12 @@ async function setUp() {
   });
   accounts.teamId = team.body.data.id;
   await api('POST', `/api/teams/${accounts.teamId}/invitations`, { token: a.token, body: { userId: b.id, message: null } });
+
+  // Connected, with a message between them, so the chat checks have a real thread.
+  await api('POST', '/api/connections', { token: a.token, body: { userId: b.id } });
+  const waiting = await api('GET', '/api/connections', { token: b.token });
+  await api('PATCH', `/api/connections/${waiting.body.data.incoming[0].id}`, { token: b.token, body: { action: 'accept' } });
+  await api('POST', `/api/connections/messages/${b.id}`, { token: a.token, body: { body: 'Hello from the UI suite.' } });
 }
 
 async function tearDown() {
@@ -208,6 +214,38 @@ async function darkSweep(token) {
   }
 }
 
+/**
+ * An open chat must poll, not loop. The panel used to blank its header to
+ * "Loading…" and refetch the thread several times a second, because a new
+ * `onRead` from the parent re-ran its reset on every render.
+ */
+async function chatStaysPut(context, path, open, label) {
+  const { b } = accounts;
+  const { page, problems } = await openPage(context, path);
+  let fetches = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'GET' && new URL(request.url()).pathname === `/api/connections/messages/${b.id}`) {
+      fetches += 1;
+    }
+  });
+  await open(page);
+  const header = page.locator('header').filter({ hasText: new RegExp(`${b.firstName} Tester|Loading…`) }).last();
+  await header.getByText(`${b.firstName} Tester`, { exact: true }).waitFor({ timeout: 15000 });
+  fetches = 0;
+  let blank = 0;
+  const until = Date.now() + 8000;
+  while (Date.now() < until) {
+    if ((await header.innerText().catch(() => '')).includes('Loading…')) blank += 1;
+    await page.waitForTimeout(100);
+  }
+  check(
+    `${label}: an open chat polls instead of refetching in a loop`,
+    fetches <= 3 && blank === 0 && problems.length === 0,
+    `fetched ${fetches}× in 8 s; header blank in ${blank} samples${problems.length ? `; ${problems.join('; ')}` : ''}`,
+  );
+  await page.close();
+}
+
 async function flows(token) {
   const { b, teamId } = accounts;
   console.log('\nflows (desktop)');
@@ -228,7 +266,7 @@ async function flows(token) {
   {
     const { page } = await openPage(context, `/participants/${b.id}`);
     check('profile: compatibility with you, broken down', await page.getByText(`You and ${b.firstName}`, { exact: true }).first().isVisible());
-    check('profile: connect is offered', await page.getByRole('button', { name: 'Connect', exact: true }).isVisible());
+    check('profile: a connection can be messaged from their profile', await page.getByRole('button', { name: `Message ${b.firstName}`, exact: true }).isVisible());
     check('profile: skills and at-a-glance stats', (await page.getByText('At a glance', { exact: true }).isVisible()) && (await page.getByText('Figma').first().isVisible()));
     await page.close();
   }
@@ -267,6 +305,15 @@ async function flows(token) {
     check('settings: change password and delete account', (await page.getByRole('button', { name: 'Change', exact: true }).isVisible()) && (await page.getByText('Danger zone', { exact: true }).isVisible()));
     await page.close();
   }
+
+  // Chat, on its own page and in the dock opened from a profile.
+  await chatStaysPut(context, `/connections?with=${b.id}`, async () => {}, 'connections page');
+  await chatStaysPut(
+    context,
+    `/participants/${b.id}`,
+    async (page) => page.getByRole('button', { name: `Message ${b.firstName}`, exact: true }).click(),
+    'chat dock',
+  );
 
   // The lab, all the way to a real team: a different event, Blake in the room,
   // a name, one click — and the team page that follows lists Blake as invited.
